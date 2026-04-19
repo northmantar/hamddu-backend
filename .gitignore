@@ -2,3 +2,6 @@ dist/
 node_modules/
 .env
 *.js.map
+package-lock.json
+desc
+.DS_Store
