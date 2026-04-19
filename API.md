@@ -19,9 +19,9 @@ Authorization: Bearer <access_token>
 | 토큰 | 유효 기간 | 전달 방식 |
 |---|---|---|
 | `access_token` | 15분 | `Authorization: Bearer` 헤더 |
-| `refresh_token` | 7일 | httpOnly 쿠키 (서버가 자동으로 설정/삭제) |
+| `refresh_token` | 30일 | httpOnly 쿠키 (서버가 자동으로 설정/삭제) |
 
-액세스 토큰이 만료되면 `POST /auth/refresh`를 호출하여 새 토큰을 발급받습니다. 리프레시 토큰 쿠키는 브라우저가 자동으로 전송합니다.
+액세스 토큰이 만료되면 `POST /auth/refresh`를 호출하여 새 토큰을 발급받습니다. 리프레시 토큰 쿠키는 클라이언트가 자동으로 전송합니다.
 
 ---
 
@@ -67,13 +67,33 @@ Authorization: Bearer <access_token>
 ### `age`
 | 값 | 연령대 |
 |---|---|
-| `1518` | 15 – 18세 |
+| `1418` | 14 – 18세 |
 | `1924` | 19 – 24세 |
 | `2529` | 25 – 29세 |
 | `3034` | 30 – 34세 |
 | `3539` | 35 – 39세 |
 | `4049` | 40 – 49세 |
 | `50+` | 50세 이상 |
+
+### `gender`
+| 값 | 설명 |
+|---|---|
+| `M` | 남성 |
+| `F` | 여성 |
+
+### `interests`
+| 값 | 설명 |
+|---|---|
+| `crochet` | 코바늘 |
+| `knitting` | 대바늘 |
+
+### `ability`
+| 값 | 설명 |
+|---|---|
+| `beginner` | 입문 |
+| `intermediate` | 초급 |
+| `advanced` | 중급 |
+| `expert` | 고급 |
 
 ---
 
@@ -91,6 +111,9 @@ Authorization: Bearer <access_token>
   "name": "홍길동",
   "nickname": "실뭉치장인",
   "age": "2529",
+  "gender": "F",
+  "interests": "knitting",
+  "ability": "intermediate",
   "surveyCompleted": true,
   "createdAt": "2026-04-09T12:00:00.000Z"
 }
@@ -106,6 +129,9 @@ Authorization: Bearer <access_token>
 | `name` | string | Yes | OAuth 제공자로부터 받은 이름 |
 | `nickname` | string | Yes | 유저가 설정한 닉네임, 설정 전 null |
 | `age` | string (enum) | Yes | 연령대, 설문 완료 전 null |
+| `gender` | string (enum) | Yes | 성별, 설문 완료 전 null |
+| `interests` | string (enum) | Yes | 관심 분야, 설문 완료 전 null |
+| `ability` | string (enum) | Yes | 실력 수준, 설문 완료 전 null |
 | `surveyCompleted` | boolean | No | 로그인 후 설문 완료 여부 |
 | `createdAt` | string (ISO 8601) | No | 계정 생성 일시 |
 
@@ -151,7 +177,7 @@ GET /api/auth/google/callback
 httpOnly 쿠키도 함께 설정됩니다:
 
 ```
-Set-Cookie: refresh_token=<token>; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800
+Set-Cookie: refresh_token=<token>; HttpOnly; SameSite=Strict; Path=/; Max-Age=2592000
 ```
 
 | 쿼리 파라미터 | 타입 | 설명 |
@@ -284,7 +310,7 @@ PATCH /api/users/me
 
 ### 9. 설문 제출
 
-로그인 후 설문 답변을 저장합니다. 이후 재호출하여 연령대를 수정할 수 있습니다.
+로그인 후 설문 답변을 저장합니다. 이후 재호출하여 수정할 수 있습니다.
 
 ```
 POST /api/users/me/survey
@@ -296,13 +322,19 @@ POST /api/users/me/survey
 
 ```json
 {
-  "age": "2529"
+  "age": "2529",
+  "gender": "F",
+  "interests": "knitting",
+  "ability": "intermediate"
 }
 ```
 
 | 필드 | 타입 | 필수 | 유효성 조건 |
 |---|---|---|---|
 | `age` | string (enum) | Yes | `age` enum 값 중 하나 |
+| `gender` | string (enum) | Yes | `M` \| `F` |
+| `interests` | string (enum) | Yes | `crochet` \| `knitting` |
+| `ability` | string (enum) | Yes | `ability` enum 값 중 하나 |
 
 **응답 `200`:** [유저 객체](#유저-객체) (`surveyCompleted: true`)
 
@@ -310,7 +342,7 @@ POST /api/users/me/survey
 
 | 상태 코드 | 조건 |
 |---|---|
-| `400` | 유효하지 않은 연령대 값 |
+| `400` | 유효하지 않은 enum 값 |
 
 ---
 
