@@ -3,10 +3,9 @@ import { JwtService } from '@nestjs/jwt';
 import { createHash, randomBytes } from 'crypto';
 import { UsersService } from '../users/users.service';
 import { RedisService } from '../redis/redis.service';
-import { Platform } from '../users/entities/user.entity';
+import { Platform } from '@enums/user.enum';
 import { OAuthProfile } from './interfaces/oauth-profile.interface';
-
-const REFRESH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+const REFRESH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 export interface TokenPair {
   accessToken: string;

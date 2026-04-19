@@ -1,4 +1,13 @@
-import { AgeRange, Platform, User, UserStatus, UserType } from '../entities/user.entity';
+import {
+  AgeRange,
+  Platform,
+  UserStatus,
+  UserType,
+  UserGender,
+  UserInterests,
+  UserAbility,
+} from "@enums/user.enum";
+import { User } from "@entities/user.entity";
 
 export class UserResponseDto {
   id: string;
@@ -9,6 +18,9 @@ export class UserResponseDto {
   name: string | null;
   nickname: string | null;
   age: AgeRange | null;
+  gender: UserGender | null;
+  interests: UserInterests | null;
+  ability: UserAbility | null;
   surveyCompleted: boolean;
   createdAt: Date;
 
@@ -22,6 +34,9 @@ export class UserResponseDto {
       name: user.name,
       nickname: user.nickname,
       age: user.age,
+      gender: user.gender,
+      interests: user.interests,
+      ability: user.ability,
       surveyCompleted: user.surveyCompletedAt !== null,
       createdAt: user.createdAt,
     };

@@ -5,11 +5,12 @@ import { SnakeNamingStrategy } from "typeorm-naming-strategies";
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
 import { RedisModule } from "./redis/redis.module";
-import { User } from "./users/entities/user.entity";
+import { User } from "./entities/user.entity";
+import { infisicalLoader } from "./infisical/infisical.loader";
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, load: [infisicalLoader] }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -20,7 +21,7 @@ import { User } from "./users/entities/user.entity";
         password: config.get("DB_PASSWORD"),
         database: config.get("DB_NAME"),
         entities: [User],
-        synchronize: config.get("NODE_ENV") !== "production",
+        synchronize: false,
         namingStrategy: new SnakeNamingStrategy(),
       }),
     }),

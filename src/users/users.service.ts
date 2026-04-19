@@ -1,11 +1,13 @@
 import {
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Platform, User, UserStatus } from './entities/user.entity';
+import { User } from '@entities/user.entity';
+import { Platform, UserStatus } from '../enums/user.enum';
 import { UpdateNicknameDto } from './dto/update-nickname.dto';
 import { SurveyDto } from './dto/survey.dto';
 import { RedisService } from '../redis/redis.service';
@@ -20,6 +22,13 @@ export class UsersService {
 
   async findById(id: string): Promise<User | null> {
     return this.userRepo.findOne({ where: { id } });
+  }
+
+
+  async findByIdOrFail(id: string): Promise<User> {
+    const user = await this.userRepo.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+    return user;
   }
 
   async findOrCreate(
@@ -38,9 +47,11 @@ export class UsersService {
     const taken = await this.userRepo.findOne({ where: { nickname: dto.nickname } });
     if (taken && taken.id !== userId) {
       throw new ConflictException('Nickname already taken');
-    }
+    } 
     await this.userRepo.update(userId, { nickname: dto.nickname });
-    return this.userRepo.findOne({ where: { id: userId } });
+    const updated = await this.userRepo.findOne({ where: { id: userId } });
+    if (!updated) throw new InternalServerErrorException('User disappeared after update');
+    return updated;
   }
 
   async completeSurvey(userId: string, dto: SurveyDto): Promise<User> {
@@ -49,9 +60,14 @@ export class UsersService {
 
     await this.userRepo.update(userId, {
       age: dto.age,
+      gender: dto.gender,
+      interests: dto.interests,
+      ability: dto.ability,
       surveyCompletedAt: user.surveyCompletedAt ?? new Date(),
     });
-    return this.userRepo.findOne({ where: { id: userId } });
+    const updated = await this.userRepo.findOne({ where: { id: userId } });
+    if (!updated) throw new InternalServerErrorException('User disappeared after update');
+    return updated;
   }
 
   async withdraw(userId: string): Promise<void> {

@@ -13,7 +13,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { Platform } from '../users/entities/user.entity';
+import { Platform } from '@enums/user.enum';
 import { OAuthProfile } from './interfaces/oauth-profile.interface';
 
 const COOKIE_NAME = 'refresh_token';
@@ -23,7 +23,7 @@ function cookieOptions(config: ConfigService) {
     httpOnly: true,
     secure: config.get('NODE_ENV') === 'production',
     sameSite: 'strict' as const,
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in ms
     path: '/',
   };
 }

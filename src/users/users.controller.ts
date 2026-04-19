@@ -26,7 +26,7 @@ export class UsersController {
 
   @Get('me')
   async getMe(@CurrentUser() payload: JwtPayload): Promise<UserResponseDto> {
-    const user = await this.usersService.findById(payload.sub);
+    const user = await this.usersService.findByIdOrFail(payload.sub);
     return UserResponseDto.from(user);
   }
 
