@@ -10,6 +10,10 @@
     "sourceMap": true,
     "outDir": "./dist",
     "baseUrl": "./",
+    "paths": {
+      "@entities/*": ["./src/entities/*"],
+      "@enums/*": ["./src/enums/*"],
+    },
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": false,
