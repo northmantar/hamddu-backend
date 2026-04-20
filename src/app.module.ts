@@ -6,11 +6,10 @@ import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
 import { RedisModule } from "./redis/redis.module";
 import { User } from "./entities/user.entity";
-import { infisicalLoader } from "./infisical/infisical.loader";
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, load: [infisicalLoader] }),
+    ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -21,7 +20,8 @@ import { infisicalLoader } from "./infisical/infisical.loader";
         password: config.get("DB_PASSWORD"),
         database: config.get("DB_NAME"),
         entities: [User],
-        synchronize: false,
+        // synchronize: false,
+        synchronize: true,    // TODO: false
         namingStrategy: new SnakeNamingStrategy(),
       }),
     }),
