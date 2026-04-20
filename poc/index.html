@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hamddu OAuth POC</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 40px 48px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      width: 100%;
+      max-width: 480px;
+    }
+
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { font-size: 14px; color: #888; margin-bottom: 32px; }
+
+    /* Config section */
+    .config { margin-bottom: 28px; }
+    .config label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 6px; }
+    .config input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .config input:focus { border-color: #6c63ff; }
+
+    /* Buttons */
+    .btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 13px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity .15s, transform .1s;
+      margin-bottom: 12px;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn:hover { opacity: 0.9; }
+    .btn:last-child { margin-bottom: 0; }
+
+    .btn-google { background: #fff; border: 1.5px solid #ddd; color: #333; }
+    .btn-naver  { background: #03C75A; color: #fff; }
+
+    .btn svg { flex-shrink: 0; }
+
+    /* Divider */
+    .divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 24px 0;
+      color: #bbb; font-size: 12px;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px; background: #eee;
+    }
+
+    /* Token actions */
+    .token-actions { display: flex; gap: 8px; }
+    .token-actions .btn {
+      margin-bottom: 0;
+      font-size: 13px;
+      padding: 10px 16px;
+      flex: 1;
+      justify-content: center;
+    }
+    .btn-refresh { background: #6c63ff; color: #fff; }
+    .btn-logout  { background: #ff4d4f; color: #fff; }
+
+    /* Result panel */
+    .result {
+      display: none;
+      margin-top: 28px;
+      background: #f9f9f9;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #eee;
+    }
+    .result.show { display: block; }
+    .result-header {
+      padding: 10px 16px;
+      background: #f0f0f0;
+      font-size: 12px;
+      font-weight: 600;
+      color: #555;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .result-body {
+      padding: 14px 16px;
+      font-size: 12px;
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+      color: #333;
+      word-break: break-all;
+      white-space: pre-wrap;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    /* Status badge */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+    .badge.ok  { background: #e6f9ee; color: #09b44d; }
+    .badge.err { background: #fff0f0; color: #ff4d4f; }
+    .badge.info { background: #eff3ff; color: #6c63ff; }
+
+    /* Copy button */
+    .copy-btn {
+      font-size: 11px;
+      padding: 2px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+      color: #555;
+    }
+    .copy-btn:hover { background: #f0f0f0; }
+
+    /* Survey warning */
+    .survey-banner {
+      display: none;
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: #fffbe6;
+      border: 1px solid #ffe58f;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #876800;
+    }
+    .survey-banner.show { display: block; }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: #333;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s, transform .25s;
+    }
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+<div class="card" id="app"></div>
+<div id="toast"></div>
+
+<script>
+  // ─── Config ────────────────────────────────────────────────────────────────
+  const DEFAULT_API = 'http://localhost:3000';
+  let apiBase = localStorage.getItem('poc_api_base') || DEFAULT_API;
+
+  // ─── Helpers ───────────────────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+  const app = document.getElementById('app');
+
+  function toast(msg, duration = 2500) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), duration);
+  }
+
+  function copyText(text) {
+    navigator.clipboard.writeText(text).then(() => toast('Copied!')).catch(() => toast('Copy failed'));
+  }
+
+  function formatJwt(token) {
+    try {
+      const [, payload] = token.split('.');
+      const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+      return JSON.stringify(decoded, null, 2);
+    } catch {
+      return '(could not decode)';
+    }
+  }
+
+  // ─── State ─────────────────────────────────────────────────────────────────
+  let accessToken = null;
+
+  // ─── Views ─────────────────────────────────────────────────────────────────
+
+  function renderLogin() {
+    app.innerHTML = `
+      <h1>OAuth POC</h1>
+      <p class="subtitle">Hamddu 백엔드 OAuth 로그인 흐름 테스트</p>
+
+      <div class="config">
+        <label>API Base URL</label>
+        <input id="api-input" type="text" value="${apiBase}" placeholder="http://localhost:3000" />
+      </div>
+
+      <a id="btn-google" class="btn btn-google" href="#">
+        <svg width="20" height="20" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          <path fill="none" d="M0 0h48v48H0z"/>
+        </svg>
+        Google로 로그인
+      </a>
+
+      <a id="btn-naver" class="btn btn-naver" href="#">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+          <path d="M16.273 12.845L7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727z"/>
+        </svg>
+        네이버로 로그인
+      </a>
+    `;
+
+    $('api-input').addEventListener('change', e => {
+      apiBase = e.target.value.replace(/\/$/, '');
+      localStorage.setItem('poc_api_base', apiBase);
+      updateLinks();
+    });
+
+    updateLinks();
+  }
+
+  function updateLinks() {
+    const g = $('btn-google');
+    const n = $('btn-naver');
+    if (g) g.href = `${apiBase}/api/auth/google`;
+    if (n) n.href = `${apiBase}/api/auth/naver`;
+  }
+
+  function renderSuccess(token, surveyRequired) {
+    accessToken = token;
+
+    app.innerHTML = `
+      <h1>로그인 성공</h1>
+      <p class="subtitle">OAuth 콜백이 정상 처리되었습니다</p>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;">
+        <span class="badge ok">✓ Access Token 수신</span>
+        ${surveyRequired
+          ? '<span class="badge err">설문 미완료</span>'
+          : '<span class="badge ok">설문 완료</span>'}
+      </div>
+
+      <div class="survey-banner ${surveyRequired ? 'show' : ''}">
+        설문이 완료되지 않았습니다. 보호된 API 호출 시 <code>403</code>이 반환됩니다.
+      </div>
+
+      <div class="result show">
+        <div class="result-header">
+          Access Token (raw)
+          <button class="copy-btn" onclick="copyText(accessToken)">Copy</button>
+        </div>
+        <div class="result-body" id="raw-token">${token}</div>
+      </div>
+
+      <div class="result show" style="margin-top:12px;">
+        <div class="result-header">
+          JWT Payload (decoded)
+          <span class="badge info">client-side only</span>
+        </div>
+        <div class="result-body">${formatJwt(token)}</div>
+      </div>
+
+      <div class="divider">토큰 관리</div>
+
+      <div class="token-actions" style="margin-bottom:12px;">
+        <button class="btn btn-refresh" onclick="doRefresh()">Refresh Token</button>
+        <button class="btn btn-logout"  onclick="doLogout()">Logout</button>
+      </div>
+
+      <div class="result" id="api-result">
+        <div class="result-header" id="api-result-header">API 응답</div>
+        <div class="result-body"  id="api-result-body"></div>
+      </div>
+
+      <div class="divider">다시 테스트</div>
+
+      <button class="btn" style="background:#f5f5f5;color:#333;justify-content:center;" onclick="window.location.href='/'">
+        로그인 페이지로 돌아가기
+      </button>
+    `;
+  }
+
+  // ─── API calls ─────────────────────────────────────────────────────────────
+
+  async function doRefresh() {
+    const result = $('api-result');
+    const header = $('api-result-header');
+    const body   = $('api-result-body');
+    result.classList.add('show');
+    header.textContent = 'POST /api/auth/refresh';
+    body.textContent = 'Loading…';
+
+    try {
+      const res = await fetch(`${apiBase}/api/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        accessToken = data.accessToken;
+        body.textContent = JSON.stringify(data, null, 2);
+        toast('토큰 갱신 성공');
+        // update displayed token
+        const raw = $('raw-token');
+        if (raw) raw.textContent = accessToken;
+      } else {
+        body.textContent = `${res.status} ${res.statusText}\n\n${JSON.stringify(data, null, 2)}`;
+        toast(`갱신 실패: ${res.status}`);
+      }
+    } catch (err) {
+      body.textContent = `Network error: ${err.message}`;
+      toast('Network error');
+    }
+  }
+
+  async function doLogout() {
+    const result = $('api-result');
+    const header = $('api-result-header');
+    const body   = $('api-result-body');
+    result.classList.add('show');
+    header.textContent = 'POST /api/auth/logout';
+    body.textContent = 'Loading…';
+
+    try {
+      const res = await fetch(`${apiBase}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (res.status === 204 || res.ok) {
+        body.textContent = `${res.status} No Content — 로그아웃 완료`;
+        accessToken = null;
+        toast('로그아웃 성공');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        body.textContent = `${res.status}\n\n${JSON.stringify(data, null, 2)}`;
+        toast(`로그아웃 실패: ${res.status}`);
+      }
+    } catch (err) {
+      body.textContent = `Network error: ${err.message}`;
+      toast('Network error');
+    }
+  }
+
+  // ─── Router ────────────────────────────────────────────────────────────────
+
+  function route() {
+    const params = new URLSearchParams(window.location.search);
+    const token  = params.get('access_token');
+    const survey = params.get('survey_required') === 'true';
+
+    if (token) {
+      // arrived here via OAuth callback redirect
+      renderSuccess(token, survey);
+      // clean up URL
+      history.replaceState({}, '', window.location.pathname);
+    } else {
+      renderLogin();
+    }
+  }
+
+  route();
+</script>
+</body>
+</html>
