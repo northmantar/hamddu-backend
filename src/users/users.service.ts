@@ -1,23 +1,31 @@
 import {
-  ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { User } from '@entities/user.entity';
+import { NicknameAdjective } from '@entities/nickname-adjective.entity';
+import { NicknameNoun } from '@entities/nickname-noun.entity';
 import { Platform, UserStatus } from '../enums/user.enum';
 import { UpdateNicknameDto } from './dto/update-nickname.dto';
 import { SurveyDto } from './dto/survey.dto';
 import { RedisService } from '../redis/redis.service';
+import { NicknameSequenceService } from '../nicknames/nickname-sequence.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(NicknameAdjective)
+    private readonly adjectiveRepo: Repository<NicknameAdjective>,
+    @InjectRepository(NicknameNoun)
+    private readonly nounRepo: Repository<NicknameNoun>,
+    private readonly dataSource: DataSource,
     private readonly redis: RedisService,
+    private readonly nicknameSequenceService: NicknameSequenceService,
   ) {}
 
   async findById(id: string): Promise<User | null> {
@@ -44,14 +52,32 @@ export class UsersService {
   }
 
   async updateNickname(userId: string, dto: UpdateNicknameDto): Promise<User> {
-    const taken = await this.userRepo.findOne({ where: { nickname: dto.nickname } });
-    if (taken && taken.id !== userId) {
-      throw new ConflictException('Nickname already taken');
-    } 
-    await this.userRepo.update(userId, { nickname: dto.nickname });
-    const updated = await this.userRepo.findOne({ where: { id: userId } });
-    if (!updated) throw new InternalServerErrorException('User disappeared after update');
-    return updated;
+    const base = dto.nickname;
+
+    if (await this.tryUpdateNickname(userId, base)) {
+      return this.findByIdOrFail(userId);
+    }
+
+    while (true) {
+      const suffix = await this.nicknameSequenceService.allocateSuffix(base);
+      const nickname = `${base}${suffix}`;
+      if (await this.tryUpdateNickname(userId, nickname)) {
+        return this.findByIdOrFail(userId);
+      }
+    }
+  }
+
+  private async tryUpdateNickname(userId: string, nickname: string): Promise<boolean> {
+    const result = await this.dataSource.query(
+      `UPDATE users SET nickname = $1
+       WHERE id = $2
+         AND NOT EXISTS (
+           SELECT 1 FROM users WHERE nickname = $1 AND id != $2
+         )
+       RETURNING id`,
+      [nickname, userId],
+    );
+    return result.length > 0;
   }
 
   async completeSurvey(userId: string, dto: SurveyDto): Promise<User> {
@@ -68,6 +94,29 @@ export class UsersService {
     const updated = await this.userRepo.findOne({ where: { id: userId } });
     if (!updated) throw new InternalServerErrorException('User disappeared after update');
     return updated;
+  }
+
+  async generateNickname(): Promise<string> {
+    const [adjectives, nouns] = await Promise.all([
+      this.adjectiveRepo.findBy({ isActive: true }),
+      this.nounRepo.findBy({ isActive: true }),
+    ]);
+
+    if (!adjectives.length || !nouns.length) {
+      throw new InternalServerErrorException('Nickname word pool is empty');
+    }
+
+    const adj = adjectives[Math.floor(Math.random() * adjectives.length)].word;
+    const noun = nouns[Math.floor(Math.random() * nouns.length)].word;
+    const base = `${adj} ${noun}`;
+
+    const isTaken = await this.userRepo.existsBy({ nickname: base });
+    if (!isTaken) {
+      return base;
+    }
+
+    const suffix = await this.nicknameSequenceService.allocateSuffix(base);
+    return `${base}${suffix}`;
   }
 
   async withdraw(userId: string): Promise<void> {

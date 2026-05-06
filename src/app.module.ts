@@ -6,6 +6,10 @@ import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
 import { RedisModule } from "./redis/redis.module";
 import { User } from "./entities/user.entity";
+import { NicknameAdjective } from "./entities/nickname-adjective.entity";
+import { NicknameNoun } from "./entities/nickname-noun.entity";
+import { NicknameBase } from "./entities/nickname-base.entity";
+import { NicknamesModule } from './nicknames/nicknames.module';
 
 @Module({
   imports: [
@@ -19,15 +23,17 @@ import { User } from "./entities/user.entity";
         username: config.get("DB_USER"),
         password: config.get("DB_PASSWORD"),
         database: config.get("DB_NAME"),
-        entities: [User],
+        entities: [User, NicknameAdjective, NicknameNoun, NicknameBase],
         // synchronize: false,
         synchronize: true,    // TODO: false
         namingStrategy: new SnakeNamingStrategy(),
+        // migrations: ['src/migrations/*.ts'],
       }),
     }),
     RedisModule,
     AuthModule,
     UsersModule,
+    NicknamesModule,
   ],
 })
 export class AppModule {}

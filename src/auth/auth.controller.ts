@@ -12,6 +12,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
+import { ApiTags, ApiOperation, ApiResponse, ApiCookieAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { Platform } from '@enums/user.enum';
 import { OAuthProfile } from './interfaces/oauth-profile.interface';
@@ -28,6 +29,7 @@ function cookieOptions(config: ConfigService) {
   };
 }
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -37,12 +39,16 @@ export class AuthController {
 
   // ── Google ──────────────────────────────────────────────────────────────────
 
+  @ApiOperation({ summary: '구글 OAuth 로그인 시작' })
+  @ApiResponse({ status: 302, description: '구글 로그인 페이지로 리다이렉트' })
   @Get('google')
   @UseGuards(AuthGuard('google'))
   googleLogin(): void {
     // Passport redirects to Google — no body needed
   }
 
+  @ApiOperation({ summary: '구글 OAuth 콜백 (구글이 직접 호출)' })
+  @ApiResponse({ status: 302, description: '{FRONTEND_URL}/auth/success?access_token=...&survey_required=...' })
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleCallback(@Req() req: Request, @Res() res: Response): Promise<void> {
@@ -51,10 +57,14 @@ export class AuthController {
 
   // ── Naver ────────────────────────────────────────────────────────────────────
 
+  @ApiOperation({ summary: '네이버 OAuth 로그인 시작' })
+  @ApiResponse({ status: 302, description: '네이버 로그인 페이지로 리다이렉트' })
   @Get('naver')
   @UseGuards(AuthGuard('naver'))
   naverLogin(): void {}
 
+  @ApiOperation({ summary: '네이버 OAuth 콜백 (네이버가 직접 호출)' })
+  @ApiResponse({ status: 302, description: '{FRONTEND_URL}/auth/success?access_token=...&survey_required=...' })
   @Get('naver/callback')
   @UseGuards(AuthGuard('naver'))
   async naverCallback(@Req() req: Request, @Res() res: Response): Promise<void> {
@@ -63,10 +73,10 @@ export class AuthController {
 
   // ── Token management ─────────────────────────────────────────────────────────
 
-  /**
-   * POST /auth/refresh
-   * Reads the httpOnly cookie, rotates the refresh token, and returns a new access token.
-   */
+  @ApiOperation({ summary: '액세스 토큰 재발급' })
+  @ApiCookieAuth('refresh_token')
+  @ApiResponse({ status: 200, description: '새 액세스 토큰 반환', schema: { example: { accessToken: 'eyJ...' } } })
+  @ApiResponse({ status: 401, description: '쿠키 없음, 토큰 만료, 또는 재사용 시도' })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(
@@ -81,11 +91,9 @@ export class AuthController {
     return { accessToken };
   }
 
-  /**
-   * POST /auth/logout
-   * Revokes the refresh token and clears the cookie. No auth required
-   * (the refresh token itself is the credential).
-   */
+  @ApiOperation({ summary: '로그아웃' })
+  @ApiCookieAuth('refresh_token')
+  @ApiResponse({ status: 204, description: '로그아웃 성공, 쿠키 삭제' })
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   async logout(
