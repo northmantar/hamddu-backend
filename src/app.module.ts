@@ -8,6 +8,10 @@ import { RedisModule } from "./redis/redis.module";
 import { NicknamesModule } from "./nicknames/nicknames.module";
 import { BoardsModule } from "./boards/boards.module";
 import { ContentsModule } from "./contents/contents.module";
+import { ChallengesModule } from "./challenges/challenges.module";
+import { PointsModule } from "./points/points.module";
+import { XpModule } from "./xp/xp.module";
+import { ChannelsModule } from "./channels/channels.module";
 import { User } from "./entities/user.entity";
 import { NicknameAdjective } from "./entities/nickname-adjective.entity";
 import { NicknameNoun } from "./entities/nickname-noun.entity";
@@ -21,6 +25,13 @@ import { Channel } from "./entities/channel.entity";
 import { Content } from "./entities/content.entity";
 import { WatchHistory } from "./entities/watch-history.entity";
 import { Challenge } from "./entities/challenge.entity";
+import { PointWallet } from "./entities/point-wallet.entity";
+import { PointTransaction } from "./entities/point-transaction.entity";
+import { PointEarningPolicy } from "./entities/point-earning-policy.entity";
+import { PointUseDetail } from "./entities/point-use-detail.entity";
+import { XpWallet } from "./entities/xp-wallet.entity";
+import { XpTransaction } from "./entities/xp-transaction.entity";
+import { XpLevelPolicy } from "./entities/xp-level-policy.entity";
 
 @Module({
   imports: [
@@ -48,6 +59,13 @@ import { Challenge } from "./entities/challenge.entity";
           Content,
           WatchHistory,
           Challenge,
+          PointWallet,
+          PointTransaction,
+          PointEarningPolicy,
+          PointUseDetail,
+          XpWallet,
+          XpTransaction,
+          XpLevelPolicy,
         ],
         // synchronize: false,
         synchronize: true, // TODO: false
@@ -61,6 +79,10 @@ import { Challenge } from "./entities/challenge.entity";
     NicknamesModule,
     BoardsModule,
     ContentsModule,
+    ChallengesModule,
+    PointsModule,
+    XpModule,
+    ChannelsModule,
   ],
 })
 export class AppModule {}
