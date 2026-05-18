@@ -2,11 +2,13 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import {
   IsBoolean,
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
+  Min,
   MinLength,
 } from "class-validator";
 import { ContentType } from "@enums/content.enum";
@@ -39,10 +41,11 @@ export class CreateContentDto {
   @IsEnum(UserInterests)
   interests?: UserInterests;
 
-  @ApiPropertyOptional({ description: "이전 단계 콘텐츠 ID" })
+  @ApiPropertyOptional({ description: "interests 내 정렬 순서 (1부터 시작)" })
   @IsOptional()
-  @IsUUID()
-  previousContentId?: string;
+  @IsInt()
+  @Min(1)
+  sortOrder?: number;
 
   @ApiPropertyOptional({ description: "포인트 지급 여부", default: false })
   @IsOptional()

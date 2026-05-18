@@ -1373,8 +1373,7 @@ No Content
         "name": "함뜨 공식채널"
       },
       "pointApplyable": true,
-      "previousContentId": null,
-      "nextContentId": "next-content-uuid",
+      "sortOrder": 1,
       "uploadedAt": "2026-04-01T10:00:00.000Z",
       "createdAt": "2026-04-02T12:00:00.000Z"
     }
@@ -1390,7 +1389,70 @@ No Content
 
 ---
 
-### 6.2 `GET /contents/:id`
+### 6.2 `GET /contents/tutorials`
+
+튜토리얼 콘텐츠(type='symbol') 목록을 sortOrder 순서대로 조회합니다.
+
+**Request**
+
+- Headers:
+
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+- Query Parameters:
+
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | interests | string | Yes | 관심사 (`crochet` | `knitting`) |
+- Body: 없음
+
+**Response (200)**
+
+```json
+[
+  {
+    "id": "content-uuid-1",
+    "youtubeVideoId": "abc123",
+    "name": "코바늘 기초 1강 - 사슬뜨기",
+    "type": "symbol",
+    "channel": {
+      "id": "channel-uuid",
+      "name": "함뜨 공식채널"
+    },
+    "pointApplyable": true,
+    "sortOrder": 1,
+    "uploadedAt": "2026-04-01T10:00:00.000Z",
+    "createdAt": "2026-04-02T12:00:00.000Z"
+  },
+  {
+    "id": "content-uuid-2",
+    "youtubeVideoId": "def456",
+    "name": "코바늘 기초 2강 - 짧은뜨기",
+    "type": "symbol",
+    "channel": {
+      "id": "channel-uuid",
+      "name": "함뜨 공식채널"
+    },
+    "pointApplyable": true,
+    "sortOrder": 2,
+    "uploadedAt": "2026-04-02T10:00:00.000Z",
+    "createdAt": "2026-04-03T12:00:00.000Z"
+  }
+]
+```
+
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 400 | "interests는 필수 파라미터입니다." |
+
+---
+
+### 6.4 `GET /contents/:id`
 
 특정 콘텐츠를 조회합니다.
 
@@ -1422,8 +1484,7 @@ No Content
     "youtubeChannelId": "UC..."
   },
   "pointApplyable": true,
-  "previousContentId": null,
-  "nextContentId": "next-content-uuid",
+  "sortOrder": 1,
   "watchHistory": {
     "watchRate": 55,
     "lastWatchedTimestamp": "00:05:30",
@@ -1450,8 +1511,7 @@ No Content
     "youtubeChannelId": "UC..."
   },
   "pointApplyable": false,
-  "previousContentId": null,
-  "nextContentId": null,
+  "sortOrder": null,
   "uploadedAt": "2026-04-01T10:00:00.000Z",
   "createdAt": "2026-04-02T12:00:00.000Z"
 }
@@ -1473,39 +1533,41 @@ No Content
 
 ---
 
-### 6.3 `POST /contents` (관리자 전용)
+### 6.5 `POST /contents` (관리자 전용)
 
 새 콘텐츠를 등록합니다.
 
 **Request**
 
 - Headers:
-    
-    
+
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
 - Query Parameters: 없음
 - Body:
-    
+
     ```json
     {
       "channelId": "channel-uuid",
       "youtubeVideoId": "dQw4w9WgXcQ",
       "name": "코바늘 기초 - 사슬뜨기",
       "type": "symbol",
-      "previousContentId": null,
+      "interests": "crochet",
+      "sortOrder": 1,
       "pointApplyable": true
     }
     ```
-    
+
     | 필드 | 타입 | 필수 | 유효성 조건 |
     | --- | --- | --- | --- |
     | `channelId` | string | Yes | 유효한 채널 ID |
     | `youtubeVideoId` | string | Yes | 유튜브 비디오 ID |
     | `name` | string | Yes | 1-200자 |
     | `type` | string | Yes | `symbol` | `free` |
-    | `previousContentId` | string | No | 이전 단계 콘텐츠 ID |
+    | `interests` | string | No | `crochet` | `knitting` |
+    | `sortOrder` | number | No | interests 내 정렬 순서 (1부터 시작) |
     | `pointApplyable` | boolean | No | 포인트 지급 여부 (기본값: false) |
 
 **Response (200)**
@@ -1521,8 +1583,7 @@ No Content
     "name": "함뜨 공식채널"
   },
   "pointApplyable": true,
-  "previousContentId": null,
-  "nextContentId": null,
+  "sortOrder": 1,
   "uploadedAt": "2026-04-01T10:00:00.000Z",
   "createdAt": "2026-04-02T12:00:00.000Z"
 }
@@ -1532,34 +1593,34 @@ No Content
 
 | **상태 코드** | **errorMessage** |
 | --- | --- |
-| 403 | “접근 권한이 없습니다.” |
-| 400 | “유효하지 않은 채널입니다.” |
+| 403 | "접근 권한이 없습니다." |
+| 400 | "유효하지 않은 채널입니다." |
 
 ---
 
-### 6.4 `PATCH /contents/:id` (관리자 전용)
+### 6.6 `PATCH /contents/:id` (관리자 전용)
 
 콘텐츠 정보를 수정합니다.
 
 **Request**
 
 - Headers:
-    
-    
+
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
 - Query Parameters: 없음
 - Body:
-    
+
     ```json
     {
       "name": "수정된 콘텐츠 제목",
-      "pointApplyable": false,
-      "previousContentId": "prev-content-uuid"
+      "sortOrder": 2,
+      "pointApplyable": false
     }
     ```
-    
+
 
 **Response (200)**
 
@@ -1574,8 +1635,7 @@ No Content
     "name": "함뜨 공식채널"
   },
   "pointApplyable": false,
-  "previousContentId": "prev-content-uuid",
-  "nextContentId": null,
+  "sortOrder": 2,
   "uploadedAt": "2026-04-01T10:00:00.000Z",
   "createdAt": "2026-04-02T12:00:00.000Z",
   "updatedAt": "2026-04-10T15:00:00.000Z"
@@ -1586,12 +1646,68 @@ No Content
 
 | **상태 코드** | **errorMessage** |
 | --- | --- |
-| 403 | “접근 권한이 없습니다.” |
-| 404 | “콘텐츠를 찾을 수 없습니다.” |
+| 403 | "접근 권한이 없습니다." |
+| 404 | "콘텐츠를 찾을 수 없습니다." |
 
 ---
 
-### 6.5 `DELETE /contents/:id` (관리자 전용)
+### 6.7 `PATCH /contents/:id/order` (관리자 전용)
+
+콘텐츠 순서를 변경합니다. 같은 interests 내 다른 콘텐츠들의 순서도 자동으로 재조정됩니다.
+
+**Request**
+
+- Headers:
+
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+- Query Parameters: 없음
+- Body:
+
+    ```json
+    {
+      "sortOrder": 3
+    }
+    ```
+
+    | 필드 | 타입 | 필수 | 유효성 조건 |
+    | --- | --- | --- | --- |
+    | `sortOrder` | number | Yes | 새로운 정렬 순서 (1 이상) |
+
+**Response (200)**
+
+```json
+{
+  "id": "content-uuid",
+  "youtubeVideoId": "dQw4w9WgXcQ",
+  "name": "코바늘 기초 - 사슬뜨기",
+  "type": "symbol",
+  "interests": "crochet",
+  "channel": {
+    "id": "channel-uuid",
+    "name": "함뜨 공식채널",
+    "youtubeChannelId": "UC..."
+  },
+  "pointApplyable": true,
+  "sortOrder": 3,
+  "uploadedAt": "2026-04-01T10:00:00.000Z",
+  "createdAt": "2026-04-02T12:00:00.000Z"
+}
+```
+
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 400 | "interests가 지정되지 않은 콘텐츠는 순서를 변경할 수 없습니다." |
+| 403 | "접근 권한이 없습니다." |
+| 404 | "콘텐츠를 찾을 수 없습니다." |
+
+---
+
+### 6.8 `DELETE /contents/:id` (관리자 전용)
 
 콘텐츠를 삭제합니다.
 
@@ -2401,9 +2517,11 @@ XP 레벨 정책 목록을 조회합니다.
 |  | POST | /boards/:boardId/comments/:commentId/like | 인증 | 댓글 좋아요 |
 |  | DELETE | /boards/:boardId/comments/:commentId/like | 인증 | 댓글 좋아요 취소 |
 | **콘텐츠** | GET | /contents | 인증 | 콘텐츠 목록 |
+|  | GET | /contents/tutorials | 인증 | 튜토리얼 목록 (순서별) |
 |  | GET | /contents/:id | 인증 | 콘텐츠 상세 |
 |  | POST | /contents | 관리자 | 콘텐츠 등록 |
 |  | PATCH | /contents/:id | 관리자 | 콘텐츠 수정 |
+|  | PATCH | /contents/:id/order | 관리자 | 콘텐츠 순서 변경 |
 |  | DELETE | /contents/:id | 관리자 | 콘텐츠 삭제 |
 | **시청 기록** | GET | /watch-history | 인증 | 시청 기록 목록 |
 |  | POST | /watch-history | 인증 | 시청 기록 저장 |

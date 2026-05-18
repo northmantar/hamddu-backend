@@ -5,7 +5,6 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
-  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
@@ -39,19 +38,8 @@ export class Content {
   @Column({ type: "enum", enum: UserInterests, nullable: true })
   interests: UserInterests | null;
 
-  @Column({ type: "uuid", nullable: true })
-  previousContentId: string | null;
-
-  @OneToOne(() => Content, { nullable: true })
-  @JoinColumn({ name: "previousContentId" })
-  previousContent: Content | null;
-
-  @Column({ type: "uuid", nullable: true })
-  nextContentId: string | null;
-
-  @OneToOne(() => Content, { nullable: true })
-  @JoinColumn({ name: "nextContentId" })
-  nextContent: Content | null;
+  @Column({ type: "int", nullable: true })
+  sortOrder: number | null;
 
   @Column({ default: false })
   pointApplyable: boolean;

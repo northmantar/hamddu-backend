@@ -45,8 +45,7 @@
       * name
       * type <<enum>>
       * interests <<enum>>
-      * previous_content_id
-      * next_content_id
+      * sort_order
       * point_applyable
       * uploaded_at
       * created_at
@@ -310,8 +309,7 @@
 | name | varchar | 영상 제목 |
 | type | enum | 영상 유형 (`symbol` | `free`) |
 | interests | enum | 콘텐츠 분류 (`crochet` | `knitting`) |
-| previous_content_id | uuid_short() | 이전 단계 콘텐츠 ID(*기법 튜토리얼만 해당) |
-| next_content_id | uuid_short() | 이후 단계 콘텐츠 ID(*기법 튜토리얼만 해당) |
+| sort_order | integer | interests 내 정렬 순서 (1부터 시작, 튜토리얼만 해당) |
 | point_applyable | boolean | 포인트 지급 여부(*기법 튜토리얼만 해당) |
 | uploaded_at | timestamp | 콘텐츠 업로드 일시 |
 | created_at | timestamp | 콘텐츠 추가 일시 |

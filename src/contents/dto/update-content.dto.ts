@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
+import { IsBoolean, IsInt, IsOptional, IsString, MaxLength, Min, MinLength } from "class-validator";
 
 export class UpdateContentDto {
   @ApiPropertyOptional({ description: "콘텐츠 제목", minLength: 1, maxLength: 200 })
@@ -9,10 +9,11 @@ export class UpdateContentDto {
   @MaxLength(200)
   name?: string;
 
-  @ApiPropertyOptional({ description: "이전 단계 콘텐츠 ID" })
+  @ApiPropertyOptional({ description: "interests 내 정렬 순서 (1부터 시작)" })
   @IsOptional()
-  @IsUUID()
-  previousContentId?: string;
+  @IsInt()
+  @Min(1)
+  sortOrder?: number;
 
   @ApiPropertyOptional({ description: "포인트 지급 여부" })
   @IsOptional()

@@ -45,11 +45,8 @@ export class ContentListItemDto {
   @ApiProperty({ example: true })
   pointApplyable: boolean;
 
-  @ApiPropertyOptional({ example: null, nullable: true })
-  previousContentId: string | null;
-
-  @ApiPropertyOptional({ example: "next-content-uuid", nullable: true })
-  nextContentId: string | null;
+  @ApiPropertyOptional({ example: 1, nullable: true })
+  sortOrder: number | null;
 
   @ApiProperty({ example: "2026-04-01T10:00:00.000Z" })
   uploadedAt: Date | null;
@@ -68,8 +65,7 @@ export class ContentListItemDto {
         name: content.channel.name,
       },
       pointApplyable: content.pointApplyable,
-      previousContentId: content.previousContentId,
-      nextContentId: content.nextContentId,
+      sortOrder: content.sortOrder,
       uploadedAt: content.uploadedAt,
       createdAt: content.createdAt,
     };

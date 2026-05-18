@@ -26,6 +26,8 @@ import { JwtPayload } from "../auth/interfaces/jwt-payload.interface";
 import { ContentQueryDto } from "./dto/content-query.dto";
 import { CreateContentDto } from "./dto/create-content.dto";
 import { UpdateContentDto } from "./dto/update-content.dto";
+import { TutorialQueryDto } from "./dto/tutorial-query.dto";
+import { UpdateOrderDto } from "./dto/update-order.dto";
 import { ContentListItemDto, ContentDetailDto } from "./dto/content-response.dto";
 import { PaginationMeta } from "../boards/dto/pagination.dto";
 
@@ -47,6 +49,14 @@ export class ContentsController {
       data: result.data.map(ContentListItemDto.from),
       meta: result.meta,
     };
+  }
+
+  @ApiOperation({ summary: "튜토리얼 콘텐츠 목록 조회 (순서별)" })
+  @ApiResponse({ status: 200, description: "튜토리얼 콘텐츠 목록 반환 (sortOrder 오름차순)" })
+  @Get("tutorials")
+  async findTutorials(@Query() query: TutorialQueryDto): Promise<ContentListItemDto[]> {
+    const contents = await this.contentsService.findTutorials(query);
+    return contents.map(ContentListItemDto.from);
   }
 
   @ApiOperation({ summary: "콘텐츠 상세 조회" })
@@ -90,6 +100,25 @@ export class ContentsController {
     @Body() dto: UpdateContentDto,
   ): Promise<ContentDetailDto> {
     const content = await this.contentsService.update(id, payload.sub, dto);
+    const watchHistory = await this.contentsService.findWatchHistory(id, payload.sub);
+    const challengeCompleted = await this.contentsService.isChallengeCompleted(id, payload.sub);
+
+    return ContentDetailDto.fromWithDetails(content, watchHistory, challengeCompleted);
+  }
+
+  @ApiOperation({ summary: "콘텐츠 순서 변경 (관리자)" })
+  @ApiParam({ name: "id", description: "콘텐츠 ID" })
+  @ApiResponse({ status: 200, description: "콘텐츠 순서 변경 완료" })
+  @ApiResponse({ status: 400, description: "순서 변경 불가 (interests 미지정)" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @ApiResponse({ status: 404, description: "콘텐츠를 찾을 수 없음" })
+  @Patch(":id/order")
+  async updateOrder(
+    @Param("id", ParseUUIDPipe) id: string,
+    @CurrentUser() payload: JwtPayload,
+    @Body() dto: UpdateOrderDto,
+  ): Promise<ContentDetailDto> {
+    const content = await this.contentsService.updateSortOrder(id, payload.sub, dto);
     const watchHistory = await this.contentsService.findWatchHistory(id, payload.sub);
     const challengeCompleted = await this.contentsService.isChallengeCompleted(id, payload.sub);
 

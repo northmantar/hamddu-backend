@@ -16,7 +16,10 @@ import { UserType } from "@enums/user.enum";
 import { ContentQueryDto } from "./dto/content-query.dto";
 import { CreateContentDto } from "./dto/create-content.dto";
 import { UpdateContentDto } from "./dto/update-content.dto";
+import { TutorialQueryDto } from "./dto/tutorial-query.dto";
+import { UpdateOrderDto } from "./dto/update-order.dto";
 import { PaginationMeta } from "../boards/dto/pagination.dto";
+import { UserInterests } from "@enums/user.enum";
 
 @Injectable()
 export class ContentsService {
@@ -95,6 +98,17 @@ export class ContentsService {
     return this.challengeRepo.existsBy({ contentId, memberId });
   }
 
+  async findTutorials(query: TutorialQueryDto): Promise<Content[]> {
+    return this.contentRepo.find({
+      where: {
+        type: ContentType.SYMBOL,
+        interests: query.interests,
+      },
+      relations: ["channel"],
+      order: { sortOrder: "ASC" },
+    });
+  }
+
   async create(memberId: string, dto: CreateContentDto): Promise<Content> {
     await this.checkAdmin(memberId);
 
@@ -103,71 +117,87 @@ export class ContentsService {
       throw new BadRequestException("유효하지 않은 채널입니다.");
     }
 
-    // 이전 콘텐츠가 지정된 경우 검증
-    if (dto.previousContentId) {
-      const prevContent = await this.contentRepo.findOne({
-        where: { id: dto.previousContentId },
-      });
-      if (!prevContent) {
-        throw new BadRequestException("이전 콘텐츠를 찾을 수 없습니다.");
-      }
-    }
-
     const content = this.contentRepo.create({
       channelId: dto.channelId,
       youtubeVideoId: dto.youtubeVideoId,
       name: dto.name,
       type: dto.type,
       interests: dto.interests ?? null,
-      previousContentId: dto.previousContentId ?? null,
+      sortOrder: dto.sortOrder ?? null,
       pointApplyable: dto.pointApplyable ?? false,
     });
 
     const saved = await this.contentRepo.save(content);
-
-    // 이전 콘텐츠의 nextContentId 업데이트
-    if (dto.previousContentId) {
-      await this.contentRepo.update(dto.previousContentId, {
-        nextContentId: saved.id,
-      });
-    }
-
     return this.findById(saved.id);
   }
 
   async update(contentId: string, memberId: string, dto: UpdateContentDto): Promise<Content> {
     await this.checkAdmin(memberId);
 
-    const content = await this.findById(contentId);
-
-    // 이전 콘텐츠가 변경되는 경우
-    if (dto.previousContentId !== undefined) {
-      // 기존 이전 콘텐츠의 nextContentId 해제
-      if (content.previousContentId) {
-        await this.contentRepo.update(content.previousContentId, {
-          nextContentId: null,
-        });
-      }
-
-      // 새 이전 콘텐츠 검증 및 연결
-      if (dto.previousContentId) {
-        const prevContent = await this.contentRepo.findOne({
-          where: { id: dto.previousContentId },
-        });
-        if (!prevContent) {
-          throw new BadRequestException("이전 콘텐츠를 찾을 수 없습니다.");
-        }
-        await this.contentRepo.update(dto.previousContentId, {
-          nextContentId: contentId,
-        });
-      }
-    }
+    await this.findById(contentId);
 
     await this.contentRepo.update(contentId, {
       ...(dto.name !== undefined && { name: dto.name }),
-      ...(dto.previousContentId !== undefined && { previousContentId: dto.previousContentId }),
+      ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
       ...(dto.pointApplyable !== undefined && { pointApplyable: dto.pointApplyable }),
     });
+
+    return this.findById(contentId);
+  }
+
+  async updateSortOrder(
+    contentId: string,
+    memberId: string,
+    dto: UpdateOrderDto,
+  ): Promise<Content> {
+    await this.checkAdmin(memberId);
+
+    const content = await this.findById(contentId);
+
+    if (!content.interests) {
+      throw new BadRequestException("interests가 지정되지 않은 콘텐츠는 순서를 변경할 수 없습니다.");
+    }
+
+    const currentOrder = content.sortOrder;
+    const newOrder = dto.sortOrder;
+
+    if (currentOrder === newOrder) {
+      return content;
+    }
+
+    // 같은 interests 내 콘텐츠들의 순서 재조정
+    if (currentOrder === null) {
+      // 기존에 순서가 없던 콘텐츠에 순서 부여
+      await this.contentRepo
+        .createQueryBuilder()
+        .update(Content)
+        .set({ sortOrder: () => "sort_order + 1" })
+        .where("interests = :interests", { interests: content.interests })
+        .andWhere("sort_order >= :newOrder", { newOrder })
+        .execute();
+    } else if (newOrder < currentOrder) {
+      // 앞으로 이동: newOrder ~ currentOrder-1 사이의 항목들을 +1
+      await this.contentRepo
+        .createQueryBuilder()
+        .update(Content)
+        .set({ sortOrder: () => "sort_order + 1" })
+        .where("interests = :interests", { interests: content.interests })
+        .andWhere("sort_order >= :newOrder", { newOrder })
+        .andWhere("sort_order < :currentOrder", { currentOrder })
+        .execute();
+    } else {
+      // 뒤로 이동: currentOrder+1 ~ newOrder 사이의 항목들을 -1
+      await this.contentRepo
+        .createQueryBuilder()
+        .update(Content)
+        .set({ sortOrder: () => "sort_order - 1" })
+        .where("interests = :interests", { interests: content.interests })
+        .andWhere("sort_order > :currentOrder", { currentOrder })
+        .andWhere("sort_order <= :newOrder", { newOrder })
+        .execute();
+    }
+
+    await this.contentRepo.update(contentId, { sortOrder: newOrder });
 
     return this.findById(contentId);
   }
@@ -175,19 +205,7 @@ export class ContentsService {
   async delete(contentId: string, memberId: string): Promise<void> {
     await this.checkAdmin(memberId);
 
-    const content = await this.findById(contentId);
-
-    // 이전/다음 콘텐츠 연결 해제
-    if (content.previousContentId) {
-      await this.contentRepo.update(content.previousContentId, {
-        nextContentId: null,
-      });
-    }
-    if (content.nextContentId) {
-      await this.contentRepo.update(content.nextContentId, {
-        previousContentId: null,
-      });
-    }
+    await this.findById(contentId);
 
     await this.contentRepo.delete(contentId);
   }
