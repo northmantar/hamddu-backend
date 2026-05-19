@@ -22,11 +22,14 @@ import {
 import { BoardsService } from "./boards.service";
 import { CommentsService } from "./comments.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { AdminGuard } from "../common/guards/admin.guard";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { JwtPayload } from "../auth/interfaces/jwt-payload.interface";
 import { CreateBoardDto } from "./dto/create-board.dto";
 import { UpdateBoardDto } from "./dto/update-board.dto";
 import { BoardQueryDto } from "./dto/board-query.dto";
+import { CreateCategoryDto } from "./dto/create-category.dto";
+import { UpdateCategoryDto } from "./dto/update-category.dto";
 import { CreateCommentDto } from "./dto/create-comment.dto";
 import { UpdateCommentDto } from "./dto/update-comment.dto";
 import { PaginationQueryDto, PaginationMeta } from "./dto/pagination.dto";
@@ -260,5 +263,44 @@ export class BoardsController {
       likeCount: result.likeCount,
       isLiked: false,
     };
+  }
+
+  // ==================== 카테고리 관리 API (관리자) ====================
+
+  @ApiOperation({ summary: "카테고리 생성 (관리자)" })
+  @ApiResponse({ status: 201, description: "카테고리 생성 완료" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @Post("categories")
+  @UseGuards(AdminGuard)
+  async createCategory(@Body() dto: CreateCategoryDto): Promise<CategoryResponseDto> {
+    const category = await this.boardsService.createCategory(dto);
+    return CategoryResponseDto.from(category);
+  }
+
+  @ApiOperation({ summary: "카테고리 수정 (관리자)" })
+  @ApiParam({ name: "categoryId", description: "카테고리 ID" })
+  @ApiResponse({ status: 200, description: "카테고리 수정 완료" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @ApiResponse({ status: 404, description: "카테고리를 찾을 수 없음" })
+  @Patch("categories/:categoryId")
+  @UseGuards(AdminGuard)
+  async updateCategory(
+    @Param("categoryId", ParseUUIDPipe) categoryId: string,
+    @Body() dto: UpdateCategoryDto,
+  ): Promise<CategoryResponseDto> {
+    const category = await this.boardsService.updateCategory(categoryId, dto);
+    return CategoryResponseDto.from(category);
+  }
+
+  @ApiOperation({ summary: "카테고리 삭제 (관리자)" })
+  @ApiParam({ name: "categoryId", description: "카테고리 ID" })
+  @ApiResponse({ status: 204, description: "카테고리 삭제 완료" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @ApiResponse({ status: 404, description: "카테고리를 찾을 수 없음" })
+  @Delete("categories/:categoryId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(AdminGuard)
+  async deleteCategory(@Param("categoryId", ParseUUIDPipe) categoryId: string): Promise<void> {
+    await this.boardsService.deleteCategory(categoryId);
   }
 }

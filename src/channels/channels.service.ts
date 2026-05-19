@@ -1,8 +1,9 @@
-import { ConflictException, Injectable } from "@nestjs/common";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Channel } from "@entities/channel.entity";
 import { CreateChannelDto } from "./dto/create-channel.dto";
+import { UpdateChannelDto } from "./dto/update-channel.dto";
 
 @Injectable()
 export class ChannelsService {
@@ -33,5 +34,28 @@ export class ChannelsService {
     });
 
     return this.channelRepo.save(channel);
+  }
+
+  async findById(id: string): Promise<Channel> {
+    const channel = await this.channelRepo.findOne({ where: { id } });
+    if (!channel) {
+      throw new NotFoundException("채널을 찾을 수 없습니다.");
+    }
+    return channel;
+  }
+
+  async update(id: string, dto: UpdateChannelDto): Promise<Channel> {
+    await this.findById(id);
+
+    await this.channelRepo.update(id, {
+      ...(dto.name !== undefined && { name: dto.name }),
+    });
+
+    return this.findById(id);
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.findById(id);
+    await this.channelRepo.delete(id);
   }
 }

@@ -1,8 +1,10 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   Req,
   Res,
@@ -12,10 +14,23 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
-import { ApiTags, ApiOperation, ApiResponse, ApiCookieAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiCookieAuth,
+  ApiBearerAuth,
+  ApiBody,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { Platform } from '@enums/user.enum';
 import { OAuthProfile } from './interfaces/oauth-profile.interface';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { AdminLoginDto } from './dto/admin-login.dto';
+import { SetAdminPasswordDto } from './dto/set-admin-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 const COOKIE_NAME = 'refresh_token';
 
@@ -103,6 +118,70 @@ export class AuthController {
     const token: string | undefined = req.cookies?.[COOKIE_NAME];
     if (token) await this.authService.logout(token);
     res.clearCookie(COOKIE_NAME, { path: '/' });
+  }
+
+  // ── Admin authentication ─────────────────────────────────────────────────────
+
+  @ApiOperation({ summary: '어드민 이메일/비밀번호 로그인' })
+  @ApiBody({ type: AdminLoginDto })
+  @ApiResponse({
+    status: 200,
+    description: '로그인 성공',
+    schema: {
+      example: {
+        accessToken: 'eyJ...',
+        user: { id: '...', email: 'admin@example.com', type: 'admin' },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: '이메일 또는 비밀번호 오류' })
+  @Post('admin/login')
+  @HttpCode(HttpStatus.OK)
+  async adminLogin(
+    @Body() dto: AdminLoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ accessToken: string; user: { id: string; email: string; type: string } }> {
+    const { user, tokens } = await this.authService.adminLogin(dto.email, dto.password);
+    res.cookie(COOKIE_NAME, tokens.refreshToken, cookieOptions(this.config));
+    return {
+      accessToken: tokens.accessToken,
+      user: { id: user.id, email: user.email ?? '', type: user.type },
+    };
+  }
+
+  @ApiOperation({ summary: '어드민 비밀번호 설정 (최초 1회)' })
+  @ApiBearerAuth()
+  @ApiBody({ type: SetAdminPasswordDto })
+  @ApiResponse({ status: 200, description: '비밀번호 설정 완료' })
+  @ApiResponse({ status: 400, description: '이미 비밀번호가 설정됨' })
+  @ApiResponse({ status: 403, description: '어드민 권한 없음' })
+  @Post('admin/set-password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  async setAdminPassword(
+    @CurrentUser() payload: JwtPayload,
+    @Body() dto: SetAdminPasswordDto,
+  ): Promise<{ message: string }> {
+    await this.authService.setAdminPassword(payload.sub, dto.password);
+    return { message: '비밀번호가 설정되었습니다.' };
+  }
+
+  @ApiOperation({ summary: '어드민 비밀번호 변경' })
+  @ApiBearerAuth()
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiResponse({ status: 200, description: '비밀번호 변경 완료' })
+  @ApiResponse({ status: 400, description: '비밀번호 미설정' })
+  @ApiResponse({ status: 401, description: '현재 비밀번호 오류' })
+  @ApiResponse({ status: 403, description: '어드민 권한 없음' })
+  @Patch('admin/change-password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  async changeAdminPassword(
+    @CurrentUser() payload: JwtPayload,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    await this.authService.changeAdminPassword(payload.sub, dto.currentPassword, dto.newPassword);
+    return { message: '비밀번호가 변경되었습니다.' };
   }
 
   // ── Shared helper ────────────────────────────────────────────────────────────

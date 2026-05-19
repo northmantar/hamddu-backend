@@ -18,6 +18,7 @@
       * platform_user_id
       * platform
       * email
+      * password
       * nickname
       * age
       * gender

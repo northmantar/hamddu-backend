@@ -1,7 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -9,6 +15,7 @@ import {
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
@@ -18,6 +25,8 @@ import { AdminGuard } from "../common/guards/admin.guard";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { JwtPayload } from "../auth/interfaces/jwt-payload.interface";
 import { EarnXpDto } from "./dto/earn-xp.dto";
+import { CreateXpLevelDto } from "./dto/create-level.dto";
+import { UpdateXpLevelDto } from "./dto/update-level.dto";
 import { PaginationQueryDto, PaginationMeta } from "../boards/dto/pagination.dto";
 import {
   XpWalletResponseDto,
@@ -80,5 +89,42 @@ export class XpController {
   async getLevels(): Promise<{ data: XpLevelPolicyResponseDto[] }> {
     const levels = await this.xpService.getLevels();
     return { data: levels.map(XpLevelPolicyResponseDto.from) };
+  }
+
+  @ApiOperation({ summary: "XP 레벨 정책 생성 (관리자)" })
+  @ApiResponse({ status: 201, description: "레벨 정책 생성 완료" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @Post("levels")
+  @UseGuards(AdminGuard)
+  async createLevel(@Body() dto: CreateXpLevelDto): Promise<XpLevelPolicyResponseDto> {
+    const policy = await this.xpService.createLevel(dto);
+    return XpLevelPolicyResponseDto.from(policy);
+  }
+
+  @ApiOperation({ summary: "XP 레벨 정책 수정 (관리자)" })
+  @ApiParam({ name: "id", description: "레벨 정책 ID" })
+  @ApiResponse({ status: 200, description: "레벨 정책 수정 완료" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @ApiResponse({ status: 404, description: "정책을 찾을 수 없음" })
+  @Patch("levels/:id")
+  @UseGuards(AdminGuard)
+  async updateLevel(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: UpdateXpLevelDto,
+  ): Promise<XpLevelPolicyResponseDto> {
+    const policy = await this.xpService.updateLevel(id, dto);
+    return XpLevelPolicyResponseDto.from(policy);
+  }
+
+  @ApiOperation({ summary: "XP 레벨 정책 삭제 (관리자)" })
+  @ApiParam({ name: "id", description: "레벨 정책 ID" })
+  @ApiResponse({ status: 204, description: "레벨 정책 삭제 완료" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @ApiResponse({ status: 404, description: "정책을 찾을 수 없음" })
+  @Delete("levels/:id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(AdminGuard)
+  async deleteLevel(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
+    await this.xpService.deleteLevel(id);
   }
 }

@@ -15,6 +15,8 @@ import { UserType } from "@enums/user.enum";
 import { CreateBoardDto } from "./dto/create-board.dto";
 import { UpdateBoardDto } from "./dto/update-board.dto";
 import { BoardQueryDto, BoardSortOption } from "./dto/board-query.dto";
+import { CreateCategoryDto } from "./dto/create-category.dto";
+import { UpdateCategoryDto } from "./dto/update-category.dto";
 import { PaginationMeta } from "./dto/pagination.dto";
 import { User } from "@entities/user.entity";
 
@@ -185,6 +187,48 @@ export class BoardsService {
     return this.categoryRepo.find({
       where: { status: BoardCategoryStatus.ENABLED },
       order: { createdAt: "ASC" },
+    });
+  }
+
+  async findAllCategoriesForAdmin(): Promise<BoardCategory[]> {
+    return this.categoryRepo.find({
+      order: { createdAt: "ASC" },
+    });
+  }
+
+  async findCategoryById(id: string): Promise<BoardCategory> {
+    const category = await this.categoryRepo.findOne({ where: { id } });
+    if (!category) {
+      throw new NotFoundException("카테고리를 찾을 수 없습니다.");
+    }
+    return category;
+  }
+
+  async createCategory(dto: CreateCategoryDto): Promise<BoardCategory> {
+    const category = this.categoryRepo.create({
+      label: dto.label,
+      status: BoardCategoryStatus.ENABLED,
+    });
+    return this.categoryRepo.save(category);
+  }
+
+  async updateCategory(id: string, dto: UpdateCategoryDto): Promise<BoardCategory> {
+    await this.findCategoryById(id);
+
+    await this.categoryRepo.update(id, {
+      ...(dto.label !== undefined && { label: dto.label }),
+      ...(dto.status !== undefined && { status: dto.status }),
+    });
+
+    return this.findCategoryById(id);
+  }
+
+  async deleteCategory(id: string): Promise<void> {
+    await this.findCategoryById(id);
+
+    // 카테고리를 비활성화 처리 (soft delete)
+    await this.categoryRepo.update(id, {
+      status: BoardCategoryStatus.DISABLED,
     });
   }
 }

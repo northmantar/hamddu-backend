@@ -38,6 +38,9 @@ export class User {
   email: string | null;
 
   @Column({ nullable: true })
+  password: string | null;
+
+  @Column({ nullable: true })
   name: string | null;
 
   @Column({ unique: true, nullable: true, length: 30 })

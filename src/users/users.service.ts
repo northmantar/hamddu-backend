@@ -8,7 +8,7 @@ import { DataSource, Repository } from 'typeorm';
 import { User } from '@entities/user.entity';
 import { NicknameAdjective } from '@entities/nickname-adjective.entity';
 import { NicknameNoun } from '@entities/nickname-noun.entity';
-import { Platform, UserStatus } from '../enums/user.enum';
+import { Platform, UserStatus, UserType } from '../enums/user.enum';
 import { UpdateNicknameDto } from './dto/update-nickname.dto';
 import { SurveyDto } from './dto/survey.dto';
 import { RedisService } from '../redis/redis.service';
@@ -47,7 +47,16 @@ export class UsersService {
     const existing = await this.userRepo.findOne({ where: { platform, platformUserId } });
     if (existing) return existing;
 
-    const user = this.userRepo.create({ platform, platformUserId, email });
+    // 최초 가입 유저는 어드민으로 등록
+    const userCount = await this.userRepo.count();
+    const isFirstUser = userCount === 0;
+
+    const user = this.userRepo.create({
+      platform,
+      platformUserId,
+      email,
+      type: isFirstUser ? UserType.ADMIN : UserType.MEMBER,
+    });
     return this.userRepo.save(user);
   }
 
@@ -129,5 +138,34 @@ export class UsersService {
     const hashes = await this.redis.smembers(`user_rts:${userId}`);
     await this.redis.del(...hashes.map((h) => `rt:${h}`));
     await this.redis.del(`user_rts:${userId}`);
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userRepo.findOne({ where: { email } });
+  }
+
+  async findAdminByEmail(email: string): Promise<User | null> {
+    return this.userRepo.findOne({
+      where: { email, type: UserType.ADMIN },
+    });
+  }
+
+  async setPassword(userId: string, hashedPassword: string): Promise<void> {
+    await this.userRepo.update(userId, { password: hashedPassword });
+  }
+
+  async updateUserType(userId: string, type: UserType): Promise<User> {
+    const user = await this.findByIdOrFail(userId);
+    await this.userRepo.update(userId, { type });
+    return { ...user, type };
+  }
+
+  async findAllUsers(page: number, limit: number): Promise<{ data: User[]; totalCount: number }> {
+    const [data, totalCount] = await this.userRepo.findAndCount({
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return { data, totalCount };
   }
 }

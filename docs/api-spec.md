@@ -2405,22 +2405,532 @@ XP 레벨 정책 목록을 조회합니다.
 
 ---
 
-## 11. 채널 API (관리자 전용)
+## 11. 어드민 인증 API
 
-### 11.1 `GET /channels`
+### 11.1 `POST /auth/admin/login`
+
+어드민 이메일/비밀번호로 로그인합니다.
+
+**Request**
+
+- Headers: 없음
+- Body:
+
+    ```json
+    {
+      "email": "admin@example.com",
+      "password": "password123!"
+    }
+    ```
+
+    | 필드 | 타입 | 필수 | 유효성 조건 |
+    | --- | --- | --- | --- |
+    | `email` | string | Yes | 유효한 이메일 |
+    | `password` | string | Yes | 최소 8자 |
+
+**Response (200)**
+
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "user-uuid",
+    "email": "admin@example.com",
+    "type": "admin"
+  }
+}
+```
+
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 400 | "비밀번호가 설정되지 않았습니다." |
+| 401 | "이메일 또는 비밀번호가 올바르지 않습니다." |
+
+---
+
+### 11.2 `POST /auth/admin/set-password`
+
+어드민 비밀번호를 최초 설정합니다. OAuth 로그인 후 비밀번호를 설정해야 이메일/비밀번호로 로그인 가능합니다.
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+
+- Body:
+
+    ```json
+    {
+      "password": "password123!"
+    }
+    ```
+
+    | 필드 | 타입 | 필수 | 유효성 조건 |
+    | --- | --- | --- | --- |
+    | `password` | string | Yes | 최소 8자, 영문+숫자 필수 |
+
+**Response (200)**
+
+```json
+{
+  "message": "비밀번호가 설정되었습니다."
+}
+```
+
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 400 | "비밀번호가 이미 설정되어 있습니다." |
+| 403 | "어드민만 비밀번호를 설정할 수 있습니다." |
+
+---
+
+### 11.3 `PATCH /auth/admin/change-password`
+
+어드민 비밀번호를 변경합니다.
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+
+- Body:
+
+    ```json
+    {
+      "currentPassword": "oldPassword123!",
+      "newPassword": "newPassword123!"
+    }
+    ```
+
+**Response (200)**
+
+```json
+{
+  "message": "비밀번호가 변경되었습니다."
+}
+```
+
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 400 | "비밀번호가 설정되지 않았습니다." |
+| 401 | "현재 비밀번호가 올바르지 않습니다." |
+| 403 | "어드민만 비밀번호를 변경할 수 있습니다." |
+
+---
+
+## 12. 유저 관리 API (관리자 전용)
+
+### 12.1 `PATCH /users/:id/role`
+
+유저의 역할을 변경합니다.
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | id | uuid | Yes | 유저 ID |
+
+- Body:
+
+    ```json
+    {
+      "type": "admin"
+    }
+    ```
+
+    | 필드 | 타입 | 필수 | 유효성 조건 |
+    | --- | --- | --- | --- |
+    | `type` | string | Yes | `admin` \| `member` |
+
+**Response (200)**
+
+```json
+{
+  "id": "user-uuid",
+  "status": "active",
+  "type": "admin",
+  "nickname": "실뭉치장인",
+  "createdAt": "2026-04-09T12:00:00.000Z"
+}
+```
+
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 403 | "접근 권한이 없습니다." |
+| 404 | "유저를 찾을 수 없습니다." |
+
+---
+
+## 13. 게시판 카테고리 관리 API (관리자 전용)
+
+### 13.1 `POST /boards/categories`
+
+새 카테고리를 생성합니다.
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+
+- Body:
+
+    ```json
+    {
+      "label": "자유게시판"
+    }
+    ```
+
+**Response (201)**
+
+```json
+{
+  "id": "category-uuid",
+  "label": "자유게시판",
+  "status": "enabled"
+}
+```
+
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 403 | "접근 권한이 없습니다." |
+
+---
+
+### 13.2 `PATCH /boards/categories/:categoryId`
+
+카테고리를 수정합니다.
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | categoryId | uuid | Yes | 카테고리 ID |
+
+- Body:
+
+    ```json
+    {
+      "label": "수정된 카테고리명",
+      "status": "enabled"
+    }
+    ```
+
+**Response (200)**
+
+```json
+{
+  "id": "category-uuid",
+  "label": "수정된 카테고리명",
+  "status": "enabled"
+}
+```
+
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 403 | "접근 권한이 없습니다." |
+| 404 | "카테고리를 찾을 수 없습니다." |
+
+---
+
+### 13.3 `DELETE /boards/categories/:categoryId`
+
+카테고리를 삭제합니다. (비활성화 처리)
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | categoryId | uuid | Yes | 카테고리 ID |
+
+**Response (204)**
+
+```
+No Content
+```
+
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 403 | "접근 권한이 없습니다." |
+| 404 | "카테고리를 찾을 수 없습니다." |
+
+---
+
+## 14. 포인트 정책 관리 API (관리자 전용)
+
+### 14.1 `POST /points/policies`
+
+새 포인트 정책을 생성합니다.
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+
+- Body:
+
+    ```json
+    {
+      "actionType": "WATCH",
+      "pointAmount": 100,
+      "isOneTime": false,
+      "isActive": true
+    }
+    ```
+
+**Response (201)**
+
+```json
+{
+  "id": "policy-uuid",
+  "actionType": "WATCH",
+  "pointAmount": 100,
+  "isOneTime": false,
+  "isActive": true,
+  "createdAt": "2026-04-09T16:00:00.000Z",
+  "updatedAt": "2026-04-09T16:00:00.000Z"
+}
+```
+
+---
+
+### 14.2 `PATCH /points/policies/:id`
+
+포인트 정책을 수정합니다.
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | id | uuid | Yes | 정책 ID |
+
+- Body:
+
+    ```json
+    {
+      "pointAmount": 150,
+      "isActive": false
+    }
+    ```
+
+**Response (200)**
+
+```json
+{
+  "id": "policy-uuid",
+  "actionType": "WATCH",
+  "pointAmount": 150,
+  "isOneTime": false,
+  "isActive": false,
+  "createdAt": "2026-04-09T16:00:00.000Z",
+  "updatedAt": "2026-04-10T12:00:00.000Z"
+}
+```
+
+---
+
+### 14.3 `DELETE /points/policies/:id`
+
+포인트 정책을 삭제합니다. (비활성화 처리)
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | id | uuid | Yes | 정책 ID |
+
+**Response (204)**
+
+```
+No Content
+```
+
+---
+
+## 15. XP 레벨 정책 관리 API (관리자 전용)
+
+### 15.1 `POST /xp/levels`
+
+새 XP 레벨 정책을 생성합니다.
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+
+- Body:
+
+    ```json
+    {
+      "level": 1,
+      "xpThreshold": 0,
+      "label": "새싹 뜨개러",
+      "isActive": true
+    }
+    ```
+
+**Response (201)**
+
+```json
+{
+  "id": "policy-uuid",
+  "level": 1,
+  "xpThreshold": 0,
+  "label": "새싹 뜨개러",
+  "isActive": true
+}
+```
+
+---
+
+### 15.2 `PATCH /xp/levels/:id`
+
+XP 레벨 정책을 수정합니다.
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | id | uuid | Yes | 정책 ID |
+
+- Body:
+
+    ```json
+    {
+      "xpThreshold": 100,
+      "label": "수정된 레벨명"
+    }
+    ```
+
+**Response (200)**
+
+```json
+{
+  "id": "policy-uuid",
+  "level": 1,
+  "xpThreshold": 100,
+  "label": "수정된 레벨명",
+  "isActive": true
+}
+```
+
+---
+
+### 15.3 `DELETE /xp/levels/:id`
+
+XP 레벨 정책을 삭제합니다. (비활성화 처리)
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | id | uuid | Yes | 정책 ID |
+
+**Response (204)**
+
+```
+No Content
+```
+
+---
+
+## 16. 채널 API
+
+### 16.1 `GET /channels`
 
 등록된 채널 목록을 조회합니다.
 
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
-- Body: 없음
 
 **Response (200)**
 
@@ -2439,30 +2949,28 @@ XP 레벨 정책 목록을 조회합니다.
 
 ---
 
-### 11.2 `POST /channels` (관리자 전용)
+### 16.2 `POST /channels` (관리자 전용)
 
 새 채널을 등록합니다.
 
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
+
 - Body:
-    
+
     ```json
     {
       "name": "함뜨 공식채널",
       "youtubeChannelId": "UC..."
     }
     ```
-    
 
-**Response (200)**
+**Response (201)**
 
 ```json
 {
@@ -2477,8 +2985,87 @@ XP 레벨 정책 목록을 조회합니다.
 
 | **상태 코드** | **errorMessage** |
 | --- | --- |
-| 403 | “접근 권한이 없습니다.” |
-| 409 | “이미 등록된 채널입니다.” |
+| 403 | "접근 권한이 없습니다." |
+| 409 | "이미 등록된 채널입니다." |
+
+---
+
+### 16.3 `PATCH /channels/:id` (관리자 전용)
+
+채널 정보를 수정합니다.
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | id | uuid | Yes | 채널 ID |
+
+- Body:
+
+    ```json
+    {
+      "name": "수정된 채널명"
+    }
+    ```
+
+**Response (200)**
+
+```json
+{
+  "id": "channel-uuid",
+  "name": "수정된 채널명",
+  "youtubeChannelId": "UC...",
+  "addedAt": "2026-01-01T00:00:00.000Z"
+}
+```
+
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 403 | "접근 권한이 없습니다." |
+| 404 | "채널을 찾을 수 없습니다." |
+
+---
+
+### 16.4 `DELETE /channels/:id` (관리자 전용)
+
+채널을 삭제합니다.
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | id | uuid | Yes | 채널 ID |
+
+**Response (204)**
+
+```
+No Content
+```
+
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 403 | "접근 권한이 없습니다." |
+| 404 | "채널을 찾을 수 없습니다." |
 
 ---
 
@@ -2537,5 +3124,20 @@ XP 레벨 정책 목록을 조회합니다.
 |  | GET | /xp/transactions | 인증 | 거래 내역 조회 |
 |  | POST | /xp/earn | 관리자 | XP 지급 |
 |  | GET | /xp/levels | 인증 | 레벨 정책 목록 |
+| **어드민 인증** | POST | /auth/admin/login | - | 어드민 이메일/비밀번호 로그인 |
+|  | POST | /auth/admin/set-password | 어드민 | 비밀번호 최초 설정 |
+|  | PATCH | /auth/admin/change-password | 어드민 | 비밀번호 변경 |
+| **유저 관리** | PATCH | /users/:id/role | 관리자 | 유저 역할 변경 |
+| **카테고리 관리** | POST | /boards/categories | 관리자 | 카테고리 생성 |
+|  | PATCH | /boards/categories/:id | 관리자 | 카테고리 수정 |
+|  | DELETE | /boards/categories/:id | 관리자 | 카테고리 삭제 |
+| **포인트 정책** | POST | /points/policies | 관리자 | 정책 생성 |
+|  | PATCH | /points/policies/:id | 관리자 | 정책 수정 |
+|  | DELETE | /points/policies/:id | 관리자 | 정책 삭제 |
+| **XP 레벨 정책** | POST | /xp/levels | 관리자 | 레벨 정책 생성 |
+|  | PATCH | /xp/levels/:id | 관리자 | 레벨 정책 수정 |
+|  | DELETE | /xp/levels/:id | 관리자 | 레벨 정책 삭제 |
 | **채널** | GET | /channels | 인증 | 채널 목록 |
 |  | POST | /channels | 관리자 | 채널 등록 |
+|  | PATCH | /channels/:id | 관리자 | 채널 수정 |
+|  | DELETE | /channels/:id | 관리자 | 채널 삭제 |

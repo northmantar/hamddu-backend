@@ -1,13 +1,20 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
   Post,
   UseGuards,
 } from "@nestjs/common";
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
@@ -15,6 +22,7 @@ import { ChannelsService } from "./channels.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { AdminGuard } from "../common/guards/admin.guard";
 import { CreateChannelDto } from "./dto/create-channel.dto";
+import { UpdateChannelDto } from "./dto/update-channel.dto";
 import { ChannelResponseDto } from "./dto/channel-response.dto";
 
 @ApiTags("channels")
@@ -41,5 +49,32 @@ export class ChannelsController {
   async create(@Body() dto: CreateChannelDto): Promise<ChannelResponseDto> {
     const channel = await this.channelsService.create(dto);
     return ChannelResponseDto.from(channel);
+  }
+
+  @ApiOperation({ summary: "채널 수정 (관리자)" })
+  @ApiParam({ name: "id", description: "채널 ID" })
+  @ApiResponse({ status: 200, description: "채널 수정 완료" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @ApiResponse({ status: 404, description: "채널을 찾을 수 없음" })
+  @Patch(":id")
+  @UseGuards(AdminGuard)
+  async update(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: UpdateChannelDto,
+  ): Promise<ChannelResponseDto> {
+    const channel = await this.channelsService.update(id, dto);
+    return ChannelResponseDto.from(channel);
+  }
+
+  @ApiOperation({ summary: "채널 삭제 (관리자)" })
+  @ApiParam({ name: "id", description: "채널 ID" })
+  @ApiResponse({ status: 204, description: "채널 삭제 완료" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @ApiResponse({ status: 404, description: "채널을 찾을 수 없음" })
+  @Delete(":id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(AdminGuard)
+  async delete(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
+    await this.channelsService.delete(id);
   }
 }

@@ -9,6 +9,8 @@ import { XpTransaction } from "@entities/xp-transaction.entity";
 import { XpLevelPolicy } from "@entities/xp-level-policy.entity";
 import { User } from "@entities/user.entity";
 import { EarnXpDto } from "./dto/earn-xp.dto";
+import { CreateXpLevelDto } from "./dto/create-level.dto";
+import { UpdateXpLevelDto } from "./dto/update-level.dto";
 import { PaginationQueryDto, PaginationMeta } from "../boards/dto/pagination.dto";
 
 @Injectable()
@@ -185,5 +187,47 @@ export class XpService {
       where: { isActive: true },
       order: { level: "ASC" },
     });
+  }
+
+  async getAllLevels(): Promise<XpLevelPolicy[]> {
+    return this.policyRepo.find({
+      order: { level: "ASC" },
+    });
+  }
+
+  async findLevelById(id: string): Promise<XpLevelPolicy> {
+    const policy = await this.policyRepo.findOne({ where: { id } });
+    if (!policy) {
+      throw new NotFoundException("레벨 정책을 찾을 수 없습니다.");
+    }
+    return policy;
+  }
+
+  async createLevel(dto: CreateXpLevelDto): Promise<XpLevelPolicy> {
+    const policy = this.policyRepo.create({
+      level: dto.level,
+      xpThreshold: dto.xpThreshold,
+      label: dto.label,
+      isActive: dto.isActive ?? true,
+    });
+    return this.policyRepo.save(policy);
+  }
+
+  async updateLevel(id: string, dto: UpdateXpLevelDto): Promise<XpLevelPolicy> {
+    await this.findLevelById(id);
+
+    await this.policyRepo.update(id, {
+      ...(dto.xpThreshold !== undefined && { xpThreshold: dto.xpThreshold }),
+      ...(dto.label !== undefined && { label: dto.label }),
+      ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+    });
+
+    return this.findLevelById(id);
+  }
+
+  async deleteLevel(id: string): Promise<void> {
+    await this.findLevelById(id);
+    // 레벨 정책을 비활성화 처리 (soft delete)
+    await this.policyRepo.update(id, { isActive: false });
   }
 }

@@ -1,7 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -9,6 +15,7 @@ import {
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
@@ -18,6 +25,8 @@ import { AdminGuard } from "../common/guards/admin.guard";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import { JwtPayload } from "../auth/interfaces/jwt-payload.interface";
 import { EarnPointDto } from "./dto/earn-point.dto";
+import { CreatePointPolicyDto } from "./dto/create-policy.dto";
+import { UpdatePointPolicyDto } from "./dto/update-policy.dto";
 import { PointTransactionQueryDto } from "./dto/point-query.dto";
 import { PaginationMeta } from "../boards/dto/pagination.dto";
 import {
@@ -83,5 +92,42 @@ export class PointsController {
   async getPolicies(): Promise<{ data: PointPolicyResponseDto[] }> {
     const policies = await this.pointsService.getPolicies();
     return { data: policies.map(PointPolicyResponseDto.from) };
+  }
+
+  @ApiOperation({ summary: "포인트 정책 생성 (관리자)" })
+  @ApiResponse({ status: 201, description: "정책 생성 완료" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @Post("policies")
+  @UseGuards(AdminGuard)
+  async createPolicy(@Body() dto: CreatePointPolicyDto): Promise<PointPolicyResponseDto> {
+    const policy = await this.pointsService.createPolicy(dto);
+    return PointPolicyResponseDto.from(policy);
+  }
+
+  @ApiOperation({ summary: "포인트 정책 수정 (관리자)" })
+  @ApiParam({ name: "id", description: "정책 ID" })
+  @ApiResponse({ status: 200, description: "정책 수정 완료" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @ApiResponse({ status: 404, description: "정책을 찾을 수 없음" })
+  @Patch("policies/:id")
+  @UseGuards(AdminGuard)
+  async updatePolicy(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: UpdatePointPolicyDto,
+  ): Promise<PointPolicyResponseDto> {
+    const policy = await this.pointsService.updatePolicy(id, dto);
+    return PointPolicyResponseDto.from(policy);
+  }
+
+  @ApiOperation({ summary: "포인트 정책 삭제 (관리자)" })
+  @ApiParam({ name: "id", description: "정책 ID" })
+  @ApiResponse({ status: 204, description: "정책 삭제 완료" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @ApiResponse({ status: 404, description: "정책을 찾을 수 없음" })
+  @Delete("policies/:id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(AdminGuard)
+  async deletePolicy(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
+    await this.pointsService.deletePolicy(id);
   }
 }

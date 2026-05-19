@@ -10,6 +10,8 @@ import { PointEarningPolicy } from "@entities/point-earning-policy.entity";
 import { User } from "@entities/user.entity";
 import { PointTransactionType, PointTransactionStatus } from "@enums/point.enum";
 import { EarnPointDto } from "./dto/earn-point.dto";
+import { CreatePointPolicyDto } from "./dto/create-policy.dto";
+import { UpdatePointPolicyDto } from "./dto/update-policy.dto";
 import { PointTransactionQueryDto } from "./dto/point-query.dto";
 import { PaginationMeta } from "../boards/dto/pagination.dto";
 
@@ -126,5 +128,41 @@ export class PointsService {
     return this.policyRepo.find({
       order: { createdAt: "ASC" },
     });
+  }
+
+  async findPolicyById(id: string): Promise<PointEarningPolicy> {
+    const policy = await this.policyRepo.findOne({ where: { id } });
+    if (!policy) {
+      throw new NotFoundException("포인트 정책을 찾을 수 없습니다.");
+    }
+    return policy;
+  }
+
+  async createPolicy(dto: CreatePointPolicyDto): Promise<PointEarningPolicy> {
+    const policy = this.policyRepo.create({
+      actionType: dto.actionType,
+      pointAmount: dto.pointAmount,
+      isOneTime: dto.isOneTime ?? false,
+      isActive: dto.isActive ?? true,
+    });
+    return this.policyRepo.save(policy);
+  }
+
+  async updatePolicy(id: string, dto: UpdatePointPolicyDto): Promise<PointEarningPolicy> {
+    await this.findPolicyById(id);
+
+    await this.policyRepo.update(id, {
+      ...(dto.pointAmount !== undefined && { pointAmount: dto.pointAmount }),
+      ...(dto.isOneTime !== undefined && { isOneTime: dto.isOneTime }),
+      ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+    });
+
+    return this.findPolicyById(id);
+  }
+
+  async deletePolicy(id: string): Promise<void> {
+    await this.findPolicyById(id);
+    // 정책을 비활성화 처리 (soft delete)
+    await this.policyRepo.update(id, { isActive: false });
   }
 }

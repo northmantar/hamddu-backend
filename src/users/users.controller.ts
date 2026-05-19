@@ -5,20 +5,26 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../common/guards/admin.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UpdateNicknameDto } from './dto/update-nickname.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
 import { SurveyDto } from './dto/survey.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { PaginationMeta } from '../boards/dto/pagination.dto';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -71,5 +77,45 @@ export class UsersController {
   ): Promise<void> {
     await this.usersService.withdraw(payload.sub);
     res.clearCookie('refresh_token', { path: '/' });
+  }
+
+  // ── Admin endpoints ─────────────────────────────────────────────────────────
+
+  @ApiOperation({ summary: '유저 목록 조회 (관리자)' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiResponse({ status: 200, description: '유저 목록 반환' })
+  @ApiResponse({ status: 403, description: '접근 권한 없음' })
+  @Get()
+  @UseGuards(AdminGuard)
+  async findAll(
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+  ): Promise<{ data: UserResponseDto[]; meta: PaginationMeta }> {
+    const { data, totalCount } = await this.usersService.findAllUsers(+page, +limit);
+    return {
+      data: data.map(UserResponseDto.from),
+      meta: {
+        page: +page,
+        limit: +limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / +limit),
+      },
+    };
+  }
+
+  @ApiOperation({ summary: '유저 역할 변경 (관리자)' })
+  @ApiParam({ name: 'id', description: '유저 ID' })
+  @ApiResponse({ status: 200, description: '역할 변경 완료', type: UserResponseDto })
+  @ApiResponse({ status: 403, description: '접근 권한 없음' })
+  @ApiResponse({ status: 404, description: '유저를 찾을 수 없음' })
+  @Patch(':id/role')
+  @UseGuards(AdminGuard)
+  async updateRole(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateRoleDto,
+  ): Promise<UserResponseDto> {
+    const user = await this.usersService.updateUserType(id, dto.type);
+    return UserResponseDto.from(user);
   }
 }
