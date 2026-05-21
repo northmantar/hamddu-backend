@@ -12,9 +12,8 @@ module.exports = {
     },
     {
       name: 'hamddu-admin-poc',
-      script: 'serve',
-      args: ['poc', '-l', '4000', '--no-clipboard'],
-      interpreter: 'none',
+      script: '/usr/local/bin/serve',
+      args: ['poc', '-l', 'tcp://0.0.0.0:4000', '--no-clipboard'],
       autorestart: true,
       watch: false,
     },
