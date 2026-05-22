@@ -1,0 +1,332 @@
+### ============================================
+### 어드민 API 테스트 (REST Client for VS Code)
+### ============================================
+### 사용법:
+### 1. VS Code 확장 "REST Client" 설치
+### 2. 서버 실행: npm run start:dev
+### 3. 각 요청 위의 "Send Request" 클릭
+### ============================================
+
+@baseUrl = http://localhost:3000
+@adminToken = {{login.response.body.accessToken}}
+@categoryId = {{createCategory.response.body.id}}
+@policyId = {{createPolicy.response.body.id}}
+@levelId = {{createLevel.response.body.id}}
+
+### ============================================
+### 1. 인증 (Authentication)
+### ============================================
+
+### 1-1. OAuth 로그인 (구글) - 브라우저에서 직접 접근
+# GET {{baseUrl}}/auth/google
+
+### 1-2. 어드민 비밀번호 설정 (OAuth 로그인 후 토큰 필요)
+### 먼저 OAuth 로그인 후 받은 토큰을 아래에 입력하세요
+# @name setPassword
+POST {{baseUrl}}/auth/admin/set-password
+Content-Type: application/json
+Authorization: Bearer YOUR_OAUTH_TOKEN_HERE
+
+{
+  "password": "Admin123!"
+}
+
+### 1-3. 어드민 이메일/비밀번호 로그인
+# @name login
+POST {{baseUrl}}/auth/admin/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Admin123!"
+}
+
+### 1-4. 어드민 비밀번호 변경
+PATCH {{baseUrl}}/auth/admin/change-password
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "currentPassword": "Admin123!",
+  "newPassword": "NewAdmin456!"
+}
+
+### ============================================
+### 2. 유저 관리 (User Management)
+### ============================================
+
+### 2-1. 유저 목록 조회
+GET {{baseUrl}}/users
+Authorization: Bearer {{adminToken}}
+
+### 2-2. 유저 권한 변경 (어드민 권한 부여)
+PATCH {{baseUrl}}/users/USER_ID_HERE/role
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "type": "admin"
+}
+
+### 2-3. 유저 권한 변경 (일반 유저로 변경)
+PATCH {{baseUrl}}/users/USER_ID_HERE/role
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "type": "member"
+}
+
+### ============================================
+### 3. 게시판 카테고리 (Board Categories)
+### ============================================
+
+### 3-1. 카테고리 목록 조회
+GET {{baseUrl}}/boards/categories
+Authorization: Bearer {{adminToken}}
+
+### 3-2. 카테고리 생성
+# @name createCategory
+POST {{baseUrl}}/boards/categories
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "label": "자유게시판"
+}
+
+### 3-3. 카테고리 수정
+PATCH {{baseUrl}}/boards/categories/{{categoryId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "label": "질문게시판",
+  "status": "enabled"
+}
+
+### 3-4. 카테고리 삭제
+DELETE {{baseUrl}}/boards/categories/{{categoryId}}
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### 4. 포인트 정책 (Point Policies)
+### ============================================
+
+### 4-1. 포인트 정책 목록 조회
+GET {{baseUrl}}/points/policies
+Authorization: Bearer {{adminToken}}
+
+### 4-2. 포인트 정책 생성 (영상 시청)
+# @name createPolicy
+POST {{baseUrl}}/points/policies
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "actionType": "WATCH",
+  "pointAmount": 100,
+  "isOneTime": false,
+  "isActive": true
+}
+
+### 4-3. 포인트 정책 생성 (챌린지 완료)
+POST {{baseUrl}}/points/policies
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "actionType": "CHALLENGE",
+  "pointAmount": 500,
+  "isOneTime": true,
+  "isActive": true
+}
+
+### 4-4. 포인트 정책 생성 (댓글 작성)
+POST {{baseUrl}}/points/policies
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "actionType": "COMMENT",
+  "pointAmount": 50,
+  "isOneTime": false,
+  "isActive": true
+}
+
+### 4-5. 포인트 정책 수정
+PATCH {{baseUrl}}/points/policies/{{policyId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "pointAmount": 150,
+  "isActive": true
+}
+
+### 4-6. 포인트 정책 삭제
+DELETE {{baseUrl}}/points/policies/{{policyId}}
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### 5. XP 레벨 정책 (XP Level Policies)
+### ============================================
+
+### 5-1. XP 레벨 목록 조회
+GET {{baseUrl}}/xp/levels
+Authorization: Bearer {{adminToken}}
+
+### 5-2. XP 레벨 생성 (레벨 1)
+# @name createLevel
+POST {{baseUrl}}/xp/levels
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "level": 1,
+  "minXp": 0,
+  "maxXp": 99,
+  "label": "입문자"
+}
+
+### 5-3. XP 레벨 생성 (레벨 2)
+POST {{baseUrl}}/xp/levels
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "level": 2,
+  "minXp": 100,
+  "maxXp": 299,
+  "label": "초보자"
+}
+
+### 5-4. XP 레벨 생성 (레벨 3)
+POST {{baseUrl}}/xp/levels
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "level": 3,
+  "minXp": 300,
+  "maxXp": 599,
+  "label": "중급자"
+}
+
+### 5-5. XP 레벨 수정
+PATCH {{baseUrl}}/xp/levels/{{levelId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "label": "뜨개 입문자",
+  "maxXp": 149
+}
+
+### 5-6. XP 레벨 삭제
+DELETE {{baseUrl}}/xp/levels/{{levelId}}
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### 6. 채널 관리 (Channel Management)
+### ============================================
+
+### 6-1. 채널 목록 조회
+GET {{baseUrl}}/channels
+Authorization: Bearer {{adminToken}}
+
+### 6-2. 채널 등록
+# @name createChannel
+POST {{baseUrl}}/channels
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "뜨개질 마스터",
+  "youtubeChannelId": "UC1234567890abcdef"
+}
+
+### 6-3. 채널 수정
+PATCH {{baseUrl}}/channels/CHANNEL_ID_HERE
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "뜨개질 전문가"
+}
+
+### 6-4. 채널 삭제
+DELETE {{baseUrl}}/channels/CHANNEL_ID_HERE
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### 7. 콘텐츠 관리 (Content Management)
+### ============================================
+
+### 7-1. 콘텐츠 목록 조회
+GET {{baseUrl}}/contents?interests=crochet
+Authorization: Bearer {{adminToken}}
+
+### 7-2. 콘텐츠 등록
+POST {{baseUrl}}/contents
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "channelId": "CHANNEL_ID_HERE",
+  "youtubeVideoId": "dQw4w9WgXcQ",
+  "name": "기초 코바늘 강좌 1편",
+  "type": "symbol",
+  "interests": "crochet",
+  "pointApplyable": true
+}
+
+### 7-3. 콘텐츠 순서 변경
+PATCH {{baseUrl}}/contents/CONTENT_ID_HERE/order
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "previousContentId": null,
+  "nextContentId": "NEXT_CONTENT_ID_HERE"
+}
+
+### 7-4. 콘텐츠 수정
+PATCH {{baseUrl}}/contents/CONTENT_ID_HERE
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "name": "기초 코바늘 강좌 1편 (수정됨)",
+  "pointApplyable": false
+}
+
+### 7-5. 콘텐츠 삭제
+DELETE {{baseUrl}}/contents/CONTENT_ID_HERE
+Authorization: Bearer {{adminToken}}
+
+### ============================================
+### 8. 포인트/XP 지급 (Admin Grant)
+### ============================================
+
+### 8-1. 포인트 지급
+POST {{baseUrl}}/points/earn
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "memberId": "USER_ID_HERE",
+  "actionType": "WATCH",
+  "referenceId": "CONTENT_ID_HERE"
+}
+
+### 8-2. XP 지급
+POST {{baseUrl}}/xp/earn
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "memberId": "USER_ID_HERE",
+  "amount": 50,
+  "reason": "이벤트 보상"
+}
