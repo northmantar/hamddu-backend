@@ -1,5 +1,7 @@
 # Hamddu API 명세
 
+이 문서는 실제 구현된 API의 상세 명세입니다.
+
 ## Base URL
 
 ```
@@ -707,21 +709,19 @@ No Content
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
+
 - Query Parameters:
-    
-    
+
     | **파라미터** | **타입** | **필수** | **설명** |
     | --- | --- | --- | --- |
     | page | number | No | 페이지 번호 (기본값: 1) |
     | limit | number | No | 페이지당 항목 수 (기본값: 20) |
     | categoryId | string | No | 카테고리 ID 필터 |
-    | sort | string | No | 정렬 기준 (latest |
-- Body: 없음
+    | sort | string | No | 정렬 기준 (latest \| popular, 기본값: latest) |
 
 **Response (200)**
 
@@ -756,20 +756,56 @@ No Content
 
 ---
 
-### 4.2 `GET /boards/:id`
+### 4.2 `GET /boards/categories`
+
+게시판 카테고리 목록을 조회합니다.
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+
+**Response (200)**
+
+```json
+{
+  "data": [
+    {
+      "id": "category-uuid-1",
+      "label": "자유게시판",
+      "status": "enabled"
+    },
+    {
+      "id": "category-uuid-2",
+      "label": "질문/답변",
+      "status": "enabled"
+    }
+  ]
+}
+```
+
+---
+
+### 4.3 `GET /boards/:id`
 
 특정 게시글을 조회합니다.
 
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
-- Body: 없음
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | id | uuid | Yes | 게시글 ID |
 
 **Response (200)**
 
@@ -798,25 +834,24 @@ No Content
 
 | **상태 코드** | **errorMessage** |
 | --- | --- |
-| 404 | “게시글을 찾을 수 없습니다.” |
+| 404 | "게시글을 찾을 수 없습니다." |
 
 ---
 
-### 4.3 `POST /boards`
+### 4.4 `POST /boards`
 
 새 게시글을 작성합니다.
 
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
+
 - Body:
-    
+
     ```json
     {
       "categoryId": "category-uuid",
@@ -825,15 +860,15 @@ No Content
       "status": "published"
     }
     ```
-    
+
     | 필드 | 타입 | 필수 | 유효성 조건 |
     | --- | --- | --- | --- |
     | `categoryId` | string | Yes | 유효한 카테고리 ID |
     | `title` | string | Yes | 1-200자 |
     | `body` | string | Yes | 1-10000자 |
-    | `status` | string | No | `draft` | `published` (기본값: `published`) |
+    | `status` | string | No | `draft` \| `published` (기본값: `published`) |
 
-**Response (200)**
+**Response (201)**
 
 ```json
 {
@@ -842,6 +877,7 @@ No Content
   "title": "코바늘 시작하기 질문이요!",
   "body": "안녕하세요, 코바늘 입문자입니다...",
   "likeCount": 0,
+  "isLiked": false,
   "category": {
     "id": "category-uuid",
     "label": "질문/답변"
@@ -859,26 +895,31 @@ No Content
 
 | **상태 코드** | **errorMessage** |
 | --- | --- |
-| 400 | “제목은 1-200자 이내여야 합니다.” |
-| 400 | “유효하지 않은 카테고리입니다.” |
+| 400 | "제목은 1-200자 이내여야 합니다." |
+| 400 | "유효하지 않은 카테고리입니다." |
 
 ---
 
-### 4.4 `PATCH /boards/:id`
+### 4.5 `PATCH /boards/:id`
 
 게시글을 수정합니다. (작성자 또는 관리자만 가능)
 
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | id | uuid | Yes | 게시글 ID |
+
 - Body:
-    
+
     ```json
     {
       "title": "수정된 제목",
@@ -886,7 +927,7 @@ No Content
       "categoryId": "new-category-uuid"
     }
     ```
-    
+
     | 필드 | 타입 | 필수 | 유효성 조건 |
     | --- | --- | --- | --- |
     | `categoryId` | string | No | 유효한 카테고리 ID |
@@ -902,6 +943,7 @@ No Content
   "title": "수정된 제목",
   "body": "수정된 내용입니다...",
   "likeCount": 12,
+  "isLiked": false,
   "category": {
     "id": "new-category-uuid",
     "label": "자유게시판"
@@ -919,25 +961,28 @@ No Content
 
 | **상태 코드** | **errorMessage** |
 | --- | --- |
-| 403 | “접근 권한이 없습니다.” |
-| 404 | “게시글을 찾을 수 없습니다.” |
+| 403 | "접근 권한이 없습니다." |
+| 404 | "게시글을 찾을 수 없습니다." |
 
 ---
 
-### 4.5 `DELETE /boards/:id`
+### 4.6 `DELETE /boards/:id`
 
 게시글을 삭제합니다. (작성자 또는 관리자만 가능, 논리 삭제)
 
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
-- Body: 없음
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | id | uuid | Yes | 게시글 ID |
 
 **Response (204)**
 
@@ -949,25 +994,28 @@ No Content
 
 | **상태 코드** | **errorMessage** |
 | --- | --- |
-| 403 | “접근 권한이 없습니다.” |
-| 404 | “게시글을 찾을 수 없습니다.” |
+| 403 | "접근 권한이 없습니다." |
+| 404 | "게시글을 찾을 수 없습니다." |
 
 ---
 
-### 4.6 `POST /boards/:id/like`
+### 4.7 `POST /boards/:id/like`
 
 게시글에 좋아요를 추가합니다.
 
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
-- Body: 없음
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | id | uuid | Yes | 게시글 ID |
 
 **Response (200)**
 
@@ -983,24 +1031,28 @@ No Content
 
 | **상태 코드** | **errorMessage** |
 | --- | --- |
-| 409 | “이미 좋아요한 게시글입니다.” |
+| 404 | "게시글을 찾을 수 없습니다." |
+| 409 | "이미 좋아요한 게시글입니다." |
 
 ---
 
-### 4.7 `DELETE /boards/:id/like`
+### 4.8 `DELETE /boards/:id/like`
 
 게시글 좋아요를 취소합니다.
 
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
-- Body: 없음
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | id | uuid | Yes | 게시글 ID |
 
 **Response (200)**
 
@@ -1016,43 +1068,8 @@ No Content
 
 | **상태 코드** | **errorMessage** |
 | --- | --- |
-| 404 | “좋아요 기록이 없습니다.” |
-
----
-
-### 4.8 `GET /boards/categories`
-
-게시판 카테고리 목록을 조회합니다.
-
-**Request**
-
-- Headers:
-    
-    
-    | **헤더** | **값** | **필수** |
-    | --- | --- | --- |
-    | Authorization | Bearer | Yes |
-- Query Parameters: 없음
-- Body: 없음
-
-**Response (200)**
-
-```json
-{
-  "data": [
-    {
-      "id": "category-uuid-1",
-      "label": "자유게시판",
-      "status": "enabled"
-    },
-    {
-      "id": "category-uuid-2",
-      "label": "질문/답변",
-      "status": "enabled"
-    }
-  ]
-}
-```
+| 404 | "게시글을 찾을 수 없습니다." |
+| 404 | "좋아요 기록이 없습니다." |
 
 ---
 
@@ -1066,18 +1083,22 @@ No Content
 
 - Headers:
 
-
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters:
 
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | boardId | uuid | Yes | 게시글 ID |
+
+- Query Parameters:
 
     | **파라미터** | **타입** | **필수** | **설명** |
     | --- | --- | --- | --- |
     | page | number | No | 페이지 번호 (기본값: 1) |
     | limit | number | No | 페이지당 항목 수 (기본값: 20) |
-- Body: 없음
 
 **Response (200)**
 
@@ -1125,6 +1146,12 @@ No Content
 }
 ```
 
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 404 | "게시글을 찾을 수 없습니다." |
+
 ---
 
 ### 5.2 `POST /boards/:boardId/comments`
@@ -1135,11 +1162,16 @@ No Content
 
 - Headers:
 
-
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | boardId | uuid | Yes | 게시글 ID |
+
 - Body:
 
     ```json
@@ -1154,7 +1186,7 @@ No Content
     | `body` | string | Yes | 1-1000자 |
     | `parentId` | string | No | 부모 댓글 ID (대댓글인 경우 필수, 루트 댓글이면 null 또는 생략) |
 
-**Response (200)**
+**Response (201)**
 
 ```json
 {
@@ -1193,11 +1225,17 @@ No Content
 
 - Headers:
 
-
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | boardId | uuid | Yes | 게시글 ID |
+    | commentId | uuid | Yes | 댓글 ID |
+
 - Body:
 
     ```json
@@ -1205,7 +1243,6 @@ No Content
       "body": "수정된 댓글 내용입니다."
     }
     ```
-
 
 **Response (200)**
 
@@ -1230,6 +1267,7 @@ No Content
 
 | **상태 코드** | **errorMessage** |
 | --- | --- |
+| 400 | "삭제된 댓글은 수정할 수 없습니다." |
 | 403 | "접근 권한이 없습니다." |
 | 404 | "댓글을 찾을 수 없습니다." |
 
@@ -1243,12 +1281,16 @@ No Content
 
 - Headers:
 
-
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
-- Body: 없음
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | boardId | uuid | Yes | 게시글 ID |
+    | commentId | uuid | Yes | 댓글 ID |
 
 **Response (204)**
 
@@ -1273,12 +1315,16 @@ No Content
 
 - Headers:
 
-
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
-- Body: 없음
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | boardId | uuid | Yes | 게시글 ID |
+    | commentId | uuid | Yes | 댓글 ID |
 
 **Response (200)**
 
@@ -1307,12 +1353,16 @@ No Content
 
 - Headers:
 
-
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
-- Body: 없음
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | boardId | uuid | Yes | 게시글 ID |
+    | commentId | uuid | Yes | 댓글 ID |
 
 **Response (200)**
 
@@ -1342,21 +1392,19 @@ No Content
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
+
 - Query Parameters:
-    
-    
+
     | **파라미터** | **타입** | **필수** | **설명** |
     | --- | --- | --- | --- |
     | page | number | No | 페이지 번호 (기본값: 1) |
     | limit | number | No | 페이지당 항목 수 (기본값: 20) |
-    | type | string | No | 콘텐츠 유형 (symbol | free) |
+    | type | string | No | 콘텐츠 유형 (symbol \| free) |
     | channelId | string | No | 채널 ID 필터 |
-- Body: 없음
 
 **Response (200)**
 
@@ -1397,17 +1445,15 @@ No Content
 
 - Headers:
 
-
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters:
 
+- Query Parameters:
 
     | **파라미터** | **타입** | **필수** | **설명** |
     | --- | --- | --- | --- |
-    | interests | string | Yes | 관심사 (`crochet` | `knitting`) |
-- Body: 없음
+    | interests | string | Yes | 관심사 (`crochet` \| `knitting`) |
 
 **Response (200)**
 
@@ -1462,12 +1508,15 @@ No Content
 
 - Headers:
 
-
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
-- Body: 없음
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | id | uuid | Yes | 콘텐츠 ID |
 
 **Response (200) - 튜토리얼 콘텐츠 (type: "symbol")**
 
@@ -1541,11 +1590,10 @@ No Content
 
 - Headers:
 
-
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
+
 - Body:
 
     ```json
@@ -1564,13 +1612,13 @@ No Content
     | --- | --- | --- | --- |
     | `channelId` | string | Yes | 유효한 채널 ID |
     | `youtubeVideoId` | string | Yes | 유튜브 비디오 ID |
-    | `name` | string | Yes | 1-200자 |
-    | `type` | string | Yes | `symbol` | `free` |
-    | `interests` | string | No | `crochet` | `knitting` |
+    | `name` | string | Yes | 1-255자 |
+    | `type` | string | Yes | `symbol` \| `free` |
+    | `interests` | string | No | `crochet` \| `knitting` |
     | `sortOrder` | number | No | interests 내 정렬 순서 (1부터 시작) |
     | `pointApplyable` | boolean | No | 포인트 지급 여부 (기본값: false) |
 
-**Response (200)**
+**Response (201)**
 
 ```json
 {
@@ -1578,13 +1626,15 @@ No Content
   "youtubeVideoId": "dQw4w9WgXcQ",
   "name": "코바늘 기초 - 사슬뜨기",
   "type": "symbol",
+  "interests": "crochet",
   "channel": {
     "id": "channel-uuid",
-    "name": "함뜨 공식채널"
+    "name": "함뜨 공식채널",
+    "youtubeChannelId": "UC..."
   },
   "pointApplyable": true,
   "sortOrder": 1,
-  "uploadedAt": "2026-04-01T10:00:00.000Z",
+  "uploadedAt": null,
   "createdAt": "2026-04-02T12:00:00.000Z"
 }
 ```
@@ -1593,8 +1643,9 @@ No Content
 
 | **상태 코드** | **errorMessage** |
 | --- | --- |
-| 403 | "접근 권한이 없습니다." |
 | 400 | "유효하지 않은 채널입니다." |
+| 403 | "접근 권한이 없습니다." |
+| 409 | "이미 등록된 유튜브 비디오입니다." |
 
 ---
 
@@ -1606,11 +1657,16 @@ No Content
 
 - Headers:
 
-
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | id | uuid | Yes | 콘텐츠 ID |
+
 - Body:
 
     ```json
@@ -1621,7 +1677,6 @@ No Content
     }
     ```
 
-
 **Response (200)**
 
 ```json
@@ -1630,15 +1685,16 @@ No Content
   "youtubeVideoId": "dQw4w9WgXcQ",
   "name": "수정된 콘텐츠 제목",
   "type": "symbol",
+  "interests": "crochet",
   "channel": {
     "id": "channel-uuid",
-    "name": "함뜨 공식채널"
+    "name": "함뜨 공식채널",
+    "youtubeChannelId": "UC..."
   },
   "pointApplyable": false,
   "sortOrder": 2,
   "uploadedAt": "2026-04-01T10:00:00.000Z",
-  "createdAt": "2026-04-02T12:00:00.000Z",
-  "updatedAt": "2026-04-10T15:00:00.000Z"
+  "createdAt": "2026-04-02T12:00:00.000Z"
 }
 ```
 
@@ -1659,11 +1715,16 @@ No Content
 
 - Headers:
 
-
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | id | uuid | Yes | 콘텐츠 ID |
+
 - Body:
 
     ```json
@@ -1714,13 +1775,16 @@ No Content
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
-- Body: 없음
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | id | uuid | Yes | 콘텐츠 ID |
 
 **Response (204)**
 
@@ -1732,8 +1796,8 @@ No Content
 
 | **상태 코드** | **errorMessage** |
 | --- | --- |
-| 403 | “접근 권한이 없습니다.” |
-| 404 | “콘텐츠를 찾을 수 없습니다.” |
+| 403 | "접근 권한이 없습니다." |
+| 404 | "콘텐츠를 찾을 수 없습니다." |
 
 ---
 
@@ -1746,19 +1810,17 @@ No Content
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
+
 - Query Parameters:
-    
-    
+
     | **파라미터** | **타입** | **필수** | **설명** |
     | --- | --- | --- | --- |
     | page | number | No | 페이지 번호 (기본값: 1) |
     | limit | number | No | 페이지당 항목 수 (기본값: 20) |
-- Body: 없음
 
 **Response (200)**
 
@@ -1792,19 +1854,18 @@ No Content
 
 ### 7.2 `POST /watch-history`
 
-시청 기록을 저장/업데이트합니다.
+시청 기록을 저장/업데이트합니다. 동일한 콘텐츠에 대한 기록이 있으면 업데이트, 없으면 새로 생성합니다.
 
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
+
 - Body:
-    
+
     ```json
     {
       "contentId": "content-uuid",
@@ -1813,7 +1874,7 @@ No Content
       "watchRate": 55
     }
     ```
-    
+
     | 필드 | 타입 | 필수 | 유효성 조건 |
     | --- | --- | --- | --- |
     | `contentId` | string | Yes | 유효한 콘텐츠 ID |
@@ -1839,7 +1900,7 @@ No Content
 
 | **상태 코드** | **errorMessage** |
 | --- | --- |
-| 404 | “콘텐츠를 찾을 수 없습니다.” |
+| 404 | "콘텐츠를 찾을 수 없습니다." |
 
 ---
 
@@ -1852,20 +1913,18 @@ No Content
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
+
 - Query Parameters:
-    
-    
+
     | **파라미터** | **타입** | **필수** | **설명** |
     | --- | --- | --- | --- |
     | page | number | No | 페이지 번호 (기본값: 1) |
     | limit | number | No | 페이지당 항목 수 (기본값: 20) |
     | contentId | string | No | 특정 콘텐츠에 대한 챌린지만 조회 |
-- Body: 없음
 
 **Response (200)**
 
@@ -1899,132 +1958,24 @@ No Content
 
 ---
 
-### 8.2 `GET /challenges/:id`
-
-특정 챌린지를 조회합니다.
-
-**Request**
-
-- Headers:
-    
-    
-    | **헤더** | **값** | **필수** |
-    | --- | --- | --- |
-    | Authorization | Bearer | Yes |
-- Query Parameters: 없음
-- Body: 없음
-
-**Response (200)**
-
-```json
-{
-  "id": "challenge-uuid",
-  "title": "사슬뜨기 완성!",
-  "body": "드디어 첫 작품을 완성했어요!",
-  "imageUrl": "https://cdn.hamddu.com/challenges/image.jpg",
-  "imageUploaded": true,
-  "stampGranted": true,
-  "content": {
-    "id": "content-uuid",
-    "name": "코바늘 기초 - 사슬뜨기",
-    "type": "symbol"
-  },
-  "author": {
-    "id": "author-uuid",
-    "nickname": "실뭉치장인"
-  },
-  "createdAt": "2026-04-09T16:00:00.000Z"
-}
-```
-
-**Errors**
-
-| **상태 코드** | **errorMessage** |
-| --- | --- |
-| 404 | “챌린지를 찾을 수 없습니다.” |
-
----
-
-### 8.3 `POST /challenges`
-
-챌린지를 등록합니다 (작품 인증).
-
-**Request**
-
-- Headers:
-    
-    
-    | **헤더** | **값** | **필수** |
-    | --- | --- | --- |
-    | Authorization | Bearer | Yes |
-    | Content-Type | multipart/form-data | Yes |
-- Query Parameters: 없음
-- Body (multipart/form-data):
-    
-    
-    | **필드** | **타입** | **필수** | **설명** |
-    | --- | --- | --- | --- |
-    | contentId | string | Yes | 인증할 콘텐츠 ID |
-    | title | string | No | 챌린지 제목 |
-    | body | string | No | 챌린지 내용 |
-    | image | file | Yes | 인증 이미지 (jpg, png, max 10MB) |
-    |  |  |  |  |
-
-**Response (200)**
-
-```json
-{
-  "id": "challenge-uuid",
-  "title": "사슬뜨기 완성!",
-  "body": "드디어 첫 작품을 완성했어요!",
-  "imageUrl": "https://cdn.hamddu.com/challenges/image.jpg",
-  "imageUploaded": true,
-  "stampGranted": true,
-  "content": {
-    "id": "content-uuid",
-    "name": "코바늘 기초 - 사슬뜨기"
-  },
-  "author": {
-    "id": "author-uuid",
-    "nickname": "실뭉치장인"
-  },
-  "pointEarned": 100,
-  "xpEarned": 50,
-  "createdAt": "2026-04-09T16:00:00.000Z"
-}
-```
-
-**Errors**
-
-| **상태 코드** | **errorMessage** |
-| --- | --- |
-| 400 | “이미지 파일이 필요합니다.” |
-| 400 | “지원하지 않는 이미지 형식입니다.” |
-| 404 | “콘텐츠를 찾을 수 없습니다.” |
-| 409 | “이미 해당 콘텐츠에 대한 챌린지를 완료했습니다.” |
-
----
-
-### 8.4 `GET /challenges/my`
+### 8.2 `GET /challenges/my`
 
 내가 등록한 챌린지 목록을 조회합니다.
 
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
+
 - Query Parameters:
-    
-    
+
     | **파라미터** | **타입** | **필수** | **설명** |
     | --- | --- | --- | --- |
     | page | number | No | 페이지 번호 (기본값: 1) |
     | limit | number | No | 페이지당 항목 수 (기본값: 20) |
-- Body: 없음
 
 **Response (200)**
 
@@ -2055,22 +2006,124 @@ No Content
 
 ---
 
-## 9. 포인트 API
+### 8.3 `GET /challenges/:id`
 
-### 9.1 `GET /points/wallet`
-
-현재 유저의 포인트 지갑 정보를 조회합니다.
+특정 챌린지를 조회합니다.
 
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
-- Body: 없음
+
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | id | uuid | Yes | 챌린지 ID |
+
+**Response (200)**
+
+```json
+{
+  "id": "challenge-uuid",
+  "title": "사슬뜨기 완성!",
+  "body": "드디어 첫 작품을 완성했어요!",
+  "imageUrl": "https://cdn.hamddu.com/challenges/image.jpg",
+  "imageUploaded": true,
+  "stampGranted": true,
+  "content": {
+    "id": "content-uuid",
+    "name": "코바늘 기초 - 사슬뜨기",
+    "type": "symbol"
+  },
+  "author": {
+    "id": "author-uuid",
+    "nickname": "실뭉치장인"
+  },
+  "createdAt": "2026-04-09T16:00:00.000Z"
+}
+```
+
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 404 | "챌린지를 찾을 수 없습니다." |
+
+---
+
+### 8.4 `POST /challenges`
+
+챌린지를 등록합니다 (작품 인증).
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+    | Content-Type | multipart/form-data | Yes |
+
+- Body (multipart/form-data):
+
+    | **필드** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | contentId | string | Yes | 인증할 콘텐츠 ID |
+    | title | string | No | 챌린지 제목 (최대 200자) |
+    | body | string | No | 챌린지 내용 (최대 2000자) |
+    | image | file | No | 인증 이미지 (jpg, png, max 10MB) |
+
+**Response (201)**
+
+```json
+{
+  "id": "challenge-uuid",
+  "title": "사슬뜨기 완성!",
+  "body": "드디어 첫 작품을 완성했어요!",
+  "imageUrl": "https://cdn.hamddu.com/challenges/image.jpg",
+  "imageUploaded": true,
+  "stampGranted": true,
+  "content": {
+    "id": "content-uuid",
+    "name": "코바늘 기초 - 사슬뜨기",
+    "type": "symbol"
+  },
+  "author": {
+    "id": "author-uuid",
+    "nickname": "실뭉치장인"
+  },
+  "pointEarned": 100,
+  "xpEarned": 50,
+  "createdAt": "2026-04-09T16:00:00.000Z"
+}
+```
+
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 404 | "콘텐츠를 찾을 수 없습니다." |
+| 409 | "이미 해당 콘텐츠에 대한 챌린지를 완료했습니다." |
+
+---
+
+## 9. 포인트 API
+
+### 9.1 `GET /points/wallet`
+
+현재 유저의 포인트 지갑 정보를 조회합니다. 지갑이 없으면 자동으로 생성됩니다.
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
 
 **Response (200)**
 
@@ -2094,20 +2147,18 @@ No Content
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
+
 - Query Parameters:
-    
-    
+
     | **파라미터** | **타입** | **필수** | **설명** |
     | --- | --- | --- | --- |
     | page | number | No | 페이지 번호 (기본값: 1) |
     | limit | number | No | 페이지당 항목 수 (기본값: 20) |
-    | type | string | No | 트랜잭션 유형 필터 (EARN | USE | CANCEL) |
-- Body: 없음
+    | type | string | No | 트랜잭션 유형 필터 (EARN \| USE \| CANCEL) |
 
 **Response (200)**
 
@@ -2137,21 +2188,20 @@ No Content
 
 ---
 
-### 9.3 `POST /points/earn` (내부/관리자용)
+### 9.3 `POST /points/earn` (관리자/내부용)
 
 포인트를 지급합니다.
 
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
+
 - Body:
-    
+
     ```json
     {
       "memberId": "member-uuid",
@@ -2161,7 +2211,7 @@ No Content
       "description": "챌린지 완료 보상"
     }
     ```
-    
+
     | 필드 | 타입 | 필수 | 설명 |
     | --- | --- | --- | --- |
     | `memberId` | string | Yes | 대상 유저 ID |
@@ -2188,9 +2238,9 @@ No Content
 
 | **상태 코드** | **errorMessage** |
 | --- | --- |
-| 403 | “접근 권한이 없습니다.” |
-| 404 | “유저를 찾을 수 없습니다.” |
-| 404 | “포인트 정책을 찾을 수 없습니다.” |
+| 403 | "접근 권한이 없습니다." |
+| 404 | "유저를 찾을 수 없습니다." |
+| 404 | "포인트 정책을 찾을 수 없습니다." |
 
 ---
 
@@ -2201,13 +2251,10 @@ No Content
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
-- Body: 없음
 
 **Response (200)**
 
@@ -2227,24 +2274,27 @@ No Content
 }
 ```
 
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 403 | "접근 권한이 없습니다." |
+
 ---
 
 ## 10. XP API
 
 ### 10.1 `GET /xp/wallet`
 
-현재 유저의 XP 지갑 정보를 조회합니다.
+현재 유저의 XP 지갑 정보를 조회합니다. 지갑이 없으면 자동으로 생성됩니다.
 
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
-- Body: 없음
 
 **Response (200)**
 
@@ -2270,19 +2320,17 @@ XP 거래 내역을 조회합니다.
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
+
 - Query Parameters:
-    
-    
+
     | **파라미터** | **타입** | **필수** | **설명** |
     | --- | --- | --- | --- |
     | page | number | No | 페이지 번호 (기본값: 1) |
     | limit | number | No | 페이지당 항목 수 (기본값: 20) |
-- Body: 없음
 
 **Response (200)**
 
@@ -2309,21 +2357,20 @@ XP 거래 내역을 조회합니다.
 
 ---
 
-### 10.3 `POST /xp/earn` (내부/관리자용)
+### 10.3 `POST /xp/earn` (관리자/내부용)
 
-XP를 지급합니다.
+XP를 지급합니다. 레벨업 시 자동으로 레벨이 업데이트됩니다.
 
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
+
 - Body:
-    
+
     ```json
     {
       "memberId": "member-uuid",
@@ -2333,11 +2380,11 @@ XP를 지급합니다.
       "description": "챌린지 완료"
     }
     ```
-    
+
     | 필드 | 타입 | 필수 | 설명 |
     | --- | --- | --- | --- |
     | `memberId` | string | Yes | 대상 유저 ID |
-    | `amount` | number | Yes | 지급할 XP 양 |
+    | `amount` | number | Yes | 지급할 XP 양 (1 이상) |
     | `refType` | string | Yes | 참조 테이블 식별자 |
     | `refId` | string | Yes | 참조 행의 ID |
     | `description` | string | No | 트랜잭션 설명 |
@@ -2360,8 +2407,9 @@ XP를 지급합니다.
 
 | **상태 코드** | **errorMessage** |
 | --- | --- |
-| 403 | “접근 권한이 없습니다.” |
-| 404 | “유저를 찾을 수 없습니다.” |
+| 403 | "접근 권한이 없습니다." |
+| 404 | "유저를 찾을 수 없습니다." |
+| 404 | "레벨 정책이 설정되지 않았습니다." |
 
 ---
 
@@ -2372,13 +2420,10 @@ XP 레벨 정책 목록을 조회합니다.
 **Request**
 
 - Headers:
-    
-    
+
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-- Query Parameters: 없음
-- Body: 없음
 
 **Response (200)**
 
@@ -2414,6 +2459,7 @@ XP 레벨 정책 목록을 조회합니다.
 **Request**
 
 - Headers: 없음
+
 - Body:
 
     ```json
@@ -2452,7 +2498,7 @@ XP 레벨 정책 목록을 조회합니다.
 
 ### 11.2 `POST /auth/admin/set-password`
 
-어드민 비밀번호를 최초 설정합니다. OAuth 로그인 후 비밀번호를 설정해야 이메일/비밀번호로 로그인 가능합니다.
+어드민 비밀번호를 최초 설정합니다.
 
 **Request**
 
@@ -2469,10 +2515,6 @@ XP 레벨 정책 목록을 조회합니다.
       "password": "password123!"
     }
     ```
-
-    | 필드 | 타입 | 필수 | 유효성 조건 |
-    | --- | --- | --- | --- |
-    | `password` | string | Yes | 최소 8자, 영문+숫자 필수 |
 
 **Response (200)**
 
@@ -2532,7 +2574,50 @@ XP 레벨 정책 목록을 조회합니다.
 
 ## 12. 유저 관리 API (관리자 전용)
 
-### 12.1 `PATCH /users/:id/role`
+### 12.1 `GET /users`
+
+전체 유저 목록을 조회합니다.
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+
+- Query Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | page | number | No | 페이지 번호 (기본값: 1) |
+    | limit | number | No | 페이지당 항목 수 (기본값: 20) |
+
+**Response (200)**
+
+```json
+{
+  "data": [
+    {
+      "id": "user-uuid",
+      "status": "active",
+      "type": "member",
+      "nickname": "실뭉치장인",
+      "createdAt": "2026-04-09T12:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "totalCount": 150,
+    "totalPages": 8
+  }
+}
+```
+
+---
+
+### 12.2 `PATCH /users/:id/role`
 
 유저의 역할을 변경합니다.
 
@@ -2557,10 +2642,6 @@ XP 레벨 정책 목록을 조회합니다.
       "type": "admin"
     }
     ```
-
-    | 필드 | 타입 | 필수 | 유효성 조건 |
-    | --- | --- | --- | --- |
-    | `type` | string | Yes | `admin` \| `member` |
 
 **Response (200)**
 
@@ -2615,12 +2696,6 @@ XP 레벨 정책 목록을 조회합니다.
 }
 ```
 
-**Errors**
-
-| **상태 코드** | **errorMessage** |
-| --- | --- |
-| 403 | "접근 권한이 없습니다." |
-
 ---
 
 ### 13.2 `PATCH /boards/categories/:categoryId`
@@ -2660,13 +2735,6 @@ XP 레벨 정책 목록을 조회합니다.
 }
 ```
 
-**Errors**
-
-| **상태 코드** | **errorMessage** |
-| --- | --- |
-| 403 | "접근 권한이 없습니다." |
-| 404 | "카테고리를 찾을 수 없습니다." |
-
 ---
 
 ### 13.3 `DELETE /boards/categories/:categoryId`
@@ -2692,13 +2760,6 @@ XP 레벨 정책 목록을 조회합니다.
 ```
 No Content
 ```
-
-**Errors**
-
-| **상태 코드** | **errorMessage** |
-| --- | --- |
-| 403 | "접근 권한이 없습니다." |
-| 404 | "카테고리를 찾을 수 없습니다." |
 
 ---
 
@@ -2790,20 +2851,6 @@ No Content
 
 포인트 정책을 삭제합니다. (비활성화 처리)
 
-**Request**
-
-- Headers:
-
-    | **헤더** | **값** | **필수** |
-    | --- | --- | --- |
-    | Authorization | Bearer | Yes |
-
-- Path Parameters:
-
-    | **파라미터** | **타입** | **필수** | **설명** |
-    | --- | --- | --- | --- |
-    | id | uuid | Yes | 정책 ID |
-
 **Response (204)**
 
 ```
@@ -2855,29 +2902,6 @@ No Content
 
 XP 레벨 정책을 수정합니다.
 
-**Request**
-
-- Headers:
-
-    | **헤더** | **값** | **필수** |
-    | --- | --- | --- |
-    | Authorization | Bearer | Yes |
-
-- Path Parameters:
-
-    | **파라미터** | **타입** | **필수** | **설명** |
-    | --- | --- | --- | --- |
-    | id | uuid | Yes | 정책 ID |
-
-- Body:
-
-    ```json
-    {
-      "xpThreshold": 100,
-      "label": "수정된 레벨명"
-    }
-    ```
-
 **Response (200)**
 
 ```json
@@ -2895,20 +2919,6 @@ XP 레벨 정책을 수정합니다.
 ### 15.3 `DELETE /xp/levels/:id`
 
 XP 레벨 정책을 삭제합니다. (비활성화 처리)
-
-**Request**
-
-- Headers:
-
-    | **헤더** | **값** | **필수** |
-    | --- | --- | --- |
-    | Authorization | Bearer | Yes |
-
-- Path Parameters:
-
-    | **파라미터** | **타입** | **필수** | **설명** |
-    | --- | --- | --- | --- |
-    | id | uuid | Yes | 정책 ID |
 
 **Response (204)**
 
@@ -2969,6 +2979,11 @@ No Content
       "youtubeChannelId": "UC..."
     }
     ```
+
+    | 필드 | 타입 | 필수 | 유효성 조건 |
+    | --- | --- | --- | --- |
+    | `name` | string | Yes | 1-255자 |
+    | `youtubeChannelId` | string | Yes | 유튜브 채널 ID |
 
 **Response (201)**
 
@@ -3090,13 +3105,13 @@ No Content
 |  | POST | /nicknames/generate | 인증 | 자동 발급 |
 |  | POST | /nicknames/register | 인증 | 수동 등록 |
 | **게시판** | GET | /boards | 인증 | 게시글 목록 |
+|  | GET | /boards/categories | 인증 | 카테고리 목록 |
 |  | GET | /boards/:id | 인증 | 게시글 상세 |
 |  | POST | /boards | 인증 | 게시글 작성 |
 |  | PATCH | /boards/:id | 작성자/관리자 | 게시글 수정 |
 |  | DELETE | /boards/:id | 작성자/관리자 | 게시글 삭제 |
 |  | POST | /boards/:id/like | 인증 | 좋아요 |
 |  | DELETE | /boards/:id/like | 인증 | 좋아요 취소 |
-|  | GET | /boards/categories | 인증 | 카테고리 목록 |
 | **댓글** | GET | /boards/:boardId/comments | 인증 | 댓글 목록 (스레드 형식) |
 |  | POST | /boards/:boardId/comments | 인증 | 댓글/대댓글 작성 |
 |  | PATCH | /boards/:boardId/comments/:commentId | 작성자/관리자 | 댓글 수정 |
@@ -3113,9 +3128,9 @@ No Content
 | **시청 기록** | GET | /watch-history | 인증 | 시청 기록 목록 |
 |  | POST | /watch-history | 인증 | 시청 기록 저장 |
 | **챌린지** | GET | /challenges | 인증 | 챌린지 목록 |
+|  | GET | /challenges/my | 인증 | 내 챌린지 목록 |
 |  | GET | /challenges/:id | 인증 | 챌린지 상세 |
 |  | POST | /challenges | 인증 | 챌린지 등록 |
-|  | GET | /challenges/my | 인증 | 내 챌린지 목록 |
 | **포인트** | GET | /points/wallet | 인증 | 포인트 지갑 조회 |
 |  | GET | /points/transactions | 인증 | 거래 내역 조회 |
 |  | POST | /points/earn | 관리자 | 포인트 지급 |
@@ -3127,7 +3142,8 @@ No Content
 | **어드민 인증** | POST | /auth/admin/login | - | 어드민 이메일/비밀번호 로그인 |
 |  | POST | /auth/admin/set-password | 어드민 | 비밀번호 최초 설정 |
 |  | PATCH | /auth/admin/change-password | 어드민 | 비밀번호 변경 |
-| **유저 관리** | PATCH | /users/:id/role | 관리자 | 유저 역할 변경 |
+| **유저 관리** | GET | /users | 관리자 | 유저 목록 |
+|  | PATCH | /users/:id/role | 관리자 | 유저 역할 변경 |
 | **카테고리 관리** | POST | /boards/categories | 관리자 | 카테고리 생성 |
 |  | PATCH | /boards/categories/:id | 관리자 | 카테고리 수정 |
 |  | DELETE | /boards/categories/:id | 관리자 | 카테고리 삭제 |
