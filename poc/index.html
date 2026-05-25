@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hamddu OAuth POC</title>
+  <title>Hamddu Admin</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f5f5f5;
+      background: #f0f2f5;
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -29,99 +29,81 @@
     h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
     .subtitle { font-size: 14px; color: #888; margin-bottom: 32px; }
 
-    /* Config section */
-    .config { margin-bottom: 28px; }
-    .config label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 6px; }
-    .config input {
+    /* Form */
+    .field { margin-bottom: 16px; }
+    .field label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 6px; }
+    .field input {
       width: 100%;
-      padding: 10px 12px;
+      padding: 11px 14px;
       border: 1px solid #ddd;
       border-radius: 8px;
-      font-size: 13px;
+      font-size: 14px;
       outline: none;
       transition: border-color .2s;
     }
-    .config input:focus { border-color: #6c63ff; }
+    .field input:focus { border-color: #4f46e5; }
+    .field input.error { border-color: #ff4d4f; }
+
+    /* Config */
+    .config { margin-bottom: 24px; }
+    .config label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 6px; }
+    .config input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      font-size: 12px;
+      outline: none;
+      color: #888;
+    }
+    .config input:focus { border-color: #4f46e5; color: #333; }
 
     /* Buttons */
     .btn {
       display: flex;
       align-items: center;
-      gap: 12px;
+      justify-content: center;
+      gap: 8px;
       width: 100%;
-      padding: 13px 20px;
+      padding: 12px 20px;
       border: none;
       border-radius: 10px;
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
-      text-decoration: none;
       transition: opacity .15s, transform .1s;
-      margin-bottom: 12px;
+      margin-top: 8px;
     }
     .btn:active { transform: scale(0.98); }
-    .btn:hover { opacity: 0.9; }
-    .btn:last-child { margin-bottom: 0; }
+    .btn:hover { opacity: 0.88; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-    .btn-google { background: #fff; border: 1.5px solid #ddd; color: #333; }
-    .btn-naver  { background: #03C75A; color: #fff; }
+    .btn-primary  { background: #4f46e5; color: #fff; }
+    .btn-danger   { background: #ff4d4f; color: #fff; }
+    .btn-ghost    { background: #f5f5f5; color: #333; }
+    .btn-warning  { background: #fa8c16; color: #fff; }
 
-    .btn svg { flex-shrink: 0; }
-
-    /* Divider */
-    .divider {
-      display: flex; align-items: center; gap: 12px;
-      margin: 24px 0;
-      color: #bbb; font-size: 12px;
-    }
-    .divider::before, .divider::after {
-      content: ''; flex: 1; height: 1px; background: #eee;
+    .btn-sm {
+      font-size: 12px;
+      padding: 7px 14px;
+      border-radius: 7px;
+      width: auto;
+      margin-top: 0;
     }
 
-    /* Token actions */
-    .token-actions { display: flex; gap: 8px; }
-    .token-actions .btn {
-      margin-bottom: 0;
-      font-size: 13px;
-      padding: 10px 16px;
-      flex: 1;
-      justify-content: center;
-    }
-    .btn-refresh { background: #6c63ff; color: #fff; }
-    .btn-logout  { background: #ff4d4f; color: #fff; }
-
-    /* Result panel */
-    .result {
+    /* Error message */
+    .err-msg {
       display: none;
-      margin-top: 28px;
-      background: #f9f9f9;
-      border-radius: 10px;
-      overflow: hidden;
-      border: 1px solid #eee;
+      font-size: 13px;
+      color: #ff4d4f;
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: #fff0f0;
+      border-radius: 8px;
     }
-    .result.show { display: block; }
-    .result-header {
-      padding: 10px 16px;
-      background: #f0f0f0;
-      font-size: 12px;
-      font-weight: 600;
-      color: #555;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .result-body {
-      padding: 14px 16px;
-      font-size: 12px;
-      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-      color: #333;
-      word-break: break-all;
-      white-space: pre-wrap;
-      max-height: 240px;
-      overflow-y: auto;
-    }
+    .err-msg.show { display: block; }
 
-    /* Status badge */
+    /* Badge */
     .badge {
       display: inline-flex;
       align-items: center;
@@ -131,9 +113,46 @@
       padding: 3px 8px;
       border-radius: 999px;
     }
-    .badge.ok  { background: #e6f9ee; color: #09b44d; }
-    .badge.err { background: #fff0f0; color: #ff4d4f; }
-    .badge.info { background: #eff3ff; color: #6c63ff; }
+    .badge.ok      { background: #e6f9ee; color: #09b44d; }
+    .badge.admin   { background: #ede9fe; color: #4f46e5; }
+    .badge.info    { background: #eff3ff; color: #4f46e5; }
+
+    /* Divider */
+    .divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 24px 0 16px;
+      color: #bbb; font-size: 12px;
+    }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #eee; }
+
+    /* Result panel */
+    .result {
+      margin-top: 16px;
+      background: #f9f9f9;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #eee;
+    }
+    .result-header {
+      padding: 9px 14px;
+      background: #f0f0f0;
+      font-size: 12px;
+      font-weight: 600;
+      color: #555;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .result-body {
+      padding: 12px 14px;
+      font-size: 12px;
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+      color: #333;
+      word-break: break-all;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+    }
 
     /* Copy button */
     .copy-btn {
@@ -147,18 +166,31 @@
     }
     .copy-btn:hover { background: #f0f0f0; }
 
-    /* Survey warning */
-    .survey-banner {
-      display: none;
-      margin-top: 16px;
-      padding: 12px 16px;
-      background: #fffbe6;
-      border: 1px solid #ffe58f;
-      border-radius: 8px;
-      font-size: 13px;
-      color: #876800;
+    /* User info row */
+    .user-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 14px 16px;
+      background: #fafafe;
+      border: 1px solid #ede9fe;
+      border-radius: 10px;
     }
-    .survey-banner.show { display: block; }
+    .user-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: #4f46e5;
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 700; flex-shrink: 0;
+    }
+    .user-info { flex: 1; min-width: 0; }
+    .user-email { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .user-meta  { font-size: 11px; color: #888; margin-top: 2px; }
+
+    /* Action grid */
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
 
     /* Toast */
     #toast {
@@ -174,11 +206,9 @@
       opacity: 0;
       pointer-events: none;
       transition: opacity .25s, transform .25s;
+      z-index: 9999;
     }
-    #toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
 </head>
 <body>
@@ -186,13 +216,15 @@
 <div id="toast"></div>
 
 <script>
-  // ─── Config ────────────────────────────────────────────────────────────────
+  // ─── Config ──────────────────────────────────────────────────────
   const DEFAULT_API = 'http://localhost:3000';
-  let apiBase = localStorage.getItem('poc_api_base') || DEFAULT_API;
+  let apiBase = localStorage.getItem('admin_api_base') || DEFAULT_API;
+  let accessToken = null;
+  let currentUser = null;
 
-  // ─── Helpers ───────────────────────────────────────────────────────────────
-  const $ = id => document.getElementById(id);
+  // ─── Helpers ─────────────────────────────────────────────────────
   const app = document.getElementById('app');
+  const $ = id => document.getElementById(id);
 
   function toast(msg, duration = 2500) {
     const t = $('toast');
@@ -202,204 +234,289 @@
   }
 
   function copyText(text) {
-    navigator.clipboard.writeText(text).then(() => toast('Copied!')).catch(() => toast('Copy failed'));
+    navigator.clipboard.writeText(text)
+      .then(() => toast('복사됨!'))
+      .catch(() => toast('복사 실패'));
   }
 
   function formatJwt(token) {
     try {
       const [, payload] = token.split('.');
-      const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-      return JSON.stringify(decoded, null, 2);
-    } catch {
-      return '(could not decode)';
-    }
+      return JSON.stringify(JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/'))), null, 2);
+    } catch { return '(decode 실패)'; }
   }
 
-  // ─── State ─────────────────────────────────────────────────────────────────
-  let accessToken = null;
+  async function api(method, path, body, auth = false) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (auth && accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+    const res = await fetch(`${apiBase}/api${path}`, {
+      method,
+      headers,
+      credentials: 'include',
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+  }
 
-  // ─── Views ─────────────────────────────────────────────────────────────────
+  // ─── Views ───────────────────────────────────────────────────────
 
-  function renderLogin() {
+  function renderLogin(prefillEmail = '') {
     app.innerHTML = `
-      <h1>OAuth POC</h1>
-      <p class="subtitle">Hamddu 백엔드 OAuth 로그인 흐름 테스트</p>
+      <h1>어드민 로그인</h1>
+      <p class="subtitle">Hamddu 어드민 페이지</p>
 
       <div class="config">
         <label>API Base URL</label>
         <input id="api-input" type="text" value="${apiBase}" placeholder="http://localhost:3000" />
       </div>
 
-      <a id="btn-google" class="btn btn-google" href="#">
-        <svg width="20" height="20" viewBox="0 0 48 48">
-          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-          <path fill="none" d="M0 0h48v48H0z"/>
-        </svg>
-        Google로 로그인
-      </a>
+      <div class="field">
+        <label>이메일</label>
+        <input id="email" type="email" placeholder="admin@example.com" value="${prefillEmail}" autocomplete="email" />
+      </div>
+      <div class="field">
+        <label>비밀번호</label>
+        <input id="password" type="password" placeholder="비밀번호 입력" autocomplete="current-password" />
+      </div>
 
-      <a id="btn-naver" class="btn btn-naver" href="#">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-          <path d="M16.273 12.845L7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727z"/>
-        </svg>
-        네이버로 로그인
-      </a>
+      <div class="err-msg" id="err-msg"></div>
+
+      <button class="btn btn-primary" id="btn-login">로그인</button>
     `;
 
     $('api-input').addEventListener('change', e => {
       apiBase = e.target.value.replace(/\/$/, '');
-      localStorage.setItem('poc_api_base', apiBase);
-      updateLinks();
+      localStorage.setItem('admin_api_base', apiBase);
     });
 
-    updateLinks();
+    $('password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    $('btn-login').addEventListener('click', doLogin);
   }
 
-  function updateLinks() {
-    const g = $('btn-google');
-    const n = $('btn-naver');
-    if (g) g.href = `${apiBase}/api/auth/google`;
-    if (n) n.href = `${apiBase}/api/auth/naver`;
-  }
-
-  function renderSuccess(token, surveyRequired) {
+  function renderSetPassword(token, user) {
     accessToken = token;
+    currentUser = user;
+    app.innerHTML = `
+      <h1>비밀번호 설정</h1>
+      <p class="subtitle">어드민 비밀번호를 최초 설정합니다</p>
+
+      <div class="field">
+        <label>새 비밀번호 <span style="color:#888;font-weight:400">(8자 이상)</span></label>
+        <input id="new-pw" type="password" placeholder="새 비밀번호 입력" />
+      </div>
+
+      <div class="err-msg" id="err-msg"></div>
+
+      <button class="btn btn-primary" id="btn-set">비밀번호 설정</button>
+      <button class="btn btn-ghost" style="margin-top:8px" onclick="renderLogin('${user?.email || ''}')">돌아가기</button>
+    `;
+
+    $('new-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doSetPassword(); });
+    $('btn-set').addEventListener('click', doSetPassword);
+  }
+
+  function renderDashboard() {
+    const email = currentUser?.email || '';
+    const initial = email.charAt(0).toUpperCase() || 'A';
 
     app.innerHTML = `
-      <h1>로그인 성공</h1>
-      <p class="subtitle">OAuth 콜백이 정상 처리되었습니다</p>
+      <h1>어드민 대시보드</h1>
+      <p class="subtitle">로그인 성공 — 토큰 및 API 테스트</p>
 
-      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;">
-        <span class="badge ok">✓ Access Token 수신</span>
-        ${surveyRequired
-          ? '<span class="badge err">설문 미완료</span>'
-          : '<span class="badge ok">설문 완료</span>'}
+      <div class="user-row">
+        <div class="user-avatar">${initial}</div>
+        <div class="user-info">
+          <div class="user-email">${email}</div>
+          <div class="user-meta">
+            <span class="badge admin">ADMIN</span>
+          </div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="doLogout()">로그아웃</button>
       </div>
 
-      <div class="survey-banner ${surveyRequired ? 'show' : ''}">
-        설문이 완료되지 않았습니다. 보호된 API 호출 시 <code>403</code>이 반환됩니다.
-      </div>
-
-      <div class="result show">
+      <div class="result">
         <div class="result-header">
-          Access Token (raw)
+          Access Token
           <button class="copy-btn" onclick="copyText(accessToken)">Copy</button>
         </div>
-        <div class="result-body" id="raw-token">${token}</div>
+        <div class="result-body" id="raw-token">${accessToken}</div>
       </div>
 
-      <div class="result show" style="margin-top:12px;">
-        <div class="result-header">
-          JWT Payload (decoded)
-          <span class="badge info">client-side only</span>
-        </div>
-        <div class="result-body">${formatJwt(token)}</div>
+      <div class="result" style="margin-top:8px">
+        <div class="result-header">JWT Payload <span class="badge info">client-side decode</span></div>
+        <div class="result-body">${formatJwt(accessToken)}</div>
       </div>
 
-      <div class="divider">토큰 관리</div>
+      <div class="divider">API 테스트</div>
 
-      <div class="token-actions" style="margin-bottom:12px;">
-        <button class="btn btn-refresh" onclick="doRefresh()">Refresh Token</button>
-        <button class="btn btn-logout"  onclick="doLogout()">Logout</button>
+      <div class="actions">
+        <button class="btn btn-ghost btn-sm" style="width:100%" onclick="testGetUsers()">GET /users</button>
+        <button class="btn btn-ghost btn-sm" style="width:100%" onclick="testGetCategories()">GET /boards/categories</button>
+        <button class="btn btn-warning btn-sm" style="width:100%;grid-column:1/-1" onclick="renderChangePassword()">비밀번호 변경</button>
       </div>
 
-      <div class="result" id="api-result">
-        <div class="result-header" id="api-result-header">API 응답</div>
+      <div class="result" id="api-result" style="display:none;margin-top:16px">
+        <div class="result-header" id="api-result-label">응답</div>
         <div class="result-body"  id="api-result-body"></div>
       </div>
-
-      <div class="divider">다시 테스트</div>
-
-      <button class="btn" style="background:#f5f5f5;color:#333;justify-content:center;" onclick="window.location.href='/'">
-        로그인 페이지로 돌아가기
-      </button>
     `;
   }
 
-  // ─── API calls ─────────────────────────────────────────────────────────────
+  function renderChangePassword() {
+    app.innerHTML = `
+      <h1>비밀번호 변경</h1>
+      <p class="subtitle">어드민 비밀번호를 변경합니다</p>
 
-  async function doRefresh() {
-    const result = $('api-result');
-    const header = $('api-result-header');
-    const body   = $('api-result-body');
-    result.classList.add('show');
-    header.textContent = 'POST /api/auth/refresh';
-    body.textContent = 'Loading…';
+      <div class="field">
+        <label>현재 비밀번호</label>
+        <input id="cur-pw" type="password" placeholder="현재 비밀번호" autocomplete="current-password" />
+      </div>
+      <div class="field">
+        <label>새 비밀번호 <span style="color:#888;font-weight:400">(8자 이상)</span></label>
+        <input id="new-pw" type="password" placeholder="새 비밀번호" autocomplete="new-password" />
+      </div>
 
-    try {
-      const res = await fetch(`${apiBase}/api/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      const data = await res.json().catch(() => ({}));
+      <div class="err-msg" id="err-msg"></div>
 
-      if (res.ok) {
-        accessToken = data.accessToken;
-        body.textContent = JSON.stringify(data, null, 2);
-        toast('토큰 갱신 성공');
-        // update displayed token
-        const raw = $('raw-token');
-        if (raw) raw.textContent = accessToken;
-      } else {
-        body.textContent = `${res.status} ${res.statusText}\n\n${JSON.stringify(data, null, 2)}`;
-        toast(`갱신 실패: ${res.status}`);
-      }
-    } catch (err) {
-      body.textContent = `Network error: ${err.message}`;
-      toast('Network error');
+      <button class="btn btn-primary" id="btn-change">변경</button>
+      <button class="btn btn-ghost" style="margin-top:8px" onclick="renderDashboard()">돌아가기</button>
+    `;
+
+    $('new-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doChangePassword(); });
+    $('btn-change').addEventListener('click', doChangePassword);
+  }
+
+  // ─── API Actions ─────────────────────────────────────────────────
+
+  async function doLogin() {
+    const email    = $('email').value.trim();
+    const password = $('password').value;
+    const errEl    = $('err-msg');
+    const btn      = $('btn-login');
+
+    if (!email || !password) {
+      showErr(errEl, '이메일과 비밀번호를 입력해주세요.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '로그인 중…';
+    errEl.classList.remove('show');
+
+    const { ok, status, data } = await api('POST', '/auth/admin/login', { email, password });
+
+    btn.disabled = false;
+    btn.textContent = '로그인';
+
+    if (ok) {
+      accessToken = data.accessToken;
+      currentUser = data.user;
+      renderDashboard();
+    } else if (status === 400 && data.message?.includes('비밀번호가 설정되지 않았습니다')) {
+      // First login — need to set password; get token via a temp flow
+      // We can't get a token without password, so show set-password with guidance
+      showErr(errEl, '비밀번호가 설정되지 않았습니다. 아래 안내를 참고하세요.');
+      // Provide instructions — user needs an access token from OAuth first
+      showErr(errEl, '비밀번호가 설정되지 않았습니다.\n먼저 OAuth로 로그인해 발급받은 토큰으로 /auth/admin/set-password를 호출하세요.');
+    } else {
+      showErr(errEl, data.message || `오류: ${status}`);
+    }
+  }
+
+  async function doSetPassword() {
+    const password = $('new-pw').value;
+    const errEl    = $('err-msg');
+    const btn      = $('btn-set');
+
+    if (!password || password.length < 8) {
+      showErr(errEl, '비밀번호는 8자 이상이어야 합니다.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '설정 중…';
+
+    const { ok, status, data } = await api('POST', '/auth/admin/set-password', { password }, true);
+
+    btn.disabled = false;
+    btn.textContent = '비밀번호 설정';
+
+    if (ok) {
+      toast('비밀번호가 설정되었습니다.');
+      renderDashboard();
+    } else {
+      showErr(errEl, data.message || `오류: ${status}`);
+    }
+  }
+
+  async function doChangePassword() {
+    const currentPassword = $('cur-pw').value;
+    const newPassword     = $('new-pw').value;
+    const errEl           = $('err-msg');
+    const btn             = $('btn-change');
+
+    if (!currentPassword || !newPassword) {
+      showErr(errEl, '모든 필드를 입력해주세요.');
+      return;
+    }
+    if (newPassword.length < 8) {
+      showErr(errEl, '새 비밀번호는 8자 이상이어야 합니다.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '변경 중…';
+
+    const { ok, status, data } = await api('PATCH', '/auth/admin/change-password', { currentPassword, newPassword }, true);
+
+    btn.disabled = false;
+    btn.textContent = '변경';
+
+    if (ok) {
+      toast('비밀번호가 변경되었습니다.');
+      renderDashboard();
+    } else {
+      showErr(errEl, data.message || `오류: ${status}`);
     }
   }
 
   async function doLogout() {
-    const result = $('api-result');
-    const header = $('api-result-header');
-    const body   = $('api-result-body');
-    result.classList.add('show');
-    header.textContent = 'POST /api/auth/logout';
-    body.textContent = 'Loading…';
-
-    try {
-      const res = await fetch(`${apiBase}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-
-      if (res.status === 204 || res.ok) {
-        body.textContent = `${res.status} No Content — 로그아웃 완료`;
-        accessToken = null;
-        toast('로그아웃 성공');
-      } else {
-        const data = await res.json().catch(() => ({}));
-        body.textContent = `${res.status}\n\n${JSON.stringify(data, null, 2)}`;
-        toast(`로그아웃 실패: ${res.status}`);
-      }
-    } catch (err) {
-      body.textContent = `Network error: ${err.message}`;
-      toast('Network error');
-    }
+    await api('POST', '/auth/logout', null, true).catch(() => {});
+    accessToken = null;
+    currentUser = null;
+    renderLogin();
   }
 
-  // ─── Router ────────────────────────────────────────────────────────────────
-
-  function route() {
-    const params = new URLSearchParams(window.location.search);
-    const token  = params.get('access_token');
-    const survey = params.get('survey_required') === 'true';
-
-    if (token) {
-      // arrived here via OAuth callback redirect
-      renderSuccess(token, survey);
-      // clean up URL
-      history.replaceState({}, '', window.location.pathname);
-    } else {
-      renderLogin();
-    }
+  async function testGetUsers() {
+    showApiResult('GET /api/users', '불러오는 중…');
+    const { ok, status, data } = await api('GET', '/users', null, true);
+    showApiResult('GET /api/users', ok ? JSON.stringify(data, null, 2) : `${status}\n${JSON.stringify(data, null, 2)}`);
   }
 
-  route();
+  async function testGetCategories() {
+    showApiResult('GET /api/boards/categories', '불러오는 중…');
+    const { ok, status, data } = await api('GET', '/boards/categories', null, true);
+    showApiResult('GET /api/boards/categories', ok ? JSON.stringify(data, null, 2) : `${status}\n${JSON.stringify(data, null, 2)}`);
+  }
+
+  // ─── Helpers ─────────────────────────────────────────────────────
+
+  function showErr(el, msg) {
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  function showApiResult(label, body) {
+    const el = $('api-result');
+    if (!el) return;
+    el.style.display = 'block';
+    $('api-result-label').textContent = label;
+    $('api-result-body').textContent = body;
+  }
+
+  // ─── Init ────────────────────────────────────────────────────────
+  renderLogin();
 </script>
 </body>
 </html>
