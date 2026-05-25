@@ -78,14 +78,19 @@ export class AuthService {
   }
 
   async adminLogin(email: string, password: string): Promise<{ user: User; tokens: TokenPair }> {
-    const user = await this.usersService.findAdminByEmail(email);
+    const adminCount = await this.usersService.countAdmins();
 
-    if (!user) {
-      throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.');
+    // 최초 어드민 가입: DB에 어드민이 없으면 슈퍼 유저 생성
+    if (adminCount === 0) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const user = await this.usersService.createAdminUser(email, hashedPassword);
+      const tokens = await this.issueTokens(user.id);
+      return { user, tokens };
     }
 
-    if (!user.password) {
-      throw new BadRequestException('비밀번호가 설정되지 않았습니다. OAuth 로그인 후 비밀번호를 설정해주세요.');
+    const user = await this.usersService.findAdminByEmail(email);
+    if (!user || !user.password) {
+      throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);

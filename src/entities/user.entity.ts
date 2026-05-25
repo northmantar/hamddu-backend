@@ -18,6 +18,7 @@ import {
 
 @Entity("users")
 @Unique(["platform", "platformUserId"])
+@Unique(["email", "type"])
 export class User {
   @PrimaryGeneratedColumn("uuid")
   id: string;

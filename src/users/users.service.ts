@@ -1,10 +1,11 @@
 import {
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Not, IsNull, Repository } from 'typeorm';
 import { User } from '@entities/user.entity';
 import { NicknameAdjective } from '@entities/nickname-adjective.entity';
 import { NicknameNoun } from '@entities/nickname-noun.entity';
@@ -47,15 +48,11 @@ export class UsersService {
     const existing = await this.userRepo.findOne({ where: { platform, platformUserId } });
     if (existing) return existing;
 
-    // 최초 가입 유저는 어드민으로 등록
-    const userCount = await this.userRepo.count();
-    const isFirstUser = userCount === 0;
-
     const user = this.userRepo.create({
       platform,
       platformUserId,
       email,
-      type: isFirstUser ? UserType.ADMIN : UserType.MEMBER,
+      type: UserType.MEMBER,
     });
     return this.userRepo.save(user);
   }
@@ -148,6 +145,36 @@ export class UsersService {
     return this.userRepo.findOne({
       where: { email, type: UserType.ADMIN },
     });
+  }
+
+  async countAdmins(): Promise<number> {
+    return this.userRepo.count({
+      where: { type: UserType.ADMIN, password: Not(IsNull()) },
+    });
+  }
+
+  async createAdminUser(email: string, hashedPassword: string): Promise<User> {
+    const existing = await this.userRepo.findOne({
+      where: { email, type: UserType.ADMIN },
+    });
+
+    if (existing) {
+      if (existing.password) {
+        throw new ConflictException('이미 등록된 어드민 이메일입니다.');
+      }
+      // 비밀번호 없는 admin(OAuth로 생성)이면 비밀번호만 설정
+      await this.userRepo.update(existing.id, { password: hashedPassword });
+      return { ...existing, password: hashedPassword };
+    }
+
+    const user = this.userRepo.create({
+      email,
+      password: hashedPassword,
+      type: UserType.ADMIN,
+      platform: null,
+      platformUserId: null,
+    });
+    return this.userRepo.save(user);
   }
 
   async setPassword(userId: string, hashedPassword: string): Promise<void> {
