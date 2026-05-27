@@ -8,7 +8,7 @@ export class SeedDummyData1747100000000 implements MigrationInterface {
 
     // ── 채널 ────────────────────────────────────────────────────────
     await queryRunner.query(`
-      INSERT INTO "channels" ("id", "name", "youtubeChannelId", "addedAt")
+      INSERT INTO "channels" ("id", "name", "youtube_channel_id", "added_at")
       VALUES
         ('${CHANNEL_KNITTING_ID}', '대바늘 튜토리얼', 'UC_placeholder_knitting', NOW()),
         ('${CHANNEL_CROCHET_ID}',  '코바늘 튜토리얼', 'UC_placeholder_crochet',  NOW())
@@ -18,7 +18,7 @@ export class SeedDummyData1747100000000 implements MigrationInterface {
     // ── 대바늘 튜토리얼 콘텐츠 ─────────────────────────────────────
     await queryRunner.query(`
       INSERT INTO "contents"
-        ("channelId", "youtubeVideoId", "name", "type", "interests", "sortOrder", "pointApplyable", "uploadedAt", "createdAt", "updatedAt")
+        ("channel_id", "youtube_video_id", "name", "type", "interests", "sort_order", "point_applyable", "uploaded_at", "created_at", "updated_at")
       VALUES
         ('${CHANNEL_KNITTING_ID}', 'OEyHKadY2ts', '코 잡기',       'symbol', 'knitting', 1, true, NOW(), NOW(), NOW()),
         ('${CHANNEL_KNITTING_ID}', 'WZu0d9sDkmU', '겉뜨기',        'symbol', 'knitting', 2, true, NOW(), NOW(), NOW()),
@@ -27,23 +27,23 @@ export class SeedDummyData1747100000000 implements MigrationInterface {
         ('${CHANNEL_KNITTING_ID}', '5V7YEv6Wmws', '메리야스 뜨기', 'symbol', 'knitting', 5, true, NOW(), NOW(), NOW()),
         ('${CHANNEL_KNITTING_ID}', 'VoGVs8DuPg8', '가터뜨기',      'symbol', 'knitting', 6, true, NOW(), NOW(), NOW()),
         ('${CHANNEL_KNITTING_ID}', 'KCI5VS5yu2k', '코 막기',       'symbol', 'knitting', 7, true, NOW(), NOW(), NOW())
-      ON CONFLICT ("youtubeVideoId") DO NOTHING
+      ON CONFLICT ("youtube_video_id") DO NOTHING
     `);
 
     // ── 코바늘 튜토리얼 콘텐츠 (링크 있는 것만, 원래 순서 유지) ──
     await queryRunner.query(`
       INSERT INTO "contents"
-        ("channelId", "youtubeVideoId", "name", "type", "interests", "sortOrder", "pointApplyable", "uploadedAt", "createdAt", "updatedAt")
+        ("channel_id", "youtube_video_id", "name", "type", "interests", "sort_order", "point_applyable", "uploaded_at", "created_at", "updated_at")
       VALUES
         ('${CHANNEL_CROCHET_ID}', 'ohk5XIV8TTQ', '매직링 만들기', 'symbol', 'crochet', 1, true, NOW(), NOW(), NOW()),
         ('${CHANNEL_CROCHET_ID}', 'v_tqq8Xd1FM', '사슬뜨기',     'symbol', 'crochet', 2, true, NOW(), NOW(), NOW()),
         ('${CHANNEL_CROCHET_ID}', 'N9nmlUrBsWQ', '팝콘뜨기',     'symbol', 'crochet', 9, true, NOW(), NOW(), NOW())
-      ON CONFLICT ("youtubeVideoId") DO NOTHING
+      ON CONFLICT ("youtube_video_id") DO NOTHING
     `);
 
     // ── 게시판 카테고리 ─────────────────────────────────────────────
     await queryRunner.query(`
-      INSERT INTO "board_categories" ("label", "status", "createdAt")
+      INSERT INTO "board_categories" ("label", "status", "created_at")
       VALUES
         ('뜨개 결과물 자랑',             'enabled', NOW()),
         ('뜨개 지식 공유',               'enabled', NOW()),
