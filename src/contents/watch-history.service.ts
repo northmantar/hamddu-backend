@@ -5,6 +5,8 @@ import { WatchHistory } from "@entities/watch-history.entity";
 import { Content } from "@entities/content.entity";
 import { CreateWatchHistoryDto } from "./dto/create-watch-history.dto";
 import { PaginationQueryDto, PaginationMeta } from "../boards/dto/pagination.dto";
+import { RewardsService } from "../rewards/rewards.service";
+import { RewardActionType } from "../rewards/constants/reward.constants";
 
 @Injectable()
 export class WatchHistoryService {
@@ -13,6 +15,7 @@ export class WatchHistoryService {
     private readonly watchHistoryRepo: Repository<WatchHistory>,
     @InjectRepository(Content)
     private readonly contentRepo: Repository<Content>,
+    private readonly rewardsService: RewardsService,
   ) {}
 
   async findAll(
@@ -54,13 +57,25 @@ export class WatchHistoryService {
     });
 
     if (existing) {
-      // 업데이트
+      const prevWatchRate = existing.watchRate;
+
       await this.watchHistoryRepo.update(existing.id, {
         totalDuration: dto.totalDuration,
         lastWatchedTimestamp: dto.lastWatchedTimestamp,
         watchRate: dto.watchRate,
         lastWatchedAt: new Date(),
       });
+
+      // 이번에 처음으로 100% 달성 시에만 보상 지급
+      if (dto.watchRate >= 100 && prevWatchRate < 100) {
+        await this.rewardsService.enqueueReward({
+          memberId,
+          actionType: RewardActionType.VIDEO_WATCHED,
+          refId: existing.id,
+          refType: 'watch_history',
+          metadata: { contentId: dto.contentId, pointApplyable: content.pointApplyable },
+        });
+      }
 
       return this.watchHistoryRepo.findOne({
         where: { id: existing.id },
@@ -76,6 +91,19 @@ export class WatchHistoryService {
       watchRate: dto.watchRate,
     });
 
-    return this.watchHistoryRepo.save(watchHistory);
+    const saved = await this.watchHistoryRepo.save(watchHistory);
+
+    // 처음 저장 시 이미 100% 완료인 경우
+    if (dto.watchRate >= 100) {
+      await this.rewardsService.enqueueReward({
+        memberId,
+        actionType: RewardActionType.VIDEO_WATCHED,
+        refId: saved.id,
+        refType: 'watch_history',
+        metadata: { contentId: dto.contentId, pointApplyable: content.pointApplyable },
+      });
+    }
+
+    return saved;
   }
 }

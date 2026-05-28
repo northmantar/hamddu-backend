@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@infisical/sdk": "^5.0.2",
+    "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.0.0",
     "@nestjs/core": "^10.0.0",
@@ -32,6 +33,7 @@
     "@types/bcrypt": "^6.0.0",
     "axios": "^1.6.0",
     "bcrypt": "^6.0.0",
+    "bullmq": "^5.77.6",
     "class-transformer": "^0.5.0",
     "class-validator": "^0.14.0",
     "cookie-parser": "^1.4.6",

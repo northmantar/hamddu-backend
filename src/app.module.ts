@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { BullModule } from "@nestjs/bullmq";
 import { SnakeNamingStrategy } from "typeorm-naming-strategies";
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
@@ -12,6 +13,7 @@ import { ChallengesModule } from "./challenges/challenges.module";
 import { PointsModule } from "./points/points.module";
 import { XpModule } from "./xp/xp.module";
 import { ChannelsModule } from "./channels/channels.module";
+import { RewardsModule } from "./rewards/rewards.module";
 import { User } from "./entities/user.entity";
 import { NicknameAdjective } from "./entities/nickname-adjective.entity";
 import { NicknameNoun } from "./entities/nickname-noun.entity";
@@ -36,6 +38,16 @@ import { XpLevelPolicy } from "./entities/xp-level-policy.entity";
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        connection: {
+          host: config.get('REDIS_HOST', 'localhost'),
+          port: config.get<number>('REDIS_PORT', 6379),
+          password: config.get('REDIS_PASSWORD') || undefined,
+        },
+      }),
+    }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -83,6 +95,7 @@ import { XpLevelPolicy } from "./entities/xp-level-policy.entity";
     PointsModule,
     XpModule,
     ChannelsModule,
+    RewardsModule,
   ],
 })
 export class AppModule {}

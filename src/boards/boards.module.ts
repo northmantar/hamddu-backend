@@ -4,6 +4,7 @@ import { BoardsController } from "./boards.controller";
 import { BoardsService } from "./boards.service";
 import { CommentsService } from "./comments.service";
 import { AdminGuard } from "../common/guards/admin.guard";
+import { RewardsModule } from "../rewards/rewards.module";
 import { Board } from "@entities/board.entity";
 import { BoardLike } from "@entities/board-like.entity";
 import { BoardCategory } from "@entities/board-category.entity";
@@ -21,6 +22,7 @@ import { User } from "@entities/user.entity";
       BoardCommentLike,
       User,
     ]),
+    RewardsModule,
   ],
   controllers: [BoardsController],
   providers: [BoardsService, CommentsService, AdminGuard],

@@ -9,6 +9,7 @@ import { Channel } from "@entities/channel.entity";
 import { WatchHistory } from "@entities/watch-history.entity";
 import { Challenge } from "@entities/challenge.entity";
 import { User } from "@entities/user.entity";
+import { RewardsModule } from "../rewards/rewards.module";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { User } from "@entities/user.entity";
       Challenge,
       User,
     ]),
+    RewardsModule,
   ],
   controllers: [ContentsController, WatchHistoryController],
   providers: [ContentsService, WatchHistoryService],

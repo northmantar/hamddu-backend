@@ -19,6 +19,8 @@ import { CreateCategoryDto } from "./dto/create-category.dto";
 import { UpdateCategoryDto } from "./dto/update-category.dto";
 import { PaginationMeta } from "./dto/pagination.dto";
 import { User } from "@entities/user.entity";
+import { RewardsService } from "../rewards/rewards.service";
+import { RewardActionType } from "../rewards/constants/reward.constants";
 
 @Injectable()
 export class BoardsService {
@@ -31,6 +33,7 @@ export class BoardsService {
     private readonly categoryRepo: Repository<BoardCategory>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly rewardsService: RewardsService,
   ) {}
 
   async findAll(
@@ -104,6 +107,14 @@ export class BoardsService {
     });
 
     const saved = await this.boardRepo.save(board);
+
+    await this.rewardsService.enqueueReward({
+      memberId,
+      actionType: RewardActionType.BOARD_CREATED,
+      refId: saved.id,
+      refType: 'board',
+    });
+
     return this.findById(saved.id);
   }
 

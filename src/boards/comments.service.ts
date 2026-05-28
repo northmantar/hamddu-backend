@@ -17,6 +17,8 @@ import { CreateCommentDto } from "./dto/create-comment.dto";
 import { UpdateCommentDto } from "./dto/update-comment.dto";
 import { PaginationQueryDto, PaginationMeta } from "./dto/pagination.dto";
 import { CommentResponseDto } from "./dto/comment-response.dto";
+import { RewardsService } from "../rewards/rewards.service";
+import { RewardActionType } from "../rewards/constants/reward.constants";
 
 @Injectable()
 export class CommentsService {
@@ -29,6 +31,7 @@ export class CommentsService {
     private readonly boardRepo: Repository<Board>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly rewardsService: RewardsService,
   ) {}
 
   private async findBoardOrFail(boardId: string): Promise<Board> {
@@ -162,6 +165,14 @@ export class CommentsService {
     });
 
     const saved = await this.commentRepo.save(comment);
+
+    await this.rewardsService.enqueueReward({
+      memberId,
+      actionType: RewardActionType.COMMENT_CREATED,
+      refId: saved.id,
+      refType: 'board_comment',
+    });
+
     return this.findCommentOrFail(saved.id);
   }
 

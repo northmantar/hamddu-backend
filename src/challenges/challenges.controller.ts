@@ -94,16 +94,12 @@ export class ChallengesController {
     // 현재는 임시로 null 처리
     const imageUrl = image ? `https://cdn.hamddu.com/challenges/${image.filename}` : undefined;
 
-    const { challenge, pointEarned, xpEarned } = await this.challengesService.create(
+    const { challenge } = await this.challengesService.create(
       payload.sub,
       dto,
       imageUrl,
     );
 
-    const response = ChallengeDetailDto.fromDetail(challenge) as ChallengeCreateResponseDto;
-    response.pointEarned = pointEarned;
-    response.xpEarned = xpEarned;
-
-    return response;
+    return ChallengeDetailDto.fromDetail(challenge) as ChallengeCreateResponseDto;
   }
 }

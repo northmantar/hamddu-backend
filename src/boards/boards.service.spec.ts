@@ -8,6 +8,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { BoardsService } from './boards.service';
+import { RewardsService } from '../rewards/rewards.service';
 import { Board } from '@entities/board.entity';
 import { BoardLike } from '@entities/board-like.entity';
 import { BoardCategory } from '@entities/board-category.entity';
@@ -90,6 +91,7 @@ describe('BoardsService', () => {
         { provide: getRepositoryToken(BoardLike), useValue: mockBoardLikeRepo },
         { provide: getRepositoryToken(BoardCategory), useValue: mockCategoryRepo },
         { provide: getRepositoryToken(User), useValue: mockUserRepo },
+        { provide: RewardsService, useValue: { enqueueReward: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 

@@ -31,6 +31,8 @@ describe('AuthService', () => {
       findByIdOrFail: jest.fn(),
       findAdminByEmail: jest.fn(),
       setPassword: jest.fn(),
+      countAdmins: jest.fn(),
+      createAdminUser: jest.fn(),
     };
 
     const mockJwtService = {
@@ -129,7 +131,21 @@ describe('AuthService', () => {
   });
 
   describe('adminLogin', () => {
-    it('should login admin successfully', async () => {
+    it('should create super user on first login (no existing admins)', async () => {
+      usersService.countAdmins.mockResolvedValue(0);
+      usersService.createAdminUser.mockResolvedValue(mockUser as User);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
+      jwtService.sign.mockReturnValue('access-token');
+
+      const result = await service.adminLogin('admin@example.com', 'password');
+
+      expect(usersService.createAdminUser).toHaveBeenCalledWith('admin@example.com', 'hashedPassword');
+      expect(result.user).toEqual(mockUser);
+      expect(result.tokens.accessToken).toBe('access-token');
+    });
+
+    it('should login existing admin successfully', async () => {
+      usersService.countAdmins.mockResolvedValue(1);
       usersService.findAdminByEmail.mockResolvedValue(mockUser as User);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       jwtService.sign.mockReturnValue('access-token');
@@ -141,6 +157,7 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException for non-existent user', async () => {
+      usersService.countAdmins.mockResolvedValue(1);
       usersService.findAdminByEmail.mockResolvedValue(null);
 
       await expect(service.adminLogin('test@example.com', 'password')).rejects.toThrow(
@@ -148,15 +165,17 @@ describe('AuthService', () => {
       );
     });
 
-    it('should throw BadRequestException if password not set', async () => {
+    it('should throw UnauthorizedException if admin has no password', async () => {
+      usersService.countAdmins.mockResolvedValue(1);
       usersService.findAdminByEmail.mockResolvedValue({ ...mockUser, password: null } as User);
 
       await expect(service.adminLogin('admin@example.com', 'password')).rejects.toThrow(
-        BadRequestException,
+        UnauthorizedException,
       );
     });
 
     it('should throw UnauthorizedException for wrong password', async () => {
+      usersService.countAdmins.mockResolvedValue(1);
       usersService.findAdminByEmail.mockResolvedValue(mockUser as User);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 

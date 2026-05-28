@@ -10,6 +10,8 @@ import { Content } from "@entities/content.entity";
 import { CreateChallengeDto } from "./dto/create-challenge.dto";
 import { ChallengeQueryDto } from "./dto/challenge-query.dto";
 import { PaginationQueryDto, PaginationMeta } from "../boards/dto/pagination.dto";
+import { RewardsService } from "../rewards/rewards.service";
+import { RewardActionType } from "../rewards/constants/reward.constants";
 
 @Injectable()
 export class ChallengesService {
@@ -18,6 +20,7 @@ export class ChallengesService {
     private readonly challengeRepo: Repository<Challenge>,
     @InjectRepository(Content)
     private readonly contentRepo: Repository<Content>,
+    private readonly rewardsService: RewardsService,
   ) {}
 
   async findAll(
@@ -94,7 +97,7 @@ export class ChallengesService {
     memberId: string,
     dto: CreateChallengeDto,
     imageUrl?: string,
-  ): Promise<{ challenge: Challenge; pointEarned?: number; xpEarned?: number }> {
+  ): Promise<{ challenge: Challenge }> {
     // 콘텐츠 존재 여부 확인
     const content = await this.contentRepo.findOne({ where: { id: dto.contentId } });
     if (!content) {
@@ -123,13 +126,16 @@ export class ChallengesService {
     // 저장된 챌린지를 relations와 함께 다시 조회
     const result = await this.findById(saved.id);
 
-    // TODO: 포인트/XP 지급 로직 (PointsService, XpService 연동)
-    // 현재는 임시로 고정값 반환
-    return {
-      challenge: result,
-      pointEarned: content.pointApplyable ? 100 : undefined,
-      xpEarned: 50,
-    };
+    // 포인트/XP 백그라운드 지급 큐 등록
+    await this.rewardsService.enqueueReward({
+      memberId,
+      actionType: RewardActionType.CHALLENGE_CREATED,
+      refId: saved.id,
+      refType: 'challenge',
+      metadata: { pointApplyable: content.pointApplyable },
+    });
+
+    return { challenge: result };
   }
 
   async existsByMemberAndContent(memberId: string, contentId: string): Promise<boolean> {
