@@ -11,12 +11,15 @@ module.exports = {
       },
     },
     {
-      name: 'hamddu-admin-poc',
-      script: '/usr/local/bin/serve',
-      args: ['poc', '-l', 'tcp://0.0.0.0:4000', '--no-clipboard'],
+      name: 'hamddu-admin',
+      cwd: './admin',
+      script: 'node_modules/.bin/next',
+      args: 'start -p 4000',
       autorestart: true,
       watch: false,
+      env: {
+        NODE_ENV: 'production',
+      },
     },
   ],
 };
-  

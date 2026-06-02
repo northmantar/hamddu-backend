@@ -115,7 +115,7 @@ services:
       retries: 15
       start_period: 60s
 
-  # ─── NestJS Application + Admin POC (PM2) ────────────────────────
+  # ─── NestJS Application + Admin Dashboard (PM2) ─────────────────
   app:
     build:
       context: .
@@ -124,7 +124,7 @@ services:
     networks: [hamddu-net]
     ports:
       - "3000:3000"   # API server
-      - "4000:4000"   # Admin POC static site
+      - "4000:4000"   # Admin dashboard (Next.js)
     environment:
       INFISICAL_SITE_URL: http://infisical:8080
       INFISICAL_PROJECT_ID: ${INFISICAL_PROJECT_ID}
