@@ -1,5 +1,5 @@
-export const POINT_QUEUE = 'reward:point';
-export const XP_QUEUE = 'reward:xp';
+export const POINT_QUEUE = 'reward-point';
+export const XP_QUEUE = 'reward-xp';
 
 export enum RewardActionType {
   CHALLENGE_CREATED = 'CHALLENGE_CREATED',

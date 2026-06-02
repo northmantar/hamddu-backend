@@ -57,7 +57,7 @@ export class SeedDummyData1747100000000 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       DELETE FROM "contents"
-      WHERE "youtubeVideoId" IN (
+      WHERE "youtube_video_id" IN (
         'OEyHKadY2ts','WZu0d9sDkmU','f0Ki0bFBuHw','GM9-iZZxjhw',
         '5V7YEv6Wmws','VoGVs8DuPg8','KCI5VS5yu2k',
         'ohk5XIV8TTQ','v_tqq8Xd1FM','N9nmlUrBsWQ'

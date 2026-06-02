@@ -23,7 +23,7 @@ export class Content {
   channelId: string;
 
   @ManyToOne(() => Channel, (channel) => channel.contents)
-  @JoinColumn({ name: "channelId" })
+  @JoinColumn({ name: "channel_id" })
   channel: Channel;
 
   @Column({ unique: true })
