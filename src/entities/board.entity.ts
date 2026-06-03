@@ -13,6 +13,8 @@ import { User } from "./user.entity";
 import { BoardCategory } from "./board-category.entity";
 import { BoardComment } from "./board-comment.entity";
 import { BoardLike } from "./board-like.entity";
+import { BoardMedia } from "./board-media.entity";
+import { Media } from "./media.entity";
 
 @Entity("boards")
 export class Board {
@@ -49,6 +51,13 @@ export class Board {
   @Column({ type: "int", default: 0 })
   likeCount: number;
 
+  @Column({ nullable: true })
+  thumbnailMediaId: string | null;
+
+  @ManyToOne(() => Media, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "thumbnail_media_id" })
+  thumbnailMedia: Media | null;
+
   @CreateDateColumn()
   createdAt: Date;
 
@@ -63,4 +72,7 @@ export class Board {
 
   @OneToMany(() => BoardLike, (like) => like.board)
   likes: BoardLike[];
+
+  @OneToMany(() => BoardMedia, (bm) => bm.board)
+  boardMedia: BoardMedia[];
 }

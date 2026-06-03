@@ -9,6 +9,7 @@ import {
 } from "typeorm";
 import { User } from "./user.entity";
 import { Content } from "./content.entity";
+import { Media } from "./media.entity";
 
 @Entity("challenges")
 @Unique(["memberId", "contentId"])
@@ -36,8 +37,12 @@ export class Challenge {
   @Column({ type: "text", nullable: true })
   body: string | null;
 
-  @Column({ type: "text", nullable: true })
-  imageUrl: string | null;
+  @Column({ nullable: true })
+  mediaId: string | null;
+
+  @ManyToOne(() => Media, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "media_id" })
+  media: Media | null;
 
   @CreateDateColumn()
   createdAt: Date;

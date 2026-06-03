@@ -47,7 +47,7 @@ export class ChallengeListItemDto {
       id: challenge.id,
       title: challenge.title,
       body: challenge.body,
-      imageUrl: challenge.imageUrl,
+      imageUrl: challenge.media?.url ?? null,
       content: {
         id: challenge.content.id,
         name: challenge.content.name,
@@ -77,8 +77,8 @@ export class ChallengeDetailDto extends ChallengeListItemDto {
         name: challenge.content.name,
         type: challenge.content.type,
       },
-      imageUploaded: !!challenge.imageUrl,
-      stampGranted: true, // 챌린지 등록 시 스탬프 부여
+      imageUploaded: !!challenge.mediaId,
+      stampGranted: true,
     };
   }
 }
@@ -117,8 +117,8 @@ export class MyChallengeListItemDto {
     return {
       id: challenge.id,
       title: challenge.title,
-      imageUrl: challenge.imageUrl,
-      imageUploaded: !!challenge.imageUrl,
+      imageUrl: challenge.media?.url ?? null,
+      imageUploaded: !!challenge.mediaId,
       stampGranted: true,
       content: {
         id: challenge.content.id,

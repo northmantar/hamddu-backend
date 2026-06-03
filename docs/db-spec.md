@@ -41,6 +41,7 @@
       * id
       --
       * channel_id
+      * media_id
       --
       * youtube_video_id
       * name
@@ -71,19 +72,40 @@
       --
       * member_id
       * content_id
+      * media_id
       --
       * title
       * body
-      * image_url
       * created_at
     }
     
+    entity media #FFE4E1 {
+      * id
+      --
+      * uploader_id
+      --
+      * url
+      * mime_type
+      * created_at
+    }
+
+    entity board_media #FFE4E1 {
+      * id
+      --
+      * board_id
+      * media_id
+      --
+      * sort_order
+      * created_at
+    }
+
     entity board #E1FFE1 {
       * id
       --
       * status <<enum>>
       * member_id
       * category_id
+      * thumbnail_media_id
       * title
       * body
       * like_count
@@ -222,6 +244,13 @@
       * created_at
     }
     
+    member ||--o{ media
+    media ||--o{ board_media
+    board ||--o{ board_media
+    board }o--o| media : thumbnail
+    content }o--o| media : symbol_icon
+    challenge }o--o| media : proof_image
+
     channel ||--o{ content
     member ||--o{ watch_history
     member ||--o{ board
@@ -306,10 +335,11 @@
 | --- | --- | --- |
 | id | uuid_short() | **`<<pkey>>`** 콘텐츠 ID |
 | channel_id | varchar | 콘텐츠 업로드 채널 ID/slug |
+| media_id | uuid | 기호 버튼 이미지 미디어 ID (nullable, symbol 타입에만 사용) |
 | youtube_video_id | varchar | 유튜브 비디오 ID |
 | name | varchar | 영상 제목 |
-| type | enum | 영상 유형 (`symbol` | `free`) |
-| interests | enum | 콘텐츠 분류 (`crochet` | `knitting`) |
+| type | enum | 영상 유형 (`symbol` \| `free` \| `normal`) |
+| interests | enum | 콘텐츠 분류 (`crochet` \| `knitting`) |
 | sort_order | integer | interests 내 정렬 순서 (1부터 시작, 튜토리얼만 해당) |
 | point_applyable | boolean | 포인트 지급 여부(*기법 튜토리얼만 해당) |
 | uploaded_at | timestamp | 콘텐츠 업로드 일시 |
@@ -323,19 +353,42 @@
 | id | uuid_short() | `<<pkey>>` 인증 게시글 ID |
 | member_id | uuid_short() | 게시글 업로드 유저 ID |
 | content_id | uuid_short() | 인증 전 시청한 콘텐츠 ID |
+| media_id | uuid | 인증 이미지 미디어 ID (nullable, `POST /media/upload` 응답의 id) |
 | title | text | 인증 게시글 제목(*기획에 없어도 유지) |
 | body | text | 인증 게시글 내용(*기획에 없어도 유지) |
-| image_url | text | 이미지 업로드 완료된 CDN URL |
 | created_at | timestamp | 인증 게시글 작성 일시 |
+
+### 미디어 테이블 (`media`)
+
+| name | type | description |
+| --- | --- | --- |
+| id | uuid_short() | `<<pkey>>` 미디어 ID |
+| uploader_id | uuid_short() | 업로드한 유저 ID (탈퇴 시 NULL) |
+| url | text | CDN에 업로드된 이미지 URL |
+| mime_type | varchar(100) | MIME 타입 (예: `image/jpeg`, `image/png`) |
+| created_at | timestamp | 업로드 일시 |
+
+### 게시글-미디어 연결 테이블 (`board_media`)
+
+| name | type | description |
+| --- | --- | --- |
+| id | uuid_short() | `<<pkey>>` ID |
+| board_id | uuid_short() | 게시글 ID |
+| media_id | uuid_short() | 미디어 ID |
+| sort_order | integer | 이미지 노출 순서 (0부터 시작) |
+| created_at | timestamp | 연결 생성 일시 |
+- 게시글 삭제 시 cascade 삭제
+- 미디어 삭제 시 cascade 삭제
 
 ### 게시글 테이블 (`board`)
 
 | name | type | description |
 | --- | --- | --- |
 | id | uuid_short() | `<<pkey>>` 게시글 ID |
-| status | enum | 게시글 상태 (`draft` | `published` | `deleted`) |
+| status | enum | 게시글 상태 (`draft` \| `published` \| `deleted`) |
 | member_id | uuid_short() | 게시글 업로드 유저 ID |
 | category_id | uuid_short() | 게시글 카테고리 ID |
+| thumbnail_media_id | uuid_short() | 대표 이미지 미디어 ID (nullable) |
 | title | text | 게시글 타이틀 |
 | body | text | 게시글 내용 |
 | like_count | integer | 좋아요 수 |

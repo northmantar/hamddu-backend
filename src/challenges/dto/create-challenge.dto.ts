@@ -18,4 +18,9 @@ export class CreateChallengeDto {
   @IsOptional()
   @MaxLength(2000)
   body?: string;
+
+  @ApiPropertyOptional({ description: "업로드한 미디어 ID (POST /media/upload 응답의 id)", example: "media-uuid" })
+  @IsUUID()
+  @IsOptional()
+  mediaId?: string;
 }

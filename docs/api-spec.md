@@ -111,8 +111,9 @@ Authorization: Bearer <access_token>
 
 | 값 | 설명 |
 | --- | --- |
-| `symbol` | 기법 튜토리얼 |
+| `symbol` | 기법 튜토리얼 (기호 버튼 형태로 메인 화면 노출) |
 | `free` | 무료 도안 |
+| `normal` | 일반 콘텐츠 |
 
 ### `boardStatus`
 
@@ -733,6 +734,11 @@ No Content
       "title": "코바늘 시작하기 질문이요!",
       "body": "안녕하세요, 코바늘 입문자입니다...",
       "likeCount": 12,
+      "thumbnailUrl": "https://cdn.hamddu.online/media/image1.jpg",
+      "images": [
+        { "id": "media-uuid-1", "url": "https://cdn.hamddu.online/media/image1.jpg", "sortOrder": 0 },
+        { "id": "media-uuid-2", "url": "https://cdn.hamddu.online/media/image2.jpg", "sortOrder": 1 }
+      ],
       "category": {
         "id": "category-uuid",
         "label": "질문/답변"
@@ -817,6 +823,11 @@ No Content
   "body": "안녕하세요, 코바늘 입문자입니다...",
   "likeCount": 12,
   "isLiked": false,
+  "thumbnailUrl": "https://cdn.hamddu.online/media/image1.jpg",
+  "images": [
+    { "id": "media-uuid-1", "url": "https://cdn.hamddu.online/media/image1.jpg", "sortOrder": 0 },
+    { "id": "media-uuid-2", "url": "https://cdn.hamddu.online/media/image2.jpg", "sortOrder": 1 }
+  ],
   "category": {
     "id": "category-uuid",
     "label": "질문/답변"
@@ -857,7 +868,9 @@ No Content
       "categoryId": "category-uuid",
       "title": "코바늘 시작하기 질문이요!",
       "body": "안녕하세요, 코바늘 입문자입니다...",
-      "status": "published"
+      "status": "published",
+      "mediaIds": ["media-uuid-1", "media-uuid-2"],
+      "thumbnailMediaId": "media-uuid-1"
     }
     ```
 
@@ -867,6 +880,8 @@ No Content
     | `title` | string | Yes | 1-200자 |
     | `body` | string | Yes | 1-10000자 |
     | `status` | string | No | `draft` \| `published` (기본값: `published`) |
+    | `mediaIds` | string[] | No | 업로드된 미디어 ID 배열 (순서대로 sortOrder 부여) |
+    | `thumbnailMediaId` | string | No | 대표 이미지로 지정할 미디어 ID (`mediaIds` 중 하나) |
 
 **Response (201)**
 
@@ -878,6 +893,10 @@ No Content
   "body": "안녕하세요, 코바늘 입문자입니다...",
   "likeCount": 0,
   "isLiked": false,
+  "thumbnailUrl": "https://cdn.hamddu.online/media/image1.jpg",
+  "images": [
+    { "id": "media-uuid-1", "url": "https://cdn.hamddu.online/media/image1.jpg", "sortOrder": 0 }
+  ],
   "category": {
     "id": "category-uuid",
     "label": "질문/답변"
@@ -924,7 +943,9 @@ No Content
     {
       "title": "수정된 제목",
       "body": "수정된 내용입니다...",
-      "categoryId": "new-category-uuid"
+      "categoryId": "new-category-uuid",
+      "mediaIds": ["media-uuid-1"],
+      "thumbnailMediaId": "media-uuid-1"
     }
     ```
 
@@ -933,6 +954,8 @@ No Content
     | `categoryId` | string | No | 유효한 카테고리 ID |
     | `title` | string | No | 1-200자 |
     | `body` | string | No | 1-10000자 |
+    | `mediaIds` | string[] | No | 교체할 이미지 목록 (전달 시 기존 목록 전체 교체) |
+    | `thumbnailMediaId` | string | No | 대표 이미지 변경 |
 
 **Response (200)**
 
@@ -944,6 +967,10 @@ No Content
   "body": "수정된 내용입니다...",
   "likeCount": 12,
   "isLiked": false,
+  "thumbnailUrl": "https://cdn.hamddu.online/media/image1.jpg",
+  "images": [
+    { "id": "media-uuid-1", "url": "https://cdn.hamddu.online/media/image1.jpg", "sortOrder": 0 }
+  ],
   "category": {
     "id": "new-category-uuid",
     "label": "자유게시판"
@@ -1403,7 +1430,7 @@ No Content
     | --- | --- | --- | --- |
     | page | number | No | 페이지 번호 (기본값: 1) |
     | limit | number | No | 페이지당 항목 수 (기본값: 20) |
-    | type | string | No | 콘텐츠 유형 (symbol \| free) |
+    | type | string | No | 콘텐츠 유형 (symbol \| free \| normal) |
     | channelId | string | No | 채널 ID 필터 |
 
 **Response (200)**
@@ -1420,6 +1447,8 @@ No Content
         "id": "channel-uuid",
         "name": "함뜨 공식채널"
       },
+      "interests": "crochet",
+      "imageUrl": "https://cdn.hamddu.online/symbols/chain.png",
       "pointApplyable": true,
       "sortOrder": 1,
       "uploadedAt": "2026-04-01T10:00:00.000Z",
@@ -1468,6 +1497,8 @@ No Content
       "id": "channel-uuid",
       "name": "함뜨 공식채널"
     },
+    "interests": "crochet",
+    "imageUrl": "https://cdn.hamddu.online/symbols/chain.png",
     "pointApplyable": true,
     "sortOrder": 1,
     "uploadedAt": "2026-04-01T10:00:00.000Z",
@@ -1482,6 +1513,8 @@ No Content
       "id": "channel-uuid",
       "name": "함뜨 공식채널"
     },
+    "interests": "crochet",
+    "imageUrl": "https://cdn.hamddu.online/symbols/single-crochet.png",
     "pointApplyable": true,
     "sortOrder": 2,
     "uploadedAt": "2026-04-02T10:00:00.000Z",
@@ -1527,6 +1560,7 @@ No Content
   "name": "코바늘 기초 - 사슬뜨기",
   "type": "symbol",
   "interests": "crochet",
+  "imageUrl": "https://cdn.hamddu.online/symbols/chain.png",
   "channel": {
     "id": "channel-uuid",
     "name": "함뜨 공식채널",
@@ -1554,6 +1588,7 @@ No Content
   "name": "귀여운 토끼 인형 도안",
   "type": "free",
   "interests": "crochet",
+  "imageUrl": null,
   "channel": {
     "id": "channel-uuid",
     "name": "함뜨 공식채널",
@@ -1603,6 +1638,7 @@ No Content
       "name": "코바늘 기초 - 사슬뜨기",
       "type": "symbol",
       "interests": "crochet",
+      "mediaId": "media-uuid",
       "sortOrder": 1,
       "pointApplyable": true
     }
@@ -1613,8 +1649,9 @@ No Content
     | `channelId` | string | Yes | 유효한 채널 ID |
     | `youtubeVideoId` | string | Yes | 유튜브 비디오 ID |
     | `name` | string | Yes | 1-255자 |
-    | `type` | string | Yes | `symbol` \| `free` |
+    | `type` | string | Yes | `symbol` \| `free` \| `normal` |
     | `interests` | string | No | `crochet` \| `knitting` |
+    | `mediaId` | string | No | 기호 버튼 이미지 미디어 ID (`POST /media/upload` 응답의 `id`, symbol 타입에만 사용) |
     | `sortOrder` | number | No | interests 내 정렬 순서 (1부터 시작) |
     | `pointApplyable` | boolean | No | 포인트 지급 여부 (기본값: false) |
 
@@ -1627,6 +1664,7 @@ No Content
   "name": "코바늘 기초 - 사슬뜨기",
   "type": "symbol",
   "interests": "crochet",
+  "imageUrl": "https://cdn.hamddu.online/symbols/chain.png",
   "channel": {
     "id": "channel-uuid",
     "name": "함뜨 공식채널",
@@ -1672,10 +1710,18 @@ No Content
     ```json
     {
       "name": "수정된 콘텐츠 제목",
+      "mediaId": "media-uuid",
       "sortOrder": 2,
       "pointApplyable": false
     }
     ```
+
+    | 필드 | 타입 | 필수 | 유효성 조건 |
+    | --- | --- | --- | --- |
+    | `name` | string | No | 1-255자 |
+    | `mediaId` | string | No | 이미지 미디어 ID (`POST /media/upload` 응답의 `id`) |
+    | `sortOrder` | number | No | interests 내 정렬 순서 (1 이상) |
+    | `pointApplyable` | boolean | No | 포인트 지급 여부 |
 
 **Response (200)**
 
@@ -1686,6 +1732,7 @@ No Content
   "name": "수정된 콘텐츠 제목",
   "type": "symbol",
   "interests": "crochet",
+  "imageUrl": "https://cdn.hamddu.online/media/chain-v2.jpg",
   "channel": {
     "id": "channel-uuid",
     "name": "함뜨 공식채널",
@@ -1746,6 +1793,7 @@ No Content
   "name": "코바늘 기초 - 사슬뜨기",
   "type": "symbol",
   "interests": "crochet",
+  "imageUrl": "https://cdn.hamddu.online/symbols/chain.png",
   "channel": {
     "id": "channel-uuid",
     "name": "함뜨 공식채널",
@@ -2066,16 +2114,27 @@ No Content
     | **헤더** | **값** | **필수** |
     | --- | --- | --- |
     | Authorization | Bearer | Yes |
-    | Content-Type | multipart/form-data | Yes |
+    | Content-Type | application/json | Yes |
 
-- Body (multipart/form-data):
+- Body:
 
-    | **필드** | **타입** | **필수** | **설명** |
+    ```json
+    {
+      "contentId": "content-uuid",
+      "title": "사슬뜨기 완성!",
+      "body": "드디어 첫 작품을 완성했어요!",
+      "mediaId": "media-uuid"
+    }
+    ```
+
+    | 필드 | 타입 | 필수 | 유효성 조건 |
     | --- | --- | --- | --- |
-    | contentId | string | Yes | 인증할 콘텐츠 ID |
-    | title | string | No | 챌린지 제목 (최대 200자) |
-    | body | string | No | 챌린지 내용 (최대 2000자) |
-    | image | file | No | 인증 이미지 (jpg, png, max 10MB) |
+    | `contentId` | string | Yes | 인증할 콘텐츠 ID |
+    | `title` | string | No | 최대 200자 |
+    | `body` | string | No | 최대 2000자 |
+    | `mediaId` | string | No | 인증 이미지 미디어 ID (`POST /media/upload` 응답의 `id`) |
+
+    > 이미지는 먼저 `POST /media/upload`로 업로드한 뒤 반환된 `id`를 `mediaId`에 전달합니다.
 
 **Response (201)**
 
@@ -2084,7 +2143,7 @@ No Content
   "id": "challenge-uuid",
   "title": "사슬뜨기 완성!",
   "body": "드디어 첫 작품을 완성했어요!",
-  "imageUrl": "https://cdn.hamddu.com/challenges/image.jpg",
+  "imageUrl": "https://cdn.hamddu.online/media/proof.jpg",
   "imageUploaded": true,
   "stampGranted": true,
   "content": {
@@ -2574,7 +2633,56 @@ XP 레벨 정책 목록을 조회합니다.
 
 ## 12. 유저 관리 API (관리자 전용)
 
-### 12.1 `GET /users`
+### 12.1 `POST /users`
+
+새 유저를 직접 생성합니다.
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+
+- Body:
+
+    ```json
+    {
+      "email": "newuser@example.com",
+      "password": "password123!",
+      "type": "member"
+    }
+    ```
+
+    | 필드 | 타입 | 필수 | 유효성 조건 |
+    | --- | --- | --- | --- |
+    | `email` | string | Yes | 유효한 이메일 |
+    | `password` | string | Yes | 최소 8자 |
+    | `type` | string | No | `member` \| `admin` (기본값: `member`) |
+
+**Response (201)**
+
+```json
+{
+  "id": "user-uuid",
+  "status": "active",
+  "type": "member",
+  "nickname": null,
+  "createdAt": "2026-04-09T12:00:00.000Z"
+}
+```
+
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 403 | "접근 권한이 없습니다." |
+| 409 | "이미 등록된 이메일입니다." |
+
+---
+
+### 12.3 `GET /users`
 
 전체 유저 목록을 조회합니다.
 
@@ -2617,7 +2725,7 @@ XP 레벨 정책 목록을 조회합니다.
 
 ---
 
-### 12.2 `PATCH /users/:id/role`
+### 12.4 `PATCH /users/:id/role`
 
 유저의 역할을 변경합니다.
 
@@ -3084,6 +3192,46 @@ No Content
 
 ---
 
+## 17. 미디어 API
+
+### 17.1 `POST /media/upload`
+
+이미지 파일을 업로드하고 미디어 레코드를 생성합니다. 반환된 `id`를 챌린지(`mediaId`), 콘텐츠(`mediaId`), 게시글(`mediaIds`) 등의 요청에 사용합니다.
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+    | Content-Type | multipart/form-data | Yes |
+
+- Body (multipart/form-data):
+
+    | **필드** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | file | file | Yes | 업로드할 이미지 파일 |
+
+**Response (201)**
+
+```json
+{
+  "id": "media-uuid",
+  "url": "https://cdn.hamddu.online/media/1748920000000-photo.jpg",
+  "mimeType": "image/jpeg",
+  "createdAt": "2026-04-09T16:00:00.000Z"
+}
+```
+
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 401 | "인증이 필요합니다." |
+
+---
+
 ## API 요약표
 
 | 분류 | Method | Endpoint | 권한 | 설명 |
@@ -3142,7 +3290,8 @@ No Content
 | **어드민 인증** | POST | /auth/admin/login | - | 어드민 이메일/비밀번호 로그인 |
 |  | POST | /auth/admin/set-password | 어드민 | 비밀번호 최초 설정 |
 |  | PATCH | /auth/admin/change-password | 어드민 | 비밀번호 변경 |
-| **유저 관리** | GET | /users | 관리자 | 유저 목록 |
+| **유저 관리** | POST | /users | 관리자 | 유저 생성 |
+|  | GET | /users | 관리자 | 유저 목록 |
 |  | PATCH | /users/:id/role | 관리자 | 유저 역할 변경 |
 | **카테고리 관리** | POST | /boards/categories | 관리자 | 카테고리 생성 |
 |  | PATCH | /boards/categories/:id | 관리자 | 카테고리 수정 |
@@ -3157,3 +3306,4 @@ No Content
 |  | POST | /channels | 관리자 | 채널 등록 |
 |  | PATCH | /channels/:id | 관리자 | 채널 수정 |
 |  | DELETE | /channels/:id | 관리자 | 채널 삭제 |
+| **미디어** | POST | /media/upload | 인증 | 이미지 업로드 |

@@ -1,0 +1,137 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
+import { MediaService } from './media.service';
+import { Media } from '@entities/media.entity';
+
+describe('MediaService', () => {
+  let service: MediaService;
+  let mediaRepo: jest.Mocked<Repository<Media>>;
+  let configService: jest.Mocked<ConfigService>;
+
+  const mockFile = {
+    originalname: 'photo.jpg',
+    mimetype: 'image/jpeg',
+    buffer: Buffer.from(''),
+    size: 1024,
+  } as Express.Multer.File;
+
+  const mockMedia: Media = {
+    id: 'media-1',
+    uploaderId: 'user-1',
+    uploader: null,
+    url: 'https://cdn.hamddu.online/media/123-photo.jpg',
+    mimeType: 'image/jpeg',
+    createdAt: new Date('2026-01-01'),
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        MediaService,
+        {
+          provide: getRepositoryToken(Media),
+          useValue: {
+            create: jest.fn(),
+            save: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string, fallback?: string) => {
+              if (key === 'CDN_BASE_URL') return 'https://cdn.hamddu.online';
+              return fallback;
+            }),
+          },
+        },
+      ],
+    }).compile();
+
+    service      = module.get(MediaService);
+    mediaRepo    = module.get(getRepositoryToken(Media));
+    configService = module.get(ConfigService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  describe('upload', () => {
+    it('should build URL from CDN_BASE_URL config', async () => {
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      await service.upload(mockFile, 'user-1');
+
+      expect(configService.get).toHaveBeenCalledWith('CDN_BASE_URL', 'https://cdn.hamddu.online');
+    });
+
+    it('should include original filename in generated URL', async () => {
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      await service.upload(mockFile, 'user-1');
+
+      const createCall = mediaRepo.create.mock.calls[0][0] as Partial<Media>;
+      expect(createCall.url).toContain('photo.jpg');
+      expect(createCall.url).toMatch(/^https:\/\/cdn\.hamddu\.online\/media\//);
+    });
+
+    it('should set uploaderId from the caller', async () => {
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      await service.upload(mockFile, 'user-42');
+
+      expect(mediaRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ uploaderId: 'user-42' }),
+      );
+    });
+
+    it('should set mimeType from file', async () => {
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      await service.upload(mockFile, 'user-1');
+
+      expect(mediaRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ mimeType: 'image/jpeg' }),
+      );
+    });
+
+    it('should use fallback CDN URL when CDN_BASE_URL is not set', async () => {
+      (configService.get as jest.Mock).mockImplementation((_key: string, fallback?: string) => fallback);
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      await service.upload(mockFile, 'user-1');
+
+      const createCall = mediaRepo.create.mock.calls[0][0] as Partial<Media>;
+      expect(createCall.url).toMatch(/^https:\/\/cdn\.hamddu\.online\/media\//);
+    });
+
+    it('should save and return the media entity', async () => {
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      const result = await service.upload(mockFile, 'user-1');
+
+      expect(mediaRepo.save).toHaveBeenCalledWith(mockMedia);
+      expect(result).toEqual(mockMedia);
+    });
+
+    it('should set mimeType to null when file has no mimetype', async () => {
+      const fileWithoutMime = { ...mockFile, mimetype: '' };
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      await service.upload(fileWithoutMime as Express.Multer.File, 'user-1');
+
+      expect(mediaRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ mimeType: null }),
+      );
+    });
+  });
+});

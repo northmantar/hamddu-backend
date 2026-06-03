@@ -52,6 +52,7 @@ export class ContentsService {
     const qb = this.contentRepo
       .createQueryBuilder("content")
       .leftJoinAndSelect("content.channel", "channel")
+      .leftJoinAndSelect("content.media", "media")
       .orderBy("content.createdAt", "DESC");
 
     if (type) {
@@ -78,7 +79,7 @@ export class ContentsService {
   async findById(id: string): Promise<Content> {
     const content = await this.contentRepo.findOne({
       where: { id },
-      relations: ["channel"],
+      relations: ["channel", "media"],
     });
 
     if (!content) {
@@ -104,7 +105,7 @@ export class ContentsService {
         type: ContentType.SYMBOL,
         interests: query.interests,
       },
-      relations: ["channel"],
+      relations: ["channel", "media"],
       order: { sortOrder: "ASC" },
     });
   }
@@ -125,6 +126,7 @@ export class ContentsService {
       interests: dto.interests ?? null,
       sortOrder: dto.sortOrder ?? null,
       pointApplyable: dto.pointApplyable ?? false,
+      mediaId: dto.mediaId ?? null,
     });
 
     const saved = await this.contentRepo.save(content);
@@ -140,6 +142,7 @@ export class ContentsService {
       ...(dto.name !== undefined && { name: dto.name }),
       ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
       ...(dto.pointApplyable !== undefined && { pointApplyable: dto.pointApplyable }),
+      ...(dto.mediaId !== undefined && { mediaId: dto.mediaId }),
     });
 
     return this.findById(contentId);

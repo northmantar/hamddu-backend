@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsInt, IsOptional, IsString, MaxLength, Min, MinLength } from "class-validator";
+import { IsBoolean, IsInt, IsOptional, IsString, IsUUID, MaxLength, Min, MinLength } from "class-validator";
 
 export class UpdateContentDto {
   @ApiPropertyOptional({ description: "콘텐츠 제목", minLength: 1, maxLength: 200 })
@@ -19,4 +19,9 @@ export class UpdateContentDto {
   @IsOptional()
   @IsBoolean()
   pointApplyable?: boolean;
+
+  @ApiPropertyOptional({ description: "미디어 ID (POST /media/upload 응답의 id)", example: "media-uuid" })
+  @IsOptional()
+  @IsUUID()
+  mediaId?: string;
 }

@@ -33,6 +33,7 @@ export class ChallengesService {
       .createQueryBuilder("challenge")
       .leftJoinAndSelect("challenge.content", "content")
       .leftJoinAndSelect("challenge.member", "member")
+      .leftJoinAndSelect("challenge.media", "media")
       .orderBy("challenge.createdAt", "DESC")
       .skip(skip)
       .take(limit);
@@ -57,7 +58,7 @@ export class ChallengesService {
   async findById(id: string): Promise<Challenge> {
     const challenge = await this.challengeRepo.findOne({
       where: { id },
-      relations: ["content", "member"],
+      relations: ["content", "member", "media"],
     });
 
     if (!challenge) {
@@ -76,7 +77,7 @@ export class ChallengesService {
 
     const [data, totalCount] = await this.challengeRepo.findAndCount({
       where: { memberId },
-      relations: ["content"],
+      relations: ["content", "media"],
       order: { createdAt: "DESC" },
       skip,
       take: limit,
@@ -96,7 +97,6 @@ export class ChallengesService {
   async create(
     memberId: string,
     dto: CreateChallengeDto,
-    imageUrl?: string,
   ): Promise<{ challenge: Challenge }> {
     // 콘텐츠 존재 여부 확인
     const content = await this.contentRepo.findOne({ where: { id: dto.contentId } });
@@ -118,7 +118,7 @@ export class ChallengesService {
       contentId: dto.contentId,
       title: dto.title ?? null,
       body: dto.body ?? null,
-      imageUrl: imageUrl ?? null,
+      mediaId: dto.mediaId ?? null,
     });
 
     const saved = await this.challengeRepo.save(challenge);

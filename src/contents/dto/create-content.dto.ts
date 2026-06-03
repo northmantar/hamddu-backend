@@ -51,4 +51,9 @@ export class CreateContentDto {
   @IsOptional()
   @IsBoolean()
   pointApplyable?: boolean;
+
+  @ApiPropertyOptional({ description: "미디어 ID (POST /media/upload 응답의 id)", example: "media-uuid" })
+  @IsOptional()
+  @IsUUID()
+  mediaId?: string;
 }

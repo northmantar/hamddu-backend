@@ -6,14 +6,10 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
-  UploadedFile,
   UseGuards,
-  UseInterceptors,
 } from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
 import {
   ApiBearerAuth,
-  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -78,28 +74,16 @@ export class ChallengesController {
   }
 
   @ApiOperation({ summary: "챌린지 등록 (작품 인증)" })
-  @ApiConsumes("multipart/form-data")
   @ApiResponse({ status: 201, description: "챌린지 등록 완료" })
   @ApiResponse({ status: 400, description: "유효하지 않은 요청" })
   @ApiResponse({ status: 404, description: "콘텐츠를 찾을 수 없음" })
   @ApiResponse({ status: 409, description: "이미 해당 콘텐츠에 대한 챌린지를 완료함" })
   @Post()
-  @UseInterceptors(FileInterceptor("image"))
   async create(
     @CurrentUser() payload: JwtPayload,
     @Body() dto: CreateChallengeDto,
-    @UploadedFile() image?: any,
   ): Promise<ChallengeCreateResponseDto> {
-    // TODO: 이미지 업로드 처리 (S3 등)
-    // 현재는 임시로 null 처리
-    const imageUrl = image ? `https://cdn.hamddu.com/challenges/${image.filename}` : undefined;
-
-    const { challenge } = await this.challengesService.create(
-      payload.sub,
-      dto,
-      imageUrl,
-    );
-
+    const { challenge } = await this.challengesService.create(payload.sub, dto);
     return ChallengeDetailDto.fromDetail(challenge) as ChallengeCreateResponseDto;
   }
 }

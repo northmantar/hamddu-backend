@@ -14,6 +14,7 @@ import { PointsModule } from "./points/points.module";
 import { XpModule } from "./xp/xp.module";
 import { ChannelsModule } from "./channels/channels.module";
 import { RewardsModule } from "./rewards/rewards.module";
+import { MediaModule } from "./media/media.module";
 import { User } from "./entities/user.entity";
 import { NicknameAdjective } from "./entities/nickname-adjective.entity";
 import { NicknameNoun } from "./entities/nickname-noun.entity";
@@ -34,6 +35,8 @@ import { PointUseDetail } from "./entities/point-use-detail.entity";
 import { XpWallet } from "./entities/xp-wallet.entity";
 import { XpTransaction } from "./entities/xp-transaction.entity";
 import { XpLevelPolicy } from "./entities/xp-level-policy.entity";
+import { Media } from "./entities/media.entity";
+import { BoardMedia } from "./entities/board-media.entity";
 
 @Module({
   imports: [
@@ -78,6 +81,8 @@ import { XpLevelPolicy } from "./entities/xp-level-policy.entity";
           XpWallet,
           XpTransaction,
           XpLevelPolicy,
+          Media,
+          BoardMedia,
         ],
         synchronize: false,
         namingStrategy: new SnakeNamingStrategy(),
@@ -95,6 +100,7 @@ import { XpLevelPolicy } from "./entities/xp-level-policy.entity";
     XpModule,
     ChannelsModule,
     RewardsModule,
+    MediaModule,
   ],
 })
 export class AppModule {}

@@ -13,6 +13,7 @@ import { UserInterests } from "@enums/user.enum";
 import { Channel } from "./channel.entity";
 import { WatchHistory } from "./watch-history.entity";
 import { Challenge } from "./challenge.entity";
+import { Media } from "./media.entity";
 
 @Entity("contents")
 export class Content {
@@ -40,6 +41,13 @@ export class Content {
 
   @Column({ type: "int", nullable: true })
   sortOrder: number | null;
+
+  @Column({ nullable: true })
+  mediaId: string | null;
+
+  @ManyToOne(() => Media, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "media_id" })
+  media: Media | null;
 
   @Column({ default: false })
   pointApplyable: boolean;

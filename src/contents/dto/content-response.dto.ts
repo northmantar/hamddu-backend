@@ -42,6 +42,12 @@ export class ContentListItemDto {
   @ApiProperty({ type: ChannelDto })
   channel: ChannelDto;
 
+  @ApiPropertyOptional({ enum: UserInterests, nullable: true })
+  interests: UserInterests | null;
+
+  @ApiPropertyOptional({ example: "https://cdn.hamddu.online/symbols/chain.png", nullable: true })
+  imageUrl: string | null;
+
   @ApiProperty({ example: true })
   pointApplyable: boolean;
 
@@ -63,6 +69,8 @@ export class ContentListItemDto {
       channel: content.channel
         ? { id: content.channel.id, name: content.channel.name }
         : { id: '', name: '(삭제된 채널)' },
+      interests: content.interests,
+      imageUrl: content.media?.url ?? null,
       pointApplyable: content.pointApplyable,
       sortOrder: content.sortOrder,
       uploadedAt: content.uploadedAt,
@@ -72,9 +80,6 @@ export class ContentListItemDto {
 }
 
 export class ContentDetailDto extends ContentListItemDto {
-  @ApiPropertyOptional({ enum: UserInterests, nullable: true })
-  interests: UserInterests | null;
-
   @ApiPropertyOptional({ type: WatchHistoryDto, nullable: true })
   watchHistory?: WatchHistoryDto | null;
 
@@ -90,7 +95,6 @@ export class ContentDetailDto extends ContentListItemDto {
 
     const dto: ContentDetailDto = {
       ...base,
-      interests: content.interests,
       channel: content.channel
         ? { id: content.channel.id, name: content.channel.name, youtubeChannelId: content.channel.youtubeChannelId }
         : { id: '', name: '(삭제된 채널)' },
