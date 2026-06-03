@@ -64,8 +64,8 @@ export default function CategoriesPage() {
       header: 'Name',
       render: (category: Category) => (
         <div>
-          <div className="font-medium">{category.name}</div>
-          <div className="text-gray-500 text-xs">{category.slug}</div>
+          <div className="font-medium">{category.label ?? category.name}</div>
+          <div className="text-gray-500 text-xs">{category.slug ?? category.status}</div>
         </div>
       ),
     },

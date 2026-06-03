@@ -72,14 +72,14 @@ export default function XpPage() {
       key: 'name',
       header: 'Name',
       render: (level: XpLevel) => (
-        <span className="font-medium">{level.name}</span>
+        <span className="font-medium">{level.label ?? level.name ?? '-'}</span>
       ),
     },
     {
       key: 'minXp',
       header: 'Min XP',
       render: (level: XpLevel) => (
-        <span className="font-mono">{level.minXp.toLocaleString()}</span>
+        <span className="font-mono">{(level.xpThreshold ?? level.minXp ?? 0).toLocaleString()}</span>
       ),
     },
     {

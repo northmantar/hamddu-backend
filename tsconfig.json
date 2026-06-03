@@ -1,4 +1,5 @@
 {
+  "exclude": ["admin", "node_modules", "dist"],
   "compilerOptions": {
     "module": "commonjs",
     "declaration": true,

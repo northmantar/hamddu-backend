@@ -7,7 +7,10 @@ import type { Category, CreateCategoryDto, UpdateCategoryDto } from '@/types';
 export function useCategories() {
   return useQuery({
     queryKey: ['categories'],
-    queryFn: () => api.get<Category[]>('/boards/categories'),
+    queryFn: async () => {
+      const res = await api.get<{ data: Category[] }>('/boards/categories');
+      return res.data;
+    },
   });
 }
 

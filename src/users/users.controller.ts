@@ -22,9 +22,12 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UpdateNicknameDto } from './dto/update-nickname.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { SurveyDto } from './dto/survey.dto';
+import { CreateUserDto } from './dto/create-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PaginationMeta } from '../boards/dto/pagination.dto';
+import { UserType } from '../enums/user.enum';
+import * as bcrypt from 'bcrypt';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -102,6 +105,18 @@ export class UsersController {
         totalPages: Math.ceil(totalCount / +limit),
       },
     };
+  }
+
+  @ApiOperation({ summary: '유저 생성 (관리자)' })
+  @ApiResponse({ status: 201, description: '유저 생성 완료', type: UserResponseDto })
+  @ApiResponse({ status: 403, description: '접근 권한 없음' })
+  @ApiResponse({ status: 409, description: '이미 존재하는 이메일' })
+  @Post()
+  @UseGuards(AdminGuard)
+  async createUser(@Body() dto: CreateUserDto): Promise<UserResponseDto> {
+    const hashed = await bcrypt.hash(dto.password, 10);
+    const user = await this.usersService.createUser(dto.email, hashed, dto.type ?? UserType.MEMBER);
+    return UserResponseDto.from(user);
   }
 
   @ApiOperation({ summary: '유저 역할 변경 (관리자)' })

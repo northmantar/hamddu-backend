@@ -29,9 +29,9 @@ export function XpLevelForm({ initialData, onSubmit, isLoading, onCancel }: XpLe
   useEffect(() => {
     if (initialData) {
       setLevel(String(initialData.level));
-      setName(initialData.name);
-      setMinXp(String(initialData.minXp));
-      setMaxXp(initialData.maxXp !== null ? String(initialData.maxXp) : '');
+      setName(initialData.name ?? initialData.label ?? '');
+      setMinXp(String(initialData.minXp ?? initialData.xpThreshold ?? 0));
+      setMaxXp(initialData.maxXp != null ? String(initialData.maxXp) : '');
     }
   }, [initialData]);
 

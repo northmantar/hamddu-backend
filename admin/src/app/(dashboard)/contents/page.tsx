@@ -71,17 +71,17 @@ export default function ContentsPage() {
     {
       key: 'viewCount',
       header: 'Views',
-      render: (content: Content) => content.viewCount.toLocaleString(),
+      render: (content: Content) => (content.viewCount ?? 0).toLocaleString(),
     },
     {
       key: 'likeCount',
       header: 'Likes',
-      render: (content: Content) => content.likeCount.toLocaleString(),
+      render: (content: Content) => (content.likeCount ?? 0).toLocaleString(),
     },
     {
       key: 'publishedAt',
       header: 'Published',
-      render: (content: Content) => new Date(content.publishedAt).toLocaleDateString(),
+      render: (content: Content) => content.publishedAt ? new Date(content.publishedAt).toLocaleDateString() : '-',
     },
     {
       key: 'actions',

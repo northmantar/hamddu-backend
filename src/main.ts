@@ -6,8 +6,12 @@ import { AppModule } from './app.module';
 import { infisicalLoader } from './infisical/infisical.loader';
 
 async function bootstrap() {
-  const secrets = await infisicalLoader();
-  Object.assign(process.env, secrets);
+  try {
+    const secrets = await infisicalLoader();
+    Object.assign(process.env, secrets);
+  } catch (err) {
+    console.warn('[Infisical] Skipping remote secrets, using local .env:', (err as Error).message);
+  }
 
   const app = await NestFactory.create(AppModule);
 

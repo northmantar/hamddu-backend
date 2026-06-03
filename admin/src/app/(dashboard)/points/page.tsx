@@ -65,7 +65,7 @@ export default function PointsPage() {
       key: 'eventType',
       header: 'Event Type',
       render: (policy: PointPolicy) => (
-        <code className="bg-gray-100 px-2 py-1 rounded text-sm">{policy.eventType}</code>
+        <code className="bg-gray-100 px-2 py-1 rounded text-sm">{policy.actionType ?? policy.eventType ?? '-'}</code>
       ),
     },
     {
@@ -73,7 +73,7 @@ export default function PointsPage() {
       header: 'Name',
       render: (policy: PointPolicy) => (
         <div>
-          <div className="font-medium">{policy.name}</div>
+          <div className="font-medium">{policy.name ?? '-'}</div>
           {policy.description && (
             <div className="text-gray-500 text-xs">{policy.description}</div>
           )}
@@ -83,11 +83,14 @@ export default function PointsPage() {
     {
       key: 'points',
       header: 'Points',
-      render: (policy: PointPolicy) => (
-        <span className={`font-mono ${policy.points >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-          {policy.points >= 0 ? '+' : ''}{policy.points}
-        </span>
-      ),
+      render: (policy: PointPolicy) => {
+        const pts = policy.pointAmount ?? policy.points ?? 0;
+        return (
+          <span className={`font-mono ${pts >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {pts >= 0 ? '+' : ''}{pts}
+          </span>
+        );
+      },
     },
     {
       key: 'isActive',

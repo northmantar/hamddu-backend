@@ -7,7 +7,10 @@ import type { XpLevel, CreateXpLevelDto, UpdateXpLevelDto } from '@/types';
 export function useXpLevels() {
   return useQuery({
     queryKey: ['xp-levels'],
-    queryFn: () => api.get<XpLevel[]>('/xp/levels'),
+    queryFn: async () => {
+      const res = await api.get<{ data: XpLevel[] }>('/xp/levels');
+      return res.data;
+    },
   });
 }
 

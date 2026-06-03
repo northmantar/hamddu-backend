@@ -60,10 +60,9 @@ export class ContentListItemDto {
       youtubeVideoId: content.youtubeVideoId,
       name: content.name,
       type: content.type,
-      channel: {
-        id: content.channel.id,
-        name: content.channel.name,
-      },
+      channel: content.channel
+        ? { id: content.channel.id, name: content.channel.name }
+        : { id: '', name: '(삭제된 채널)' },
       pointApplyable: content.pointApplyable,
       sortOrder: content.sortOrder,
       uploadedAt: content.uploadedAt,
@@ -92,11 +91,9 @@ export class ContentDetailDto extends ContentListItemDto {
     const dto: ContentDetailDto = {
       ...base,
       interests: content.interests,
-      channel: {
-        id: content.channel.id,
-        name: content.channel.name,
-        youtubeChannelId: content.channel.youtubeChannelId,
-      },
+      channel: content.channel
+        ? { id: content.channel.id, name: content.channel.name, youtubeChannelId: content.channel.youtubeChannelId }
+        : { id: '', name: '(삭제된 채널)' },
     };
 
     // 튜토리얼 콘텐츠(symbol)인 경우에만 시청 기록과 챌린지 완료 여부 포함

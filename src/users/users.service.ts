@@ -153,6 +153,21 @@ export class UsersService {
     });
   }
 
+  async createUser(email: string, hashedPassword: string, type: UserType): Promise<User> {
+    const existing = await this.userRepo.findOne({ where: { email } });
+    if (existing) {
+      throw new ConflictException('이미 등록된 이메일입니다.');
+    }
+    const user = this.userRepo.create({
+      email,
+      password: hashedPassword,
+      type,
+      platform: null,
+      platformUserId: null,
+    });
+    return this.userRepo.save(user);
+  }
+
   async createAdminUser(email: string, hashedPassword: string): Promise<User> {
     const existing = await this.userRepo.findOne({
       where: { email, type: UserType.ADMIN },

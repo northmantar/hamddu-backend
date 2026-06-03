@@ -1,26 +1,35 @@
 // User types
 export interface User {
   id: string;
+  email: string | null;
+  nickname: string | null;
+  profileImageUrl?: string | null;
+  role?: 'member' | 'admin';
+  type?: 'member' | 'admin';
+  xp?: number;
+  points?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateUserAdminDto {
   email: string;
-  nickname: string;
-  profileImageUrl: string | null;
-  role: 'user' | 'admin';
-  xp: number;
-  points: number;
-  createdAt: string;
-  updatedAt: string;
+  password: string;
+  type?: 'member' | 'admin';
 }
 
 // Channel types
 export interface Channel {
   id: string;
-  platformType: 'youtube' | 'chzzk';
-  channelId: string;
   name: string;
-  profileImageUrl: string | null;
-  subscriberCount: number;
-  createdAt: string;
-  updatedAt: string;
+  youtubeChannelId?: string;
+  addedAt?: string;
+  platformType?: 'youtube' | 'chzzk';
+  channelId?: string;
+  profileImageUrl?: string | null;
+  subscriberCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateChannelDto {
@@ -64,12 +73,14 @@ export interface UpdateContentDto {
 // Category types
 export interface Category {
   id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  sortOrder: number;
-  createdAt: string;
-  updatedAt: string;
+  label?: string;
+  status?: string;
+  name?: string;
+  slug?: string;
+  description?: string | null;
+  sortOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateCategoryDto {
@@ -89,13 +100,16 @@ export interface UpdateCategoryDto {
 // Point Policy types
 export interface PointPolicy {
   id: string;
-  eventType: string;
-  name: string;
-  description: string | null;
-  points: number;
+  actionType?: string;
+  pointAmount?: number;
+  isOneTime?: boolean;
+  eventType?: string;
+  name?: string;
+  description?: string | null;
+  points?: number;
   isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreatePointPolicyDto {
@@ -117,11 +131,14 @@ export interface UpdatePointPolicyDto {
 export interface XpLevel {
   id: string;
   level: number;
-  name: string;
-  minXp: number;
-  maxXp: number | null;
-  createdAt: string;
-  updatedAt: string;
+  xpThreshold?: number;
+  label?: string;
+  isActive?: boolean;
+  name?: string;
+  minXp?: number;
+  maxXp?: number | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateXpLevelDto {

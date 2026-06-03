@@ -79,8 +79,7 @@ import { XpLevelPolicy } from "./entities/xp-level-policy.entity";
           XpTransaction,
           XpLevelPolicy,
         ],
-        // synchronize: false,
-        synchronize: true, // TODO: false
+        synchronize: false,
         namingStrategy: new SnakeNamingStrategy(),
         // migrations: ['src/migrations/*.ts'],
       }),

@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
@@ -49,6 +49,10 @@ async function refreshAccessToken(): Promise<string | null> {
     }
 
     const data = await response.json();
+    if (!data.accessToken || !data.refreshToken) {
+      clearTokens();
+      return null;
+    }
     setTokens(data.accessToken, data.refreshToken);
     return data.accessToken;
   } catch {

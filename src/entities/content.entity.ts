@@ -19,8 +19,8 @@ export class Content {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @Column()
-  channelId: string;
+  @Column({ nullable: true })
+  channelId: string | null;
 
   @ManyToOne(() => Channel, (channel) => channel.contents)
   @JoinColumn({ name: "channel_id" })

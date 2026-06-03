@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { User, PaginatedResponse } from '@/types';
+import type { User, PaginatedResponse, CreateUserAdminDto } from '@/types';
 
 interface UseUsersParams {
   page?: number;
@@ -30,12 +30,23 @@ export function useUser(id: string) {
   });
 }
 
+export function useCreateUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (dto: CreateUserAdminDto) => api.post<User>('/users', dto),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+}
+
 export function useUpdateUserRole() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, role }: { id: string; role: 'user' | 'admin' }) =>
-      api.patch<User>(`/users/${id}/role`, { role }),
+    mutationFn: ({ id, role }: { id: string; role: 'member' | 'admin' }) =>
+      api.patch<User>(`/users/${id}/role`, { type: role }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },

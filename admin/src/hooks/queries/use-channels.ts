@@ -7,7 +7,10 @@ import type { Channel, CreateChannelDto, UpdateChannelDto } from '@/types';
 export function useChannels() {
   return useQuery({
     queryKey: ['channels'],
-    queryFn: () => api.get<Channel[]>('/channels'),
+    queryFn: async () => {
+      const res = await api.get<{ data: Channel[] }>('/channels');
+      return res.data;
+    },
   });
 }
 

@@ -7,7 +7,10 @@ import type { PointPolicy, CreatePointPolicyDto, UpdatePointPolicyDto } from '@/
 export function usePointPolicies() {
   return useQuery({
     queryKey: ['point-policies'],
-    queryFn: () => api.get<PointPolicy[]>('/points/policies'),
+    queryFn: async () => {
+      const res = await api.get<{ data: PointPolicy[] }>('/points/policies');
+      return res.data;
+    },
   });
 }
 

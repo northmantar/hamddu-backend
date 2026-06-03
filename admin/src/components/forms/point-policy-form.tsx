@@ -40,10 +40,10 @@ export function PointPolicyForm({ initialData, onSubmit, isLoading, onCancel }: 
 
   useEffect(() => {
     if (initialData) {
-      setEventType(initialData.eventType);
-      setName(initialData.name);
+      setEventType(initialData.eventType ?? initialData.actionType ?? '');
+      setName(initialData.name ?? '');
       setDescription(initialData.description || '');
-      setPoints(String(initialData.points));
+      setPoints(String(initialData.points ?? initialData.pointAmount ?? 0));
       setIsActive(initialData.isActive);
     }
   }, [initialData]);

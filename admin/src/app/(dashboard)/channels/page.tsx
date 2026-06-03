@@ -70,12 +70,12 @@ export default function ChannelsPage() {
     {
       key: 'subscriberCount',
       header: 'Subscribers',
-      render: (channel: Channel) => channel.subscriberCount.toLocaleString(),
+      render: (channel: Channel) => (channel.subscriberCount ?? 0).toLocaleString(),
     },
     {
       key: 'createdAt',
       header: 'Created',
-      render: (channel: Channel) => new Date(channel.createdAt).toLocaleDateString(),
+      render: (channel: Channel) => channel.createdAt ? new Date(channel.createdAt).toLocaleDateString() : (channel.addedAt ? new Date(channel.addedAt).toLocaleDateString() : '-'),
     },
     {
       key: 'actions',

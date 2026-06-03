@@ -28,10 +28,10 @@ export function CategoryForm({ initialData, onSubmit, isLoading, onCancel }: Cat
 
   useEffect(() => {
     if (initialData) {
-      setName(initialData.name);
-      setSlug(initialData.slug);
+      setName(initialData.name ?? initialData.label ?? '');
+      setSlug(initialData.slug ?? '');
       setDescription(initialData.description || '');
-      setSortOrder(String(initialData.sortOrder));
+      setSortOrder(String(initialData.sortOrder ?? 0));
     }
   }, [initialData]);
 
