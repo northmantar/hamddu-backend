@@ -2,13 +2,85 @@ import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class CreateAllTables1747000000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Add password column to users table (for admin accounts)
+    // Create enum types for users table
     await queryRunner.query(`
-      ALTER TABLE "users"
-      ADD COLUMN IF NOT EXISTS "password" varchar
+      DO $$ BEGIN
+        CREATE TYPE "users_status_enum" AS ENUM ('active', 'withdrawn');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
+    `);
+    await queryRunner.query(`
+      DO $$ BEGIN
+        CREATE TYPE "users_type_enum" AS ENUM ('admin', 'member');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
+    `);
+    await queryRunner.query(`
+      DO $$ BEGIN
+        CREATE TYPE "users_platform_enum" AS ENUM ('naver', 'google');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
+    `);
+    await queryRunner.query(`
+      DO $$ BEGIN
+        CREATE TYPE "users_age_enum" AS ENUM ('1418', '1924', '2529', '3034', '3539', '4049', '50+');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
+    `);
+    await queryRunner.query(`
+      DO $$ BEGIN
+        CREATE TYPE "users_gender_enum" AS ENUM ('M', 'F');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
+    `);
+    await queryRunner.query(`
+      DO $$ BEGIN
+        CREATE TYPE "users_interests_enum" AS ENUM ('crochet', 'knitting');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
+    `);
+    await queryRunner.query(`
+      DO $$ BEGIN
+        CREATE TYPE "users_ability_enum" AS ENUM ('beginner', 'intermediate', 'advanced', 'expert');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
     `);
 
-    // Create enum types
+    // Create users table
+    await queryRunner.query(`
+      CREATE TABLE "users" (
+        "id" uuid NOT NULL DEFAULT gen_random_uuid(),
+        "status" "users_status_enum" NOT NULL DEFAULT 'active',
+        "type" "users_type_enum" NOT NULL DEFAULT 'member',
+        "platform_user_id" varchar,
+        "platform" "users_platform_enum",
+        "email" varchar,
+        "password" varchar,
+        "name" varchar,
+        "nickname" varchar(30),
+        "age" "users_age_enum",
+        "gender" "users_gender_enum",
+        "interests" "users_interests_enum",
+        "ability" "users_ability_enum",
+        "survey_completed_at" TIMESTAMP WITH TIME ZONE,
+        "withdrawn_at" TIMESTAMP WITH TIME ZONE,
+        "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+        "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+        CONSTRAINT "UQ_users_platform_platform_user_id" UNIQUE ("platform", "platform_user_id"),
+        CONSTRAINT "UQ_users_email_type" UNIQUE ("email", "type"),
+        CONSTRAINT "UQ_users_nickname" UNIQUE ("nickname"),
+        CONSTRAINT "PK_users" PRIMARY KEY ("id")
+      )
+    `);
+
+    // Create other enum types
     await queryRunner.query(`
       DO $$ BEGIN
         CREATE TYPE "board_status_enum" AS ENUM ('draft', 'published', 'deleted');
@@ -496,6 +568,14 @@ export class CreateAllTables1747000000000 implements MigrationInterface {
     await queryRunner.query(`DROP TYPE IF EXISTS "board_category_status_enum"`);
     await queryRunner.query(`DROP TYPE IF EXISTS "board_status_enum"`);
 
-    await queryRunner.query(`ALTER TABLE "users" DROP COLUMN IF EXISTS "password"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "users"`);
+
+    await queryRunner.query(`DROP TYPE IF EXISTS "users_ability_enum"`);
+    await queryRunner.query(`DROP TYPE IF EXISTS "users_interests_enum"`);
+    await queryRunner.query(`DROP TYPE IF EXISTS "users_gender_enum"`);
+    await queryRunner.query(`DROP TYPE IF EXISTS "users_age_enum"`);
+    await queryRunner.query(`DROP TYPE IF EXISTS "users_platform_enum"`);
+    await queryRunner.query(`DROP TYPE IF EXISTS "users_type_enum"`);
+    await queryRunner.query(`DROP TYPE IF EXISTS "users_status_enum"`);
   }
 }
