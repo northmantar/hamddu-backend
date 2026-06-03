@@ -7,3 +7,5 @@ package-lock.json
 desc
 .DS_Store
 ref/
+admin/e2e-results/
+admin/playwright-report/
