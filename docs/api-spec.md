@@ -3196,7 +3196,9 @@ No Content
 
 ### 17.1 `POST /media/upload`
 
-이미지 파일을 업로드하고 미디어 레코드를 생성합니다. 반환된 `id`를 챌린지(`mediaId`), 콘텐츠(`mediaId`), 게시글(`mediaIds`) 등의 요청에 사용합니다.
+이미지 파일을 Cloudflare R2에 업로드하고 미디어 레코드를 생성합니다. 반환된 `id`를 챌린지(`mediaId`), 콘텐츠(`mediaId`), 게시글(`mediaIds`) 등의 요청에 사용합니다.
+
+> 파일은 Cloudflare R2 버킷(`R2_BUCKET_NAME`)의 `media/` 경로에 저장되며, 응답의 `url`은 `CDN_BASE_URL/media/{timestamp}-{filename}` 형식의 CDN 공개 URL입니다.
 
 **Request**
 

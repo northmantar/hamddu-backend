@@ -360,11 +360,13 @@
 
 ### 미디어 테이블 (`media`)
 
+파일 원본은 Cloudflare R2 버킷에 저장되며, `url` 컬럼에는 `CDN_BASE_URL/media/{timestamp}-{filename}` 형식의 CDN 공개 URL이 기록됩니다.
+
 | name | type | description |
 | --- | --- | --- |
 | id | uuid_short() | `<<pkey>>` 미디어 ID |
 | uploader_id | uuid_short() | 업로드한 유저 ID (탈퇴 시 NULL) |
-| url | text | CDN에 업로드된 이미지 URL |
+| url | text | Cloudflare R2에 업로드된 파일의 CDN 공개 URL |
 | mime_type | varchar(100) | MIME 타입 (예: `image/jpeg`, `image/png`) |
 | created_at | timestamp | 업로드 일시 |
 

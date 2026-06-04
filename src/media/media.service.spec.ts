@@ -5,6 +5,13 @@ import { ConfigService } from '@nestjs/config';
 import { MediaService } from './media.service';
 import { Media } from '@entities/media.entity';
 
+jest.mock('@aws-sdk/client-s3', () => ({
+  S3Client: jest.fn().mockImplementation(() => ({
+    send: jest.fn().mockResolvedValue({}),
+  })),
+  PutObjectCommand: jest.fn().mockImplementation((input) => input),
+}));
+
 describe('MediaService', () => {
   let service: MediaService;
   let mediaRepo: jest.Mocked<Repository<Media>>;
@@ -13,7 +20,7 @@ describe('MediaService', () => {
   const mockFile = {
     originalname: 'photo.jpg',
     mimetype: 'image/jpeg',
-    buffer: Buffer.from(''),
+    buffer: Buffer.from('fake-image'),
     size: 1024,
   } as Express.Multer.File;
 
@@ -42,6 +49,10 @@ describe('MediaService', () => {
           useValue: {
             get: jest.fn((key: string, fallback?: string) => {
               if (key === 'CDN_BASE_URL') return 'https://cdn.hamddu.online';
+              if (key === 'R2_ACCOUNT_ID') return 'test-account-id';
+              if (key === 'R2_BUCKET_NAME') return 'test-bucket';
+              if (key === 'R2_ACCESS_KEY_ID') return 'test-access-key';
+              if (key === 'R2_SECRET_ACCESS_KEY') return 'test-secret-key';
               return fallback;
             }),
           },
@@ -49,8 +60,8 @@ describe('MediaService', () => {
       ],
     }).compile();
 
-    service      = module.get(MediaService);
-    mediaRepo    = module.get(getRepositoryToken(Media));
+    service       = module.get(MediaService);
+    mediaRepo     = module.get(getRepositoryToken(Media));
     configService = module.get(ConfigService);
   });
 
@@ -101,8 +112,7 @@ describe('MediaService', () => {
       );
     });
 
-    it('should use fallback CDN URL when CDN_BASE_URL is not set', async () => {
-      (configService.get as jest.Mock).mockImplementation((_key: string, fallback?: string) => fallback);
+    it('should use the configured CDN base URL as the URL prefix', async () => {
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
 
@@ -131,6 +141,30 @@ describe('MediaService', () => {
 
       expect(mediaRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ mimeType: null }),
+      );
+    });
+
+    it('should use R2_BUCKET_NAME when uploading to S3', async () => {
+      const { PutObjectCommand } = require('@aws-sdk/client-s3');
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      await service.upload(mockFile, 'user-1');
+
+      expect(PutObjectCommand).toHaveBeenCalledWith(
+        expect.objectContaining({ Bucket: 'test-bucket', Body: mockFile.buffer }),
+      );
+    });
+
+    it('should use file mimetype as ContentType when uploading to S3', async () => {
+      const { PutObjectCommand } = require('@aws-sdk/client-s3');
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      await service.upload(mockFile, 'user-1');
+
+      expect(PutObjectCommand).toHaveBeenCalledWith(
+        expect.objectContaining({ ContentType: 'image/jpeg' }),
       );
     });
   });
