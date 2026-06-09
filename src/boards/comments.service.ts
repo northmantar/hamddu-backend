@@ -69,9 +69,9 @@ export class CommentsService {
     const { page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
-    // 루트 댓글만 가져옴
+    // 루트 댓글만 가져옴 (숨김 처리된 댓글 제외)
     const [rootComments, totalCount] = await this.commentRepo.findAndCount({
-      where: { boardId, parentId: IsNull() },
+      where: { boardId, parentId: IsNull(), isHidden: false },
       relations: ["member"],
       order: { createdAt: "ASC" },
       skip,
@@ -87,6 +87,7 @@ export class CommentsService {
         .createQueryBuilder("comment")
         .leftJoinAndSelect("comment.member", "member")
         .where("comment.parentId IN (:...rootIds)", { rootIds })
+        .andWhere("comment.isHidden = :isHidden", { isHidden: false })
         .orderBy("comment.createdAt", "ASC")
         .getMany();
     }

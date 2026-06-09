@@ -221,6 +221,7 @@ Authorization: Bearer <access_token>
 |  | DELETE | /boards/:boardId/comments/:commentId | 작성자/관리자 | 댓글 삭제 |
 |  | POST | /boards/:boardId/comments/:commentId/like | 인증 | 댓글 좋아요 |
 |  | DELETE | /boards/:boardId/comments/:commentId/like | 인증 | 댓글 좋아요 취소 |
+|  | POST | /boards/:boardId/comments/:commentId/report | 인증 | 댓글 신고 |
 | **콘텐츠** | GET | /contents | 인증 | 콘텐츠 목록 |
 |  | GET | /contents/tutorials | 인증 | 튜토리얼 목록 (순서별) |
 |  | GET | /contents/:id | 인증 | 콘텐츠 상세 |
@@ -251,9 +252,12 @@ Authorization: Bearer <access_token>
 | **카테고리 관리** | POST | /boards/categories | 관리자 | 카테고리 생성 |
 |  | PATCH | /boards/categories/:categoryId | 관리자 | 카테고리 수정 |
 |  | DELETE | /boards/categories/:categoryId | 관리자 | 카테고리 삭제 |
-| **신고 관리** | GET | /boards/admin/reports | 관리자 | 전체 신고 목록 |
+| **신고 관리** | GET | /boards/admin/reports | 관리자 | 전체 게시글 신고 목록 |
 |  | GET | /boards/admin/:boardId/reports | 관리자 | 게시글별 신고 목록 |
-|  | PATCH | /boards/admin/reports/:reportId | 관리자 | 신고 처리 |
+|  | PATCH | /boards/admin/reports/:reportId | 관리자 | 게시글 신고 처리 |
+|  | GET | /boards/admin/comment-reports | 관리자 | 전체 댓글 신고 목록 |
+|  | GET | /boards/admin/comments/:commentId/reports | 관리자 | 댓글별 신고 목록 |
+|  | PATCH | /boards/admin/comment-reports/:reportId | 관리자 | 댓글 신고 처리 |
 | **포인트 정책** | POST | /points/policies | 관리자 | 정책 생성 |
 |  | PATCH | /points/policies/:id | 관리자 | 정책 수정 |
 |  | DELETE | /points/policies/:id | 관리자 | 정책 삭제 |

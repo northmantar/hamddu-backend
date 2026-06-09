@@ -6,8 +6,8 @@ import {
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { Board } from "@entities/board.entity";
-import { BoardReport } from "@entities/board-report.entity";
+import { BoardComment } from "@entities/board-comment.entity";
+import { CommentReport } from "@entities/comment-report.entity";
 import { User } from "@entities/user.entity";
 import { ReportStatus } from "@enums/report.enum";
 import { UserType } from "@enums/user.enum";
@@ -17,46 +17,46 @@ import { ReportQueryDto } from "./dto/report-query.dto";
 import { PaginationMeta } from "./dto/pagination.dto";
 
 @Injectable()
-export class ReportsService {
+export class CommentReportsService {
   constructor(
-    @InjectRepository(BoardReport)
-    private readonly reportRepo: Repository<BoardReport>,
-    @InjectRepository(Board)
-    private readonly boardRepo: Repository<Board>,
+    @InjectRepository(CommentReport)
+    private readonly reportRepo: Repository<CommentReport>,
+    @InjectRepository(BoardComment)
+    private readonly commentRepo: Repository<BoardComment>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
   ) {}
 
   async create(
-    boardId: string,
+    commentId: string,
     reporterId: string,
     dto: CreateReportDto,
-  ): Promise<BoardReport> {
-    // 게시글 존재 확인
-    const board = await this.boardRepo.findOne({
-      where: { id: boardId },
+  ): Promise<CommentReport> {
+    // 댓글 존재 확인
+    const comment = await this.commentRepo.findOne({
+      where: { id: commentId },
     });
 
-    if (!board) {
-      throw new NotFoundException("게시글을 찾을 수 없습니다.");
+    if (!comment) {
+      throw new NotFoundException("댓글을 찾을 수 없습니다.");
     }
 
-    // 자기 게시글 신고 방지
-    if (board.memberId === reporterId) {
-      throw new ForbiddenException("본인의 게시글은 신고할 수 없습니다.");
+    // 자기 댓글 신고 방지
+    if (comment.memberId === reporterId) {
+      throw new ForbiddenException("본인의 댓글은 신고할 수 없습니다.");
     }
 
     // 중복 신고 확인
     const existingReport = await this.reportRepo.findOne({
-      where: { boardId, reporterId },
+      where: { commentId, reporterId },
     });
 
     if (existingReport) {
-      throw new ConflictException("이미 신고한 게시글입니다.");
+      throw new ConflictException("이미 신고한 댓글입니다.");
     }
 
     const report = this.reportRepo.create({
-      boardId,
+      commentId,
       reporterId,
       reason: dto.reason,
       description: dto.description ?? null,
@@ -66,10 +66,10 @@ export class ReportsService {
     return this.reportRepo.save(report);
   }
 
-  async findById(id: string): Promise<BoardReport> {
+  async findById(id: string): Promise<CommentReport> {
     const report = await this.reportRepo.findOne({
       where: { id },
-      relations: ["reporter", "board"],
+      relations: ["reporter", "comment"],
     });
 
     if (!report) {
@@ -81,14 +81,14 @@ export class ReportsService {
 
   async findAll(
     query: ReportQueryDto,
-  ): Promise<{ data: BoardReport[]; meta: PaginationMeta }> {
+  ): Promise<{ data: CommentReport[]; meta: PaginationMeta }> {
     const { page = 1, limit = 20, status } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.reportRepo
       .createQueryBuilder("report")
       .leftJoinAndSelect("report.reporter", "reporter")
-      .leftJoinAndSelect("report.board", "board");
+      .leftJoinAndSelect("report.comment", "comment");
 
     if (status) {
       qb.where("report.status = :status", { status });
@@ -109,18 +109,18 @@ export class ReportsService {
     };
   }
 
-  async findByBoardId(
-    boardId: string,
+  async findByCommentId(
+    commentId: string,
     query: ReportQueryDto,
-  ): Promise<{ data: BoardReport[]; meta: PaginationMeta }> {
+  ): Promise<{ data: CommentReport[]; meta: PaginationMeta }> {
     const { page = 1, limit = 20, status } = query;
     const skip = (page - 1) * limit;
 
     const qb = this.reportRepo
       .createQueryBuilder("report")
       .leftJoinAndSelect("report.reporter", "reporter")
-      .leftJoinAndSelect("report.board", "board")
-      .where("report.boardId = :boardId", { boardId });
+      .leftJoinAndSelect("report.comment", "comment")
+      .where("report.commentId = :commentId", { commentId });
 
     if (status) {
       qb.andWhere("report.status = :status", { status });
@@ -145,7 +145,7 @@ export class ReportsService {
     reportId: string,
     memberId: string,
     dto: UpdateReportDto,
-  ): Promise<BoardReport> {
+  ): Promise<CommentReport> {
     // 관리자 권한 확인
     const user = await this.userRepo.findOne({ where: { id: memberId } });
     if (user?.type !== UserType.ADMIN) {
@@ -159,9 +159,9 @@ export class ReportsService {
       throw new ConflictException("이미 처리된 신고입니다.");
     }
 
-    // 신고 승인(resolved) 시 게시글 숨김 처리
+    // 신고 승인(resolved) 시 댓글 숨김 처리
     if (dto.status === ReportStatus.RESOLVED) {
-      await this.boardRepo.update(report.boardId, { isHidden: true });
+      await this.commentRepo.update(report.commentId, { isHidden: true });
     }
 
     await this.reportRepo.update(reportId, {

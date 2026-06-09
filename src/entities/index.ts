@@ -12,6 +12,7 @@ export * from "./board-like.entity";
 export * from "./board-comment.entity";
 export * from "./board-comment-like.entity";
 export * from "./board-report.entity";
+export * from "./comment-report.entity";
 export * from "./point-earning-policy.entity";
 export * from "./point-wallet.entity";
 export * from "./point-transaction.entity";

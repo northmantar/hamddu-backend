@@ -51,6 +51,9 @@ export class Board {
   @Column({ type: "int", default: 0 })
   likeCount: number;
 
+  @Column({ type: "boolean", default: false })
+  isHidden: boolean;
+
   @Column({ nullable: true })
   thumbnailMediaId: string | null;
 

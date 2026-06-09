@@ -52,6 +52,9 @@ export class BoardComment {
   @Column({ type: "int", default: 0 })
   likeCount: number;
 
+  @Column({ type: "boolean", default: false })
+  isHidden: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

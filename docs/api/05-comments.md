@@ -295,3 +295,54 @@ No Content
 | **상태 코드** | **errorMessage** |
 | --- | --- |
 | 404 | "좋아요 기록을 찾을 수 없습니다." |
+
+---
+
+## 5.7 `POST /boards/:boardId/comments/:commentId/report`
+
+댓글을 신고합니다.
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | boardId | string (UUID) | Yes | 게시글 ID |
+    | commentId | string (UUID) | Yes | 댓글 ID |
+- Body:
+
+    ```json
+    {
+      "reason": "spam",
+      "description": "스팸 댓글입니다."
+    }
+    ```
+
+    | 필드 | 타입 | 필수 | 유효성 조건 |
+    | --- | --- | --- | --- |
+    | `reason` | string | Yes | `spam` \| `harassment` \| `inappropriate` \| `copyright` \| `other` |
+    | `description` | string | No | 최대 1000자 |
+
+**Response (201)**
+
+```json
+{
+  "id": "report-uuid",
+  "commentId": "comment-uuid",
+  "message": "신고가 접수되었습니다."
+}
+```
+
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 403 | "본인의 댓글은 신고할 수 없습니다." |
+| 404 | "댓글을 찾을 수 없습니다." |
+| 409 | "이미 신고한 댓글입니다." |

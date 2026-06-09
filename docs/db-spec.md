@@ -109,6 +109,7 @@
       * title
       * body
       * like_count
+      * is_hidden
       * created_at
       * updated_at
       * deleted_at
@@ -141,6 +142,7 @@
       * body
       * depth
       * like_count
+      * is_hidden
       * created_at
       * updated_at
       * deleted_at
@@ -159,6 +161,19 @@
       * id
       --
       * board_id
+      * reporter_id
+      --
+      * reason <<enum>>
+      * description
+      * status <<enum>>
+      * created_at
+      * processed_at
+    }
+
+    entity comment_report #E1FFE1 {
+      * id
+      --
+      * comment_id
       * reporter_id
       --
       * reason <<enum>>
@@ -284,6 +299,8 @@
     board ||--o{ board_like
     board ||--o{ board_report
     member ||--o{ board_report
+    board_comment ||--o{ comment_report
+    member ||--o{ comment_report
     content ||--o{ watch_history
     content ||--|{ challenge
     challenge ||--o{ point_transaction
@@ -409,6 +426,7 @@
 | title | text | 게시글 타이틀 |
 | body | text | 게시글 내용 |
 | like_count | integer | 좋아요 수 |
+| is_hidden | boolean | 신고로 인한 숨김 여부 (default: false) |
 | created_at | timestamp | 게시글 작성 일시 |
 | updated_at | timestamp | 게시글 수정 일시 |
 | deleted_at | timestamp | 게시글 삭제 일시 (논리삭제) |
@@ -433,6 +451,7 @@
 | body | text | 댓글 내용 |
 | depth | integer | 댓글 깊이 (0: 루트 댓글, 1: 대댓글) |
 | like_count | integer | 좋아요 수 |
+| is_hidden | boolean | 신고로 인한 숨김 여부 (default: false) |
 | created_at | timestamp | 댓글 작성 일시 |
 | updated_at | timestamp | 댓글 수정 일시 |
 | deleted_at | timestamp | 댓글 삭제 일시 (논리삭제) |
@@ -470,6 +489,23 @@
 
 - `board_id` + `reporter_id` UNIQUE 제약조건 (동일 게시글에 중복 신고 방지)
 - 게시글 삭제 시 cascade 삭제
+- 유저 삭제 시 cascade 삭제
+
+### 댓글 신고 테이블 (`comment_report`)
+
+| name | type | description |
+| --- | --- | --- |
+| id | uuid_short() | `<<pkey>>` 신고 ID |
+| comment_id | uuid_short() | 신고 대상 댓글 ID |
+| reporter_id | uuid_short() | 신고자 유저 ID |
+| reason | enum | 신고 사유 (`spam` \| `harassment` \| `inappropriate` \| `copyright` \| `other`) |
+| description | text | 신고 상세 내용 (nullable) |
+| status | enum | 신고 처리 상태 (`pending` \| `resolved` \| `rejected`) |
+| created_at | timestamp | 신고 일시 |
+| processed_at | timestamp | 처리 완료 일시 (nullable) |
+
+- `comment_id` + `reporter_id` UNIQUE 제약조건 (동일 댓글에 중복 신고 방지)
+- 댓글 삭제 시 cascade 삭제
 - 유저 삭제 시 cascade 삭제
 
 ### 유튜브 시청 기록 테이블 (`watch_history`)

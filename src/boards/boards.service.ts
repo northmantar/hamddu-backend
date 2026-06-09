@@ -47,7 +47,8 @@ export class BoardsService {
       .leftJoinAndSelect("board.member", "member")
       .leftJoinAndSelect("board.category", "category")
       .where("board.status = :status", { status: BoardStatus.PUBLISHED })
-      .andWhere("board.deletedAt IS NULL");
+      .andWhere("board.deletedAt IS NULL")
+      .andWhere("board.isHidden = :isHidden", { isHidden: false });
 
     if (categoryId) {
       qb.andWhere("board.categoryId = :categoryId", { categoryId });
@@ -74,7 +75,7 @@ export class BoardsService {
 
   async findById(id: string): Promise<Board> {
     const board = await this.boardRepo.findOne({
-      where: { id, deletedAt: IsNull() },
+      where: { id, deletedAt: IsNull(), isHidden: false },
       relations: ["member", "category"],
     });
 

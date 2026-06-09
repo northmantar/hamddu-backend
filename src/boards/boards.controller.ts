@@ -22,6 +22,7 @@ import {
 import { BoardsService } from "./boards.service";
 import { CommentsService } from "./comments.service";
 import { ReportsService } from "./reports.service";
+import { CommentReportsService } from "./comment-reports.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { AdminGuard } from "../common/guards/admin.guard";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -48,6 +49,10 @@ import {
   CreateReportResponseDto,
   ReportDetailDto,
 } from "./dto/report-response.dto";
+import {
+  CreateCommentReportResponseDto,
+  CommentReportDetailDto,
+} from "./dto/comment-report-response.dto";
 
 @ApiTags("boards")
 @ApiBearerAuth()
@@ -58,6 +63,7 @@ export class BoardsController {
     private readonly boardsService: BoardsService,
     private readonly commentsService: CommentsService,
     private readonly reportsService: ReportsService,
+    private readonly commentReportsService: CommentReportsService,
   ) {}
 
   // ==================== 게시판 API ====================
@@ -294,6 +300,28 @@ export class BoardsController {
     };
   }
 
+  @ApiOperation({ summary: "댓글 신고" })
+  @ApiParam({ name: "boardId", description: "게시글 ID" })
+  @ApiParam({ name: "commentId", description: "댓글 ID" })
+  @ApiResponse({ status: 201, description: "신고 접수 완료" })
+  @ApiResponse({ status: 403, description: "본인 댓글 신고 불가" })
+  @ApiResponse({ status: 404, description: "댓글을 찾을 수 없음" })
+  @ApiResponse({ status: 409, description: "이미 신고한 댓글" })
+  @Post(":boardId/comments/:commentId/report")
+  async reportComment(
+    @Param("boardId", ParseUUIDPipe) _boardId: string,
+    @Param("commentId", ParseUUIDPipe) commentId: string,
+    @CurrentUser() payload: JwtPayload,
+    @Body() dto: CreateReportDto,
+  ): Promise<CreateCommentReportResponseDto> {
+    const report = await this.commentReportsService.create(commentId, payload.sub, dto);
+    return {
+      id: report.id,
+      commentId,
+      message: "신고가 접수되었습니다.",
+    };
+  }
+
   // ==================== 카테고리 관리 API (관리자) ====================
 
   @ApiOperation({ summary: "카테고리 생성 (관리자)" })
@@ -382,5 +410,56 @@ export class BoardsController {
   ): Promise<ReportDetailDto> {
     const report = await this.reportsService.update(reportId, payload.sub, dto);
     return ReportDetailDto.fromWithDetails(report);
+  }
+
+  // ==================== 댓글 신고 관리 API (관리자) ====================
+
+  @ApiOperation({ summary: "전체 댓글 신고 목록 조회 (관리자)" })
+  @ApiResponse({ status: 200, description: "댓글 신고 목록 반환" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @Get("admin/comment-reports")
+  @UseGuards(AdminGuard)
+  async findAllCommentReports(
+    @Query() query: ReportQueryDto,
+  ): Promise<{ data: CommentReportDetailDto[]; meta: PaginationMeta }> {
+    const result = await this.commentReportsService.findAll(query);
+    return {
+      data: result.data.map(CommentReportDetailDto.fromWithDetails),
+      meta: result.meta,
+    };
+  }
+
+  @ApiOperation({ summary: "특정 댓글 신고 목록 조회 (관리자)" })
+  @ApiParam({ name: "commentId", description: "댓글 ID" })
+  @ApiResponse({ status: 200, description: "댓글 신고 목록 반환" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @Get("admin/comments/:commentId/reports")
+  @UseGuards(AdminGuard)
+  async findReportsByComment(
+    @Param("commentId", ParseUUIDPipe) commentId: string,
+    @Query() query: ReportQueryDto,
+  ): Promise<{ data: CommentReportDetailDto[]; meta: PaginationMeta }> {
+    const result = await this.commentReportsService.findByCommentId(commentId, query);
+    return {
+      data: result.data.map(CommentReportDetailDto.fromWithDetails),
+      meta: result.meta,
+    };
+  }
+
+  @ApiOperation({ summary: "댓글 신고 처리 (관리자)" })
+  @ApiParam({ name: "reportId", description: "댓글 신고 ID" })
+  @ApiResponse({ status: 200, description: "댓글 신고 처리 완료" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @ApiResponse({ status: 404, description: "신고를 찾을 수 없음" })
+  @ApiResponse({ status: 409, description: "이미 처리된 신고" })
+  @Patch("admin/comment-reports/:reportId")
+  @UseGuards(AdminGuard)
+  async updateCommentReport(
+    @Param("reportId", ParseUUIDPipe) reportId: string,
+    @CurrentUser() payload: JwtPayload,
+    @Body() dto: UpdateReportDto,
+  ): Promise<CommentReportDetailDto> {
+    const report = await this.commentReportsService.update(reportId, payload.sub, dto);
+    return CommentReportDetailDto.fromWithDetails(report);
   }
 }
