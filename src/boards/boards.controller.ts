@@ -21,6 +21,7 @@ import {
 } from "@nestjs/swagger";
 import { BoardsService } from "./boards.service";
 import { CommentsService } from "./comments.service";
+import { ReportsService } from "./reports.service";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { AdminGuard } from "../common/guards/admin.guard";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
@@ -32,6 +33,9 @@ import { CreateCategoryDto } from "./dto/create-category.dto";
 import { UpdateCategoryDto } from "./dto/update-category.dto";
 import { CreateCommentDto } from "./dto/create-comment.dto";
 import { UpdateCommentDto } from "./dto/update-comment.dto";
+import { CreateReportDto } from "./dto/create-report.dto";
+import { UpdateReportDto } from "./dto/update-report.dto";
+import { ReportQueryDto } from "./dto/report-query.dto";
 import { PaginationQueryDto, PaginationMeta } from "./dto/pagination.dto";
 import {
   BoardListItemDto,
@@ -40,6 +44,10 @@ import {
 } from "./dto/board-response.dto";
 import { CategoryResponseDto } from "./dto/category-response.dto";
 import { CommentResponseDto, CommentLikeResponseDto } from "./dto/comment-response.dto";
+import {
+  CreateReportResponseDto,
+  ReportDetailDto,
+} from "./dto/report-response.dto";
 
 @ApiTags("boards")
 @ApiBearerAuth()
@@ -49,6 +57,7 @@ export class BoardsController {
   constructor(
     private readonly boardsService: BoardsService,
     private readonly commentsService: CommentsService,
+    private readonly reportsService: ReportsService,
   ) {}
 
   // ==================== 게시판 API ====================
@@ -161,6 +170,26 @@ export class BoardsController {
       boardId: id,
       likeCount: result.likeCount,
       isLiked: false,
+    };
+  }
+
+  @ApiOperation({ summary: "게시글 신고" })
+  @ApiParam({ name: "id", description: "게시글 ID" })
+  @ApiResponse({ status: 201, description: "신고 접수 완료" })
+  @ApiResponse({ status: 403, description: "본인 게시글 신고 불가" })
+  @ApiResponse({ status: 404, description: "게시글을 찾을 수 없음" })
+  @ApiResponse({ status: 409, description: "이미 신고한 게시글" })
+  @Post(":id/report")
+  async report(
+    @Param("id", ParseUUIDPipe) id: string,
+    @CurrentUser() payload: JwtPayload,
+    @Body() dto: CreateReportDto,
+  ): Promise<CreateReportResponseDto> {
+    const report = await this.reportsService.create(id, payload.sub, dto);
+    return {
+      id: report.id,
+      boardId: id,
+      message: "신고가 접수되었습니다.",
     };
   }
 
@@ -302,5 +331,56 @@ export class BoardsController {
   @UseGuards(AdminGuard)
   async deleteCategory(@Param("categoryId", ParseUUIDPipe) categoryId: string): Promise<void> {
     await this.boardsService.deleteCategory(categoryId);
+  }
+
+  // ==================== 신고 관리 API (관리자) ====================
+
+  @ApiOperation({ summary: "전체 신고 목록 조회 (관리자)" })
+  @ApiResponse({ status: 200, description: "신고 목록 반환" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @Get("admin/reports")
+  @UseGuards(AdminGuard)
+  async findAllReports(
+    @Query() query: ReportQueryDto,
+  ): Promise<{ data: ReportDetailDto[]; meta: PaginationMeta }> {
+    const result = await this.reportsService.findAll(query);
+    return {
+      data: result.data.map(ReportDetailDto.fromWithDetails),
+      meta: result.meta,
+    };
+  }
+
+  @ApiOperation({ summary: "특정 게시글 신고 목록 조회 (관리자)" })
+  @ApiParam({ name: "boardId", description: "게시글 ID" })
+  @ApiResponse({ status: 200, description: "신고 목록 반환" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @Get("admin/:boardId/reports")
+  @UseGuards(AdminGuard)
+  async findReportsByBoard(
+    @Param("boardId", ParseUUIDPipe) boardId: string,
+    @Query() query: ReportQueryDto,
+  ): Promise<{ data: ReportDetailDto[]; meta: PaginationMeta }> {
+    const result = await this.reportsService.findByBoardId(boardId, query);
+    return {
+      data: result.data.map(ReportDetailDto.fromWithDetails),
+      meta: result.meta,
+    };
+  }
+
+  @ApiOperation({ summary: "신고 처리 (관리자)" })
+  @ApiParam({ name: "reportId", description: "신고 ID" })
+  @ApiResponse({ status: 200, description: "신고 처리 완료" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @ApiResponse({ status: 404, description: "신고를 찾을 수 없음" })
+  @ApiResponse({ status: 409, description: "이미 처리된 신고" })
+  @Patch("admin/reports/:reportId")
+  @UseGuards(AdminGuard)
+  async updateReport(
+    @Param("reportId", ParseUUIDPipe) reportId: string,
+    @CurrentUser() payload: JwtPayload,
+    @Body() dto: UpdateReportDto,
+  ): Promise<ReportDetailDto> {
+    const report = await this.reportsService.update(reportId, payload.sub, dto);
+    return ReportDetailDto.fromWithDetails(report);
   }
 }

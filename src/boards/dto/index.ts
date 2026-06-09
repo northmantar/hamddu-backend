@@ -7,3 +7,7 @@ export * from "./category-response.dto";
 export * from "./create-comment.dto";
 export * from "./update-comment.dto";
 export * from "./comment-response.dto";
+export * from "./create-report.dto";
+export * from "./update-report.dto";
+export * from "./report-response.dto";
+export * from "./report-query.dto";
