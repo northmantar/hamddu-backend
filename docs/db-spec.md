@@ -154,7 +154,20 @@
       --
       * created_at
     }
-    
+
+    entity board_report #E1FFE1 {
+      * id
+      --
+      * board_id
+      * reporter_id
+      --
+      * reason <<enum>>
+      * description
+      * status <<enum>>
+      * created_at
+      * processed_at
+    }
+
     entity point_earning_policy #D2D2FF {
       * id
       --
@@ -269,6 +282,8 @@
     board_comment ||--o{ point_transaction
     board }o--|| board_category
     board ||--o{ board_like
+    board ||--o{ board_report
+    member ||--o{ board_report
     content ||--o{ watch_history
     content ||--|{ challenge
     challenge ||--o{ point_transaction
@@ -439,6 +454,23 @@
 | board_id | uuid_short() | 게시글 ID |
 | member_id | uuid_short() | 좋아요 액션을 수행한 유저 ID |
 | created_at | timestamp | 좋아요 액션 수행 일시 |
+
+### 게시글 신고 테이블 (`board_report`)
+
+| name | type | description |
+| --- | --- | --- |
+| id | uuid_short() | `<<pkey>>` 신고 ID |
+| board_id | uuid_short() | 신고 대상 게시글 ID |
+| reporter_id | uuid_short() | 신고자 유저 ID |
+| reason | enum | 신고 사유 (`spam` \| `harassment` \| `inappropriate` \| `copyright` \| `other`) |
+| description | text | 신고 상세 내용 (nullable) |
+| status | enum | 신고 처리 상태 (`pending` \| `resolved` \| `rejected`) |
+| created_at | timestamp | 신고 일시 |
+| processed_at | timestamp | 처리 완료 일시 (nullable) |
+
+- `board_id` + `reporter_id` UNIQUE 제약조건 (동일 게시글에 중복 신고 방지)
+- 게시글 삭제 시 cascade 삭제
+- 유저 삭제 시 cascade 삭제
 
 ### 유튜브 시청 기록 테이블 (`watch_history`)
 
