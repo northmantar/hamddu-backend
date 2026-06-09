@@ -26,7 +26,10 @@
 ### 2단계: 코드 구현
 아래 코드 패턴을 따라 구현합니다.
 
-### 3단계: 문서 업데이트
+### 3단계: 테스트 작성
+Service에 대한 Jest 테스트를 작성하고 커버리지를 측정합니다.
+
+### 4단계: 문서 업데이트
 작업 완료 후 반드시 docs 내 관련 문서를 업데이트합니다.
 
 ---
@@ -278,11 +281,185 @@ if (entity.memberId !== memberId && user?.type !== UserType.ADMIN) {
 
 ---
 
+## 테스트 코드 작성 (Jest)
+
+### 테스트 파일 위치
+- Service 테스트: `src/{module}/{service-name}.service.spec.ts`
+- 파일명은 반드시 `.spec.ts`로 끝나야 함
+
+### 테스트 구조
+
+```typescript
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
+
+describe('SomethingService', () => {
+  let service: SomethingService;
+  let someRepo: jest.Mocked<Repository<SomeEntity>>;
+
+  // Mock 데이터 정의
+  const mockEntity: Partial<SomeEntity> = {
+    id: 'entity-123',
+    memberId: 'user-123',
+    status: SomeStatus.ACTIVE,
+  };
+
+  const mockUser: Partial<User> = {
+    id: 'user-123',
+    type: UserType.MEMBER,
+  };
+
+  beforeEach(async () => {
+    // Mock Repository 정의
+    const mockSomeRepo = {
+      findOne: jest.fn(),
+      find: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      createQueryBuilder: jest.fn(() => ({
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[mockEntity], 1]),
+      })),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        SomethingService,
+        { provide: getRepositoryToken(SomeEntity), useValue: mockSomeRepo },
+        { provide: getRepositoryToken(User), useValue: { findOne: jest.fn() } },
+        // 다른 의존성 서비스 mock
+        { provide: OtherService, useValue: { someMethod: jest.fn().mockResolvedValue(undefined) } },
+      ],
+    }).compile();
+
+    service = module.get<SomethingService>(SomethingService);
+    someRepo = module.get(getRepositoryToken(SomeEntity));
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  describe('findById', () => {
+    it('should return entity if found', async () => {
+      someRepo.findOne.mockResolvedValue(mockEntity as SomeEntity);
+
+      const result = await service.findById('entity-123');
+
+      expect(result).toEqual(mockEntity);
+    });
+
+    it('should throw NotFoundException if not found', async () => {
+      someRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.findById('non-existent')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('create', () => {
+    it('should create entity successfully', async () => {
+      someRepo.create.mockReturnValue(mockEntity as SomeEntity);
+      someRepo.save.mockResolvedValue(mockEntity as SomeEntity);
+
+      const result = await service.create({ ... });
+
+      expect(result).toEqual(mockEntity);
+      expect(someRepo.save).toHaveBeenCalled();
+    });
+
+    it('should throw ConflictException if duplicate', async () => {
+      someRepo.findOne.mockResolvedValue(mockEntity as SomeEntity);
+
+      await expect(service.create({ ... })).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('update', () => {
+    it('should allow owner to update', async () => {
+      someRepo.findOne.mockResolvedValue(mockEntity as SomeEntity);
+
+      await service.update('entity-123', 'user-123', { ... });
+
+      expect(someRepo.update).toHaveBeenCalled();
+    });
+
+    it('should throw ForbiddenException for non-owner', async () => {
+      someRepo.findOne.mockResolvedValue(mockEntity as SomeEntity);
+
+      await expect(
+        service.update('entity-123', 'other-user', { ... })
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+});
+```
+
+### 테스트 케이스 작성 규칙
+
+**필수 테스트 케이스**:
+| 메서드 | 테스트 케이스 |
+|--------|---------------|
+| `findById` | 정상 조회, NotFoundException |
+| `findAll` | 페이지네이션 동작, 필터 동작 |
+| `create` | 정상 생성, 유효성 실패, 중복 ConflictException |
+| `update` | 소유자 수정, 관리자 수정, 비소유자 ForbiddenException |
+| `delete` | 소유자 삭제, 비소유자 ForbiddenException |
+
+**테스트 작성 패턴**:
+```typescript
+describe('methodName', () => {
+  it('should [expected behavior] when [condition]', async () => {
+    // Arrange: mock 설정
+    someRepo.findOne.mockResolvedValue(mockEntity as SomeEntity);
+
+    // Act: 메서드 실행
+    const result = await service.methodName(params);
+
+    // Assert: 결과 검증
+    expect(result).toEqual(expected);
+    expect(someRepo.someMethod).toHaveBeenCalledWith(expectedArgs);
+  });
+
+  it('should throw [Exception] when [condition]', async () => {
+    // Arrange
+    someRepo.findOne.mockResolvedValue(null);
+
+    // Act & Assert
+    await expect(service.methodName(params)).rejects.toThrow(NotFoundException);
+  });
+});
+```
+
+### 테스트 실행 명령어
+
+```bash
+npm run test              # 전체 테스트 실행
+npm run test:watch        # 변경 감지하며 테스트
+npm run test:cov          # 커버리지 측정
+```
+
+### 커버리지 목표
+- 새로 작성한 Service의 테스트 커버리지 **80% 이상** 유지
+- 핵심 비즈니스 로직(create, update, delete)은 **100% 커버**
+
+---
+
 ## 검증
 
 ```bash
 npm run build          # 빌드 확인
 npm run migration:run  # 마이그레이션 실행
+npm run test           # 테스트 실행
+npm run test:cov       # 커버리지 확인
 ```
 
 - Swagger: 서버 실행 후 `/api-docs` 접속하여 모든 엔드포인트 표시 확인
@@ -297,6 +474,7 @@ npm run migration:run  # 마이그레이션 실행
 | Enum | `src/enums/{name}.enum.ts`, `src/enums/index.ts` |
 | DTO | `src/{module}/dto/*.dto.ts`, `src/{module}/dto/index.ts` |
 | Service | `src/{module}/*.service.ts` |
+| **Test** | `src/{module}/*.service.spec.ts` |
 | Controller | `src/{module}/*.controller.ts` |
 | Module | `src/{module}/*.module.ts` |
 | Migration | `src/migrations/*.ts` |
