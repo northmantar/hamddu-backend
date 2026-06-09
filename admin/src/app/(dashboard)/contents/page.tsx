@@ -45,20 +45,20 @@ export default function ContentsPage() {
 
   const columns = [
     {
-      key: 'title',
+      key: 'name',
       header: 'Content',
       render: (content: Content) => (
         <div className="flex items-center gap-3">
-          {content.thumbnailUrl && (
+          {content.imageUrl && (
             <img
-              src={content.thumbnailUrl}
-              alt={content.title}
-              className="w-16 h-9 object-cover rounded"
+              src={content.imageUrl}
+              alt={content.name}
+              className="w-10 h-10 object-cover rounded"
             />
           )}
           <div className="max-w-xs">
-            <div className="font-medium truncate">{content.title}</div>
-            <div className="text-gray-500 text-xs">{content.platformContentId}</div>
+            <div className="font-medium truncate">{content.name}</div>
+            <div className="text-gray-500 text-xs">{content.youtubeVideoId}</div>
           </div>
         </div>
       ),
@@ -69,19 +69,19 @@ export default function ContentsPage() {
       render: (content: Content) => content.channel?.name || '-',
     },
     {
-      key: 'viewCount',
-      header: 'Views',
-      render: (content: Content) => (content.viewCount ?? 0).toLocaleString(),
+      key: 'type',
+      header: 'Type',
+      render: (content: Content) => content.type,
     },
     {
-      key: 'likeCount',
-      header: 'Likes',
-      render: (content: Content) => (content.likeCount ?? 0).toLocaleString(),
+      key: 'pointApplyable',
+      header: 'Point',
+      render: (content: Content) => content.pointApplyable ? '✓' : '-',
     },
     {
-      key: 'publishedAt',
-      header: 'Published',
-      render: (content: Content) => content.publishedAt ? new Date(content.publishedAt).toLocaleDateString() : '-',
+      key: 'createdAt',
+      header: 'Created',
+      render: (content: Content) => new Date(content.createdAt).toLocaleDateString(),
     },
     {
       key: 'actions',

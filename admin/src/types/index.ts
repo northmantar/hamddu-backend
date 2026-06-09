@@ -44,30 +44,40 @@ export interface UpdateChannelDto {
 }
 
 // Content types
+export type ContentType = 'symbol' | 'free' | 'normal';
+export type UserInterests = 'crochet' | 'knitting';
+
 export interface Content {
   id: string;
   channelId: string;
   channel?: Channel;
-  platformContentId: string;
-  title: string;
-  thumbnailUrl: string | null;
-  publishedAt: string;
-  viewCount: number;
-  likeCount: number;
+  youtubeVideoId: string;
+  name: string;
+  type: ContentType;
+  interests: UserInterests | null;
+  imageUrl: string | null;
+  pointApplyable: boolean;
+  sortOrder: number | null;
+  uploadedAt: string | null;
   createdAt: string;
-  updatedAt: string;
 }
 
 export interface CreateContentDto {
   channelId: string;
-  platformContentId: string;
+  youtubeVideoId: string;
+  name: string;
+  type: ContentType;
+  interests?: UserInterests;
+  sortOrder?: number;
+  pointApplyable?: boolean;
+  mediaId?: string;
 }
 
 export interface UpdateContentDto {
-  title?: string;
-  thumbnailUrl?: string;
-  viewCount?: number;
-  likeCount?: number;
+  name?: string;
+  sortOrder?: number;
+  pointApplyable?: boolean;
+  mediaId?: string;
 }
 
 // Category types
