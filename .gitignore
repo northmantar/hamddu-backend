@@ -9,3 +9,4 @@ desc
 ref/
 admin/e2e-results/
 admin/playwright-report/
+coverage/
