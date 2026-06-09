@@ -21,14 +21,14 @@ export class CommentReport {
   commentId: string;
 
   @ManyToOne(() => BoardComment)
-  @JoinColumn({ name: "commentId" })
+  @JoinColumn({ name: "comment_id" })
   comment: BoardComment;
 
   @Column()
   reporterId: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: "reporterId" })
+  @JoinColumn({ name: "reporter_id" })
   reporter: User;
 
   @Column({ type: "enum", enum: ReportReason })

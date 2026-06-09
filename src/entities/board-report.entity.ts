@@ -21,14 +21,14 @@ export class BoardReport {
   boardId: string;
 
   @ManyToOne(() => Board)
-  @JoinColumn({ name: "boardId" })
+  @JoinColumn({ name: "board_id" })
   board: Board;
 
   @Column()
   reporterId: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: "reporterId" })
+  @JoinColumn({ name: "reporter_id" })
   reporter: User;
 
   @Column({ type: "enum", enum: ReportReason })
