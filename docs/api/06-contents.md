@@ -1,8 +1,22 @@
 # 6. 콘텐츠 API
 
+## 조회 정책
+
+콘텐츠 조회는 아래 두 조건을 모두 만족할 때만 반환됩니다.
+
+| 조건 | 값 |
+| --- | --- |
+| `content.status` | `active` |
+| `channel.status` | `active` (채널이 있는 경우) |
+
+- 비활성(`inactive`) 콘텐츠 또는 비활성 채널에 속한 콘텐츠는 목록·상세·튜토리얼 조회에서 모두 제외됩니다.
+- 관리자는 `PATCH /contents/:id`로 `status`를 변경할 수 있습니다.
+
+---
+
 ## 6.1 `GET /contents`
 
-콘텐츠 목록을 조회합니다.
+콘텐츠 목록을 조회합니다. `content.status = active` 이고 채널이 활성 상태인 콘텐츠만 반환합니다.
 
 **Request**
 
@@ -28,9 +42,10 @@
   "data": [
     {
       "id": "content-uuid",
-      "youtubeVideoId": "dQw4w9WgXcQ",
+      "sourceVideoId": "dQw4w9WgXcQ",
       "name": "코바늘 기초 - 사슬뜨기",
       "type": "symbol",
+      "status": "active",
       "channel": {
         "id": "channel-uuid",
         "name": "함뜨 공식채널"
@@ -78,7 +93,7 @@
 [
   {
     "id": "content-uuid-1",
-    "youtubeVideoId": "dQw4w9WgXcQ",
+    "sourceVideoId": "dQw4w9WgXcQ",
     "name": "코바늘 기초 - 사슬뜨기",
     "type": "symbol",
     "channel": {
@@ -94,7 +109,7 @@
   },
   {
     "id": "content-uuid-2",
-    "youtubeVideoId": "abc123XYZ",
+    "sourceVideoId": "abc123XYZ",
     "name": "코바늘 기초 - 짧은뜨기",
     "type": "symbol",
     "channel": {
@@ -136,13 +151,13 @@
 ```json
 {
   "id": "content-uuid",
-  "youtubeVideoId": "dQw4w9WgXcQ",
+  "sourceVideoId": "dQw4w9WgXcQ",
   "name": "코바늘 기초 - 사슬뜨기",
   "type": "symbol",
   "channel": {
     "id": "channel-uuid",
     "name": "함뜨 공식채널",
-    "youtubeChannelId": "UC..."
+    "sourceChannelId": "UC..."
   },
   "interests": "crochet",
   "imageUrl": "https://cdn.hamddu.online/symbols/chain.png",
@@ -184,7 +199,7 @@
     ```json
     {
       "channelId": "channel-uuid",
-      "youtubeVideoId": "dQw4w9WgXcQ",
+      "sourceVideoId": "dQw4w9WgXcQ",
       "name": "코바늘 기초 - 사슬뜨기",
       "type": "symbol",
       "interests": "crochet",
@@ -197,7 +212,7 @@
     | 필드 | 타입 | 필수 | 유효성 조건 |
     | --- | --- | --- | --- |
     | `channelId` | string (UUID) | Yes | 유효한 UUID |
-    | `youtubeVideoId` | string | Yes | 유튜브 비디오 ID |
+    | `sourceVideoId` | string | Yes | 플랫폼 비디오 ID |
     | `name` | string | Yes | 1–200자 |
     | `type` | string | Yes | `contentType` enum 값 (`symbol` \| `free` \| `normal`) |
     | `interests` | string | No | `interests` enum 값 (`crochet` \| `knitting`) |
@@ -210,13 +225,13 @@
 ```json
 {
   "id": "content-uuid",
-  "youtubeVideoId": "dQw4w9WgXcQ",
+  "sourceVideoId": "dQw4w9WgXcQ",
   "name": "코바늘 기초 - 사슬뜨기",
   "type": "symbol",
   "channel": {
     "id": "channel-uuid",
     "name": "함뜨 공식채널",
-    "youtubeChannelId": "UC..."
+    "sourceChannelId": "UC..."
   },
   "interests": "crochet",
   "imageUrl": "https://cdn.hamddu.online/symbols/chain.png",
@@ -271,19 +286,20 @@
     | `sortOrder` | number | No | 1 이상의 정수 |
     | `pointApplyable` | boolean | No | - |
     | `mediaId` | string (UUID) | No | 미디어 ID |
+    | `status` | enum | No | `contentStatus` 참고 (`active` \| `inactive`) |
 
 **Response (200)**
 
 ```json
 {
   "id": "content-uuid",
-  "youtubeVideoId": "dQw4w9WgXcQ",
+  "sourceVideoId": "dQw4w9WgXcQ",
   "name": "수정된 콘텐츠 제목",
   "type": "symbol",
   "channel": {
     "id": "channel-uuid",
     "name": "함뜨 공식채널",
-    "youtubeChannelId": "UC..."
+    "sourceChannelId": "UC..."
   },
   "interests": "crochet",
   "imageUrl": "https://cdn.hamddu.online/symbols/new-image.png",
@@ -338,13 +354,13 @@
 ```json
 {
   "id": "content-uuid",
-  "youtubeVideoId": "dQw4w9WgXcQ",
+  "sourceVideoId": "dQw4w9WgXcQ",
   "name": "코바늘 기초 - 사슬뜨기",
   "type": "symbol",
   "channel": {
     "id": "channel-uuid",
     "name": "함뜨 공식채널",
-    "youtubeChannelId": "UC..."
+    "sourceChannelId": "UC..."
   },
   "interests": "crochet",
   "imageUrl": "https://cdn.hamddu.online/symbols/chain.png",
@@ -369,7 +385,7 @@
 
 ## 6.7 `DELETE /contents/:id` (관리자 전용)
 
-콘텐츠를 삭제합니다.
+콘텐츠를 삭제합니다. `type=symbol` 이고 `interests`가 지정된 콘텐츠를 삭제하면 해당 interests 내 나머지 symbol 콘텐츠의 `sortOrder`가 1..n으로 자동 재편됩니다.
 
 **Request**
 
@@ -397,3 +413,50 @@ No Content
 | --- | --- |
 | 403 | "접근 권한이 없습니다." |
 | 404 | "콘텐츠를 찾을 수 없습니다." |
+
+---
+
+## 6.8 `PATCH /contents/tutorials/:interests/order` (관리자 전용)
+
+interests 내 튜토리얼(type=symbol) 콘텐츠의 순서를 일괄 변경합니다. 드래그 핸들로 순서 조정 후 결과를 전송합니다.
+
+해당 interests의 **전체** symbol 콘텐츠 ID를 원하는 순서대로 배열에 담아 전송합니다 (active/inactive 무관).
+
+**Request**
+
+- Headers:
+
+    | **헤더** | **값** | **필수** |
+    | --- | --- | --- |
+    | Authorization | Bearer | Yes |
+- Path Parameters:
+
+    | **파라미터** | **타입** | **필수** | **설명** |
+    | --- | --- | --- | --- |
+    | interests | enum | Yes | `crochet` \| `knitting` |
+- Body:
+
+    ```json
+    {
+      "contentIds": ["uuid-3", "uuid-1", "uuid-2"]
+    }
+    ```
+
+    | 필드 | 타입 | 필수 | 유효성 조건 |
+    | --- | --- | --- | --- |
+    | `contentIds` | string[] | Yes | UUID 배열, 1개 이상, 중복 불가, 해당 interests의 전체 symbol 콘텐츠 ID 포함 필수 |
+
+**Response (204)**
+
+```
+No Content
+```
+
+**Errors**
+
+| **상태 코드** | **errorMessage** |
+| --- | --- |
+| 400 | "중복된 콘텐츠 ID가 있습니다." |
+| 400 | "콘텐츠 개수가 일치하지 않습니다. (전달: N, 실제: M)" |
+| 400 | "유효하지 않은 콘텐츠 ID입니다: {id}" |
+| 403 | "접근 권한이 없습니다." |

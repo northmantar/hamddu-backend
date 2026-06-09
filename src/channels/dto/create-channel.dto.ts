@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsString, MaxLength } from "class-validator";
+import { IsEnum, IsNotEmpty, IsString, MaxLength } from "class-validator";
+import { ChannelPlatform } from "@enums/channel.enum";
 
 export class CreateChannelDto {
   @ApiProperty({ description: "채널명", example: "함뜨 공식채널" })
@@ -8,8 +9,12 @@ export class CreateChannelDto {
   @MaxLength(255)
   name: string;
 
-  @ApiProperty({ description: "유튜브 채널 ID", example: "UC..." })
+  @ApiProperty({ enum: ChannelPlatform, description: "플랫폼", example: ChannelPlatform.YOUTUBE })
+  @IsEnum(ChannelPlatform)
+  platform: ChannelPlatform;
+
+  @ApiProperty({ description: "플랫폼 채널 ID", example: "UC..." })
   @IsString()
   @IsNotEmpty()
-  youtubeChannelId: string;
+  sourceChannelId: string;
 }

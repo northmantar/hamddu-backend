@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsInt, IsOptional, IsString, IsUUID, MaxLength, Min, MinLength } from "class-validator";
+import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsUUID, MaxLength, Min, MinLength } from "class-validator";
+import { ContentStatus } from "@enums/content.enum";
 
 export class UpdateContentDto {
   @ApiPropertyOptional({ description: "콘텐츠 제목", minLength: 1, maxLength: 200 })
@@ -24,4 +25,9 @@ export class UpdateContentDto {
   @IsOptional()
   @IsUUID()
   mediaId?: string;
+
+  @ApiPropertyOptional({ enum: ContentStatus, description: "콘텐츠 상태" })
+  @IsOptional()
+  @IsEnum(ContentStatus)
+  status?: ContentStatus;
 }

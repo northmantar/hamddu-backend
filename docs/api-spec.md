@@ -20,8 +20,9 @@ Authorization: Bearer <access_token>
 
 | 토큰 | 유효 기간 | 전달 방식 |
 | --- | --- | --- |
-| `access_token` | 15분 | `Authorization: Bearer` 헤더 |
-| `refresh_token` | 30일 | httpOnly 쿠키 (서버가 자동으로 설정/삭제) |
+| `access_token` (일반 유저) | 30분 | `Authorization: Bearer` 헤더 |
+| `access_token` (어드민) | 3일 | `Authorization: Bearer` 헤더 |
+| `refresh_token` | 180일 | httpOnly 쿠키 (서버가 자동으로 설정/삭제) |
 
 ---
 
@@ -157,6 +158,26 @@ Authorization: Bearer <access_token>
 | `resolved` | 처리 완료 |
 | `rejected` | 기각 |
 
+### `contentStatus`
+
+| 값 | 설명 |
+| --- | --- |
+| `active` | 활성 (일반 유저 조회 가능) |
+| `inactive` | 비활성 (일반 유저 조회 불가, 관리자만 수정 가능) |
+
+### `channelPlatform`
+
+| 값 | 설명 |
+| --- | --- |
+| `youtube` | 유튜브 |
+
+### `channelStatus`
+
+| 값 | 설명 |
+| --- | --- |
+| `active` | 활성 (콘텐츠 조회 가능) |
+| `inactive` | 비활성 (콘텐츠 조회 불가) |
+
 ---
 
 # API 엔드포인트 목차
@@ -227,8 +248,9 @@ Authorization: Bearer <access_token>
 |  | GET | /contents/:id | 인증 | 콘텐츠 상세 |
 |  | POST | /contents | 관리자 | 콘텐츠 등록 |
 |  | PATCH | /contents/:id | 관리자 | 콘텐츠 수정 |
-|  | PATCH | /contents/:id/order | 관리자 | 콘텐츠 순서 변경 |
-|  | DELETE | /contents/:id | 관리자 | 콘텐츠 삭제 |
+|  | PATCH | /contents/tutorials/:interests/order | 관리자 | 튜토리얼 순서 일괄 변경 |
+|  | PATCH | /contents/:id/order | 관리자 | 콘텐츠 순서 단건 변경 |
+|  | DELETE | /contents/:id | 관리자 | 콘텐츠 삭제 (symbol 타입이면 순서 자동 재편) |
 | **시청 기록** | GET | /watch-history | 인증 | 시청 기록 목록 |
 |  | POST | /watch-history | 인증 | 시청 기록 저장 |
 | **챌린지** | GET | /challenges | 인증 | 챌린지 목록 |
@@ -246,6 +268,8 @@ Authorization: Bearer <access_token>
 | **어드민 인증** | POST | /auth/admin/login | - | 어드민 로그인 |
 |  | POST | /auth/admin/set-password | 어드민 | 비밀번호 최초 설정 |
 |  | PATCH | /auth/admin/change-password | 어드민 | 비밀번호 변경 |
+|  | POST | /auth/admin/users/:id/reset-password | 어드민 | 어드민 비밀번호 초기화 |
+|  | DELETE | /auth/admin/users/:id | 어드민 | 어드민 유저 삭제 |
 | **유저 관리** | POST | /users | 관리자 | 유저 생성 |
 |  | GET | /users | 관리자 | 유저 목록 |
 |  | PATCH | /users/:id/role | 관리자 | 유저 역할 변경 |

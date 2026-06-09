@@ -19,9 +19,8 @@ export class ChannelsService {
   }
 
   async create(dto: CreateChannelDto): Promise<Channel> {
-    // 중복 채널 확인
     const existing = await this.channelRepo.findOne({
-      where: { youtubeChannelId: dto.youtubeChannelId },
+      where: { sourceChannelId: dto.sourceChannelId },
     });
 
     if (existing) {
@@ -30,7 +29,8 @@ export class ChannelsService {
 
     const channel = this.channelRepo.create({
       name: dto.name,
-      youtubeChannelId: dto.youtubeChannelId,
+      platform: dto.platform,
+      sourceChannelId: dto.sourceChannelId,
     });
 
     return this.channelRepo.save(channel);
@@ -49,6 +49,7 @@ export class ChannelsService {
 
     await this.channelRepo.update(id, {
       ...(dto.name !== undefined && { name: dto.name }),
+      ...(dto.status !== undefined && { status: dto.status }),
     });
 
     return this.findById(id);

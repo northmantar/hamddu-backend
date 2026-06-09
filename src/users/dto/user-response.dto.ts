@@ -7,7 +7,7 @@ import {
   UserInterests,
   UserAbility,
 } from "@enums/user.enum";
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { User } from "@entities/user.entity";
 
 export class UserResponseDto {
@@ -49,6 +49,12 @@ export class UserResponseDto {
 
   @ApiProperty({ example: '2026-04-09T12:00:00.000Z' })
   createdAt: Date;
+
+  @ApiPropertyOptional({ example: 1200, description: '서비스 회원 전용: 누적 XP' })
+  xp?: number;
+
+  @ApiPropertyOptional({ example: 500, description: '서비스 회원 전용: 포인트 잔액' })
+  points?: number;
 
   static from(user: User): UserResponseDto {
     return {

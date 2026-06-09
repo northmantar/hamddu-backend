@@ -2,31 +2,32 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { Content, CreateContentDto, UpdateContentDto, PaginatedResponse } from '@/types';
+import type { Content, CreateContentDto, UpdateContentDto, PaginatedResponse, ContentType, UserInterests } from '@/types';
 
 interface UseContentsParams {
   page?: number;
   limit?: number;
+  type?: ContentType;
   channelId?: string;
 }
 
 export function useContents(params: UseContentsParams = {}) {
-  const { page = 1, limit = 10, channelId } = params;
+  const { page = 1, limit = 20, type, channelId } = params;
 
   return useQuery({
-    queryKey: ['contents', { page, limit, channelId }],
+    queryKey: ['contents', { page, limit, type, channelId }],
     queryFn: () =>
       api.get<PaginatedResponse<Content>>('/contents', {
-        params: { page, limit, channelId },
+        params: { page, limit, ...(type ? { type } : {}), ...(channelId ? { channelId } : {}) },
       }),
   });
 }
 
-export function useContent(id: string) {
+export function useTutorials(interests: UserInterests) {
   return useQuery({
-    queryKey: ['contents', id],
-    queryFn: () => api.get<Content>(`/contents/${id}`),
-    enabled: !!id,
+    queryKey: ['contents', 'tutorials', interests],
+    queryFn: () =>
+      api.get<Content[]>(`/contents/tutorials`, { params: { interests } }),
   });
 }
 
@@ -34,8 +35,7 @@ export function useCreateContent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (dto: CreateContentDto) =>
-      api.post<Content>('/contents', dto),
+    mutationFn: (dto: CreateContentDto) => api.post<Content>('/contents', dto),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contents'] });
     },
@@ -61,6 +61,18 @@ export function useDeleteContent() {
     mutationFn: (id: string) => api.delete(`/contents/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contents'] });
+    },
+  });
+}
+
+export function useReorderTutorials() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ interests, contentIds }: { interests: UserInterests; contentIds: string[] }) =>
+      api.patch<void>(`/contents/tutorials/${interests}/order`, { contentIds }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contents', 'tutorials'] });
     },
   });
 }

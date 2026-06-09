@@ -1,9 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Req,
@@ -21,6 +24,7 @@ import {
   ApiCookieAuth,
   ApiBearerAuth,
   ApiBody,
+  ApiParam,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { Platform } from '@enums/user.enum';
@@ -31,6 +35,8 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { SetAdminPasswordDto } from './dto/set-admin-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ResetAdminPasswordDto } from './dto/reset-admin-password.dto';
+import { AdminGuard } from '../common/guards/admin.guard';
 
 const COOKIE_NAME = 'refresh_token';
 
@@ -182,6 +188,43 @@ export class AuthController {
   ): Promise<{ message: string }> {
     await this.authService.changeAdminPassword(payload.sub, dto.currentPassword, dto.newPassword);
     return { message: '비밀번호가 변경되었습니다.' };
+  }
+
+  @ApiOperation({ summary: '어드민 비밀번호 초기화 (관리자)' })
+  @ApiBearerAuth()
+  @ApiParam({ name: 'id', description: '비밀번호를 초기화할 어드민 유저 ID' })
+  @ApiBody({ type: ResetAdminPasswordDto })
+  @ApiResponse({ status: 200, description: '비밀번호 초기화 완료' })
+  @ApiResponse({ status: 400, description: '본인 계정은 이 API 사용 불가' })
+  @ApiResponse({ status: 403, description: '어드민 권한 없음' })
+  @ApiResponse({ status: 404, description: '어드민 유저를 찾을 수 없음' })
+  @Post('admin/users/:id/reset-password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async resetAdminPassword(
+    @Param('id', ParseUUIDPipe) targetId: string,
+    @CurrentUser() payload: JwtPayload,
+    @Body() dto: ResetAdminPasswordDto,
+  ): Promise<{ message: string }> {
+    await this.authService.resetAdminPassword(payload.sub, targetId, dto.newPassword);
+    return { message: '비밀번호가 초기화되었습니다.' };
+  }
+
+  @ApiOperation({ summary: '어드민 유저 삭제 (관리자)' })
+  @ApiBearerAuth()
+  @ApiParam({ name: 'id', description: '삭제할 어드민 유저 ID' })
+  @ApiResponse({ status: 204, description: '어드민 삭제 완료' })
+  @ApiResponse({ status: 400, description: '본인 계정은 삭제 불가' })
+  @ApiResponse({ status: 403, description: '어드민 권한 없음' })
+  @ApiResponse({ status: 404, description: '어드민 유저를 찾을 수 없음' })
+  @Delete('admin/users/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  async deleteAdminUser(
+    @Param('id', ParseUUIDPipe) targetId: string,
+    @CurrentUser() payload: JwtPayload,
+  ): Promise<void> {
+    await this.authService.deleteAdminUser(payload.sub, targetId);
   }
 
   // ── Shared helper ────────────────────────────────────────────────────────────

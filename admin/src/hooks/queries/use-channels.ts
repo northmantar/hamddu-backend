@@ -14,20 +14,11 @@ export function useChannels() {
   });
 }
 
-export function useChannel(id: string) {
-  return useQuery({
-    queryKey: ['channels', id],
-    queryFn: () => api.get<Channel>(`/channels/${id}`),
-    enabled: !!id,
-  });
-}
-
 export function useCreateChannel() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (dto: CreateChannelDto) =>
-      api.post<Channel>('/channels', dto),
+    mutationFn: (dto: CreateChannelDto) => api.post<Channel>('/channels', dto),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['channels'] });
     },

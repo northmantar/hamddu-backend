@@ -33,7 +33,9 @@
       * id
       --
       * name
-      * youtube_channel_id
+      * platform <<enum>>
+      * source_channel_id
+      * status <<enum>>
       * added_at
     }
     
@@ -43,7 +45,7 @@
       * channel_id
       * media_id
       --
-      * youtube_video_id
+      * source_video_id
       * name
       * type <<enum>>
       * interests <<enum>>
@@ -352,25 +354,28 @@
 | word | text | `<<unique>>` 명사 |
 | is_active | boolean | 현재 사용 여부 |
 
-### 채널 테이블 (`channel`)
+### 채널 테이블 (`channels`)
 
 | name | type | description |
 | --- | --- | --- |
-| id | uuid_short() | **`<<pkey>>`** 채널 ID |
-| name | varchar | 유튜브 채널명 |
-| youtube_channel_id | varchar | 유튜브 채널 ID/slug |
-| added_at | timestamp | 채널 추가 일시 |
+| id | uuid | **`<<pkey>>`** 채널 ID |
+| name | varchar(255) | 채널명 |
+| platform | enum | 플랫폼 (`youtube`) |
+| source_channel_id | varchar | `<<unique>>` 플랫폼 채널 ID |
+| status | enum | 채널 상태 (`active` \| `inactive`) |
+| added_at | timestamptz | 채널 추가 일시 |
 
-### 콘텐츠 테이블 (`content`)
+### 콘텐츠 테이블 (`contents`)
 
 | name | type | description |
 | --- | --- | --- |
-| id | uuid_short() | **`<<pkey>>`** 콘텐츠 ID |
-| channel_id | varchar | 콘텐츠 업로드 채널 ID/slug |
+| id | uuid | **`<<pkey>>`** 콘텐츠 ID |
+| channel_id | uuid | 콘텐츠 업로드 채널 ID (nullable) |
 | media_id | uuid | 기호 버튼 이미지 미디어 ID (nullable, symbol 타입에만 사용) |
-| youtube_video_id | varchar | 유튜브 비디오 ID |
+| source_video_id | varchar | `<<unique>>` 플랫폼 비디오 ID |
 | name | varchar | 영상 제목 |
 | type | enum | 영상 유형 (`symbol` \| `free` \| `normal`) |
+| status | enum | 콘텐츠 상태 (`active` \| `inactive`), 기본값 `active` |
 | interests | enum | 콘텐츠 분류 (`crochet` \| `knitting`) |
 | sort_order | integer | interests 내 정렬 순서 (1부터 시작, 튜토리얼만 해당) |
 | point_applyable | boolean | 포인트 지급 여부(*기법 튜토리얼만 해당) |

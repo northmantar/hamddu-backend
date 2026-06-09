@@ -30,9 +30,11 @@ describe('AuthService', () => {
       findOrCreate: jest.fn(),
       findByIdOrFail: jest.fn(),
       findAdminByEmail: jest.fn(),
+      findAdminById: jest.fn(),
       setPassword: jest.fn(),
       countAdmins: jest.fn(),
       createAdminUser: jest.fn(),
+      deleteAdmin: jest.fn(),
     };
 
     const mockJwtService = {
@@ -45,6 +47,7 @@ describe('AuthService', () => {
       del: jest.fn(),
       sadd: jest.fn(),
       srem: jest.fn(),
+      smembers: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -253,6 +256,80 @@ describe('AuthService', () => {
       await expect(
         service.changeAdminPassword('user-123', 'wrongPassword', 'new'),
       ).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('resetAdminPassword', () => {
+    const targetUser: Partial<User> = {
+      id: 'target-456',
+      email: 'target@example.com',
+      type: UserType.ADMIN,
+    };
+
+    it('should reset password successfully', async () => {
+      usersService.findAdminById.mockResolvedValue(targetUser as User);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('newHashedPassword');
+
+      await service.resetAdminPassword('user-123', 'target-456', 'newPassword1');
+
+      expect(usersService.setPassword).toHaveBeenCalledWith('target-456', 'newHashedPassword');
+    });
+
+    it('should throw BadRequestException when resetting own password', async () => {
+      await expect(
+        service.resetAdminPassword('user-123', 'user-123', 'newPassword1'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException if target admin not found', async () => {
+      const { NotFoundException } = await import('@nestjs/common');
+      usersService.findAdminById.mockRejectedValue(new NotFoundException());
+
+      await expect(
+        service.resetAdminPassword('user-123', 'non-existent', 'newPassword1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('deleteAdminUser', () => {
+    it('should delete admin and revoke tokens', async () => {
+      usersService.findAdminById.mockResolvedValue({ id: 'target-456' } as User);
+      redisService.smembers.mockResolvedValue(['hash1', 'hash2']);
+
+      await service.deleteAdminUser('user-123', 'target-456');
+
+      expect(redisService.smembers).toHaveBeenCalledWith('user_rts:target-456');
+      expect(redisService.del).toHaveBeenCalledWith(
+        'rt:hash1',
+        'rt:hash2',
+        'user_rts:target-456',
+      );
+      expect(usersService.deleteAdmin).toHaveBeenCalledWith('target-456');
+    });
+
+    it('should delete admin with no active tokens', async () => {
+      usersService.findAdminById.mockResolvedValue({ id: 'target-456' } as User);
+      redisService.smembers.mockResolvedValue([]);
+
+      await service.deleteAdminUser('user-123', 'target-456');
+
+      expect(redisService.del).toHaveBeenCalledWith('user_rts:target-456');
+      expect(usersService.deleteAdmin).toHaveBeenCalledWith('target-456');
+    });
+
+    it('should throw BadRequestException when deleting own account', async () => {
+      await expect(
+        service.deleteAdminUser('user-123', 'user-123'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException if target admin not found', async () => {
+      const { NotFoundException } = await import('@nestjs/common');
+      usersService.findAdminById.mockRejectedValue(new NotFoundException());
+
+      await expect(
+        service.deleteAdminUser('user-123', 'non-existent'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

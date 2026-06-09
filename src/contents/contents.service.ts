@@ -5,19 +5,21 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { DataSource, Repository } from "typeorm";
 import { Content } from "@entities/content.entity";
 import { Channel } from "@entities/channel.entity";
 import { WatchHistory } from "@entities/watch-history.entity";
 import { Challenge } from "@entities/challenge.entity";
 import { User } from "@entities/user.entity";
-import { ContentType } from "@enums/content.enum";
+import { ContentType, ContentStatus } from "@enums/content.enum";
+import { ChannelStatus } from "@enums/channel.enum";
 import { UserType } from "@enums/user.enum";
 import { ContentQueryDto } from "./dto/content-query.dto";
 import { CreateContentDto } from "./dto/create-content.dto";
 import { UpdateContentDto } from "./dto/update-content.dto";
 import { TutorialQueryDto } from "./dto/tutorial-query.dto";
 import { UpdateOrderDto } from "./dto/update-order.dto";
+import { BulkReorderDto } from "./dto/bulk-reorder.dto";
 import { PaginationMeta } from "../boards/dto/pagination.dto";
 import { UserInterests } from "@enums/user.enum";
 
@@ -34,6 +36,7 @@ export class ContentsService {
     private readonly challengeRepo: Repository<Challenge>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly dataSource: DataSource,
   ) {}
 
   private async checkAdmin(memberId: string): Promise<void> {
@@ -53,6 +56,8 @@ export class ContentsService {
       .createQueryBuilder("content")
       .leftJoinAndSelect("content.channel", "channel")
       .leftJoinAndSelect("content.media", "media")
+      .andWhere("content.status = :contentStatus", { contentStatus: ContentStatus.ACTIVE })
+      .andWhere("(channel.id IS NULL OR channel.status = :activeStatus)", { activeStatus: ChannelStatus.ACTIVE })
       .orderBy("content.createdAt", "DESC");
 
     if (type) {
@@ -89,6 +94,20 @@ export class ContentsService {
     return content;
   }
 
+  async findActiveContent(id: string): Promise<Content> {
+    const content = await this.findById(id);
+
+    if (content.status !== ContentStatus.ACTIVE) {
+      throw new NotFoundException("콘텐츠를 찾을 수 없습니다.");
+    }
+
+    if (content.channel && content.channel.status !== ChannelStatus.ACTIVE) {
+      throw new NotFoundException("콘텐츠를 찾을 수 없습니다.");
+    }
+
+    return content;
+  }
+
   async findWatchHistory(contentId: string, memberId: string): Promise<WatchHistory | null> {
     return this.watchHistoryRepo.findOne({
       where: { contentId, memberId },
@@ -100,14 +119,20 @@ export class ContentsService {
   }
 
   async findTutorials(query: TutorialQueryDto): Promise<Content[]> {
-    return this.contentRepo.find({
-      where: {
-        type: ContentType.SYMBOL,
-        interests: query.interests,
-      },
-      relations: ["channel", "media"],
-      order: { sortOrder: "ASC" },
-    });
+    const qb = this.contentRepo
+      .createQueryBuilder("content")
+      .leftJoinAndSelect("content.channel", "channel")
+      .leftJoinAndSelect("content.media", "media")
+      .where("content.type = :type", { type: ContentType.SYMBOL })
+      .andWhere("content.status = :contentStatus", { contentStatus: ContentStatus.ACTIVE })
+      .andWhere("(channel.id IS NULL OR channel.status = :activeStatus)", { activeStatus: ChannelStatus.ACTIVE })
+      .orderBy("content.sortOrder", "ASC");
+
+    if (query.interests) {
+      qb.andWhere("content.interests = :interests", { interests: query.interests });
+    }
+
+    return qb.getMany();
   }
 
   async create(memberId: string, dto: CreateContentDto): Promise<Content> {
@@ -120,7 +145,7 @@ export class ContentsService {
 
     const content = this.contentRepo.create({
       channelId: dto.channelId,
-      youtubeVideoId: dto.youtubeVideoId,
+      sourceVideoId: dto.sourceVideoId,
       name: dto.name,
       type: dto.type,
       interests: dto.interests ?? null,
@@ -143,6 +168,7 @@ export class ContentsService {
       ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
       ...(dto.pointApplyable !== undefined && { pointApplyable: dto.pointApplyable }),
       ...(dto.mediaId !== undefined && { mediaId: dto.mediaId }),
+      ...(dto.status !== undefined && { status: dto.status }),
     });
 
     return this.findById(contentId);
@@ -208,8 +234,69 @@ export class ContentsService {
   async delete(contentId: string, memberId: string): Promise<void> {
     await this.checkAdmin(memberId);
 
-    await this.findById(contentId);
+    const content = await this.findById(contentId);
+    const { type, interests } = content;
 
     await this.contentRepo.delete(contentId);
+
+    if (type === ContentType.SYMBOL && interests !== null) {
+      await this.renormalizeSortOrder(interests);
+    }
+  }
+
+  async reorderTutorials(
+    memberId: string,
+    interests: UserInterests,
+    dto: BulkReorderDto,
+  ): Promise<void> {
+    await this.checkAdmin(memberId);
+
+    const { contentIds } = dto;
+
+    if (new Set(contentIds).size !== contentIds.length) {
+      throw new BadRequestException("중복된 콘텐츠 ID가 있습니다.");
+    }
+
+    const existing = await this.contentRepo.find({
+      where: { type: ContentType.SYMBOL, interests },
+      select: ["id"],
+    });
+
+    if (contentIds.length !== existing.length) {
+      throw new BadRequestException(
+        `콘텐츠 개수가 일치하지 않습니다. (전달: ${contentIds.length}, 실제: ${existing.length})`,
+      );
+    }
+
+    const existingIds = new Set(existing.map((c) => c.id));
+    for (const id of contentIds) {
+      if (!existingIds.has(id)) {
+        throw new BadRequestException(`유효하지 않은 콘텐츠 ID입니다: ${id}`);
+      }
+    }
+
+    await this.dataSource.transaction(async (manager) => {
+      for (let i = 0; i < contentIds.length; i++) {
+        await manager.update(Content, contentIds[i], { sortOrder: i + 1 });
+      }
+    });
+  }
+
+  private async renormalizeSortOrder(interests: UserInterests): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const contents = await manager.find(Content, {
+        where: { type: ContentType.SYMBOL, interests },
+        order: { sortOrder: "ASC" },
+      });
+
+      const sorted = [
+        ...contents.filter((c) => c.sortOrder !== null),
+        ...contents.filter((c) => c.sortOrder === null),
+      ];
+
+      for (let i = 0; i < sorted.length; i++) {
+        await manager.update(Content, sorted[i].id, { sortOrder: i + 1 });
+      }
+    });
   }
 }

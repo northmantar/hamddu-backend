@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseEnumPipe,
   ParseUUIDPipe,
   Patch,
   Post,
@@ -28,8 +29,11 @@ import { CreateContentDto } from "./dto/create-content.dto";
 import { UpdateContentDto } from "./dto/update-content.dto";
 import { TutorialQueryDto } from "./dto/tutorial-query.dto";
 import { UpdateOrderDto } from "./dto/update-order.dto";
+import { BulkReorderDto } from "./dto/bulk-reorder.dto";
 import { ContentListItemDto, ContentDetailDto } from "./dto/content-response.dto";
 import { PaginationMeta } from "../boards/dto/pagination.dto";
+import { AdminGuard } from "../common/guards/admin.guard";
+import { UserInterests } from "@enums/user.enum";
 
 @ApiTags("contents")
 @ApiBearerAuth()
@@ -68,7 +72,7 @@ export class ContentsController {
     @Param("id", ParseUUIDPipe) id: string,
     @CurrentUser() payload: JwtPayload,
   ): Promise<ContentDetailDto> {
-    const content = await this.contentsService.findById(id);
+    const content = await this.contentsService.findActiveContent(id);
     const watchHistory = await this.contentsService.findWatchHistory(id, payload.sub);
     const challengeCompleted = await this.contentsService.isChallengeCompleted(id, payload.sub);
 
@@ -104,6 +108,22 @@ export class ContentsController {
     const challengeCompleted = await this.contentsService.isChallengeCompleted(id, payload.sub);
 
     return ContentDetailDto.fromWithDetails(content, watchHistory, challengeCompleted);
+  }
+
+  @ApiOperation({ summary: "튜토리얼 순서 일괄 변경 (관리자)" })
+  @ApiParam({ name: "interests", enum: UserInterests, description: "관심사" })
+  @ApiResponse({ status: 204, description: "순서 변경 완료" })
+  @ApiResponse({ status: 400, description: "ID 개수 불일치 / 유효하지 않은 ID / 중복 ID" })
+  @ApiResponse({ status: 403, description: "접근 권한 없음" })
+  @Patch("tutorials/:interests/order")
+  @UseGuards(AdminGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reorderTutorials(
+    @Param("interests", new ParseEnumPipe(UserInterests)) interests: UserInterests,
+    @CurrentUser() payload: JwtPayload,
+    @Body() dto: BulkReorderDto,
+  ): Promise<void> {
+    await this.contentsService.reorderTutorials(payload.sub, interests, dto);
   }
 
   @ApiOperation({ summary: "콘텐츠 순서 변경 (관리자)" })

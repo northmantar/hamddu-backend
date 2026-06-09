@@ -5,8 +5,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Not, IsNull, Repository } from 'typeorm';
+import { DataSource, In, Not, IsNull, Repository } from 'typeorm';
 import { User } from '@entities/user.entity';
+import { XpWallet } from '@entities/xp-wallet.entity';
+import { PointWallet } from '@entities/point-wallet.entity';
 import { NicknameAdjective } from '@entities/nickname-adjective.entity';
 import { NicknameNoun } from '@entities/nickname-noun.entity';
 import { Platform, UserStatus, UserType } from '../enums/user.enum';
@@ -24,6 +26,10 @@ export class UsersService {
     private readonly adjectiveRepo: Repository<NicknameAdjective>,
     @InjectRepository(NicknameNoun)
     private readonly nounRepo: Repository<NicknameNoun>,
+    @InjectRepository(XpWallet)
+    private readonly xpWalletRepo: Repository<XpWallet>,
+    @InjectRepository(PointWallet)
+    private readonly pointWalletRepo: Repository<PointWallet>,
     private readonly dataSource: DataSource,
     private readonly redis: RedisService,
     private readonly nicknameSequenceService: NicknameSequenceService,
@@ -202,12 +208,63 @@ export class UsersService {
     return { ...user, type };
   }
 
-  async findAllUsers(page: number, limit: number): Promise<{ data: User[]; totalCount: number }> {
+  async findAllUsers(
+    page: number,
+    limit: number,
+    type?: UserType,
+  ): Promise<{ data: User[]; totalCount: number }> {
     const [data, totalCount] = await this.userRepo.findAndCount({
+      where: type ? { type } : undefined,
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
     });
     return { data, totalCount };
+  }
+
+  async findMembersWithWallets(
+    page: number,
+    limit: number,
+  ): Promise<{ data: (User & { xp: number; points: number })[]; totalCount: number }> {
+    const [users, totalCount] = await this.userRepo.findAndCount({
+      where: { type: UserType.MEMBER },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    if (users.length === 0) return { data: [], totalCount };
+
+    const userIds = users.map((u) => u.id);
+    const [xpWallets, pointWallets] = await Promise.all([
+      this.xpWalletRepo.find({ where: { memberId: In(userIds) }, select: ['memberId', 'totalXp'] }),
+      this.pointWalletRepo.find({ where: { memberId: In(userIds) }, select: ['memberId', 'balance'] }),
+    ]);
+
+    const xpMap = new Map(xpWallets.map((w) => [w.memberId, w.totalXp]));
+    const pointMap = new Map(pointWallets.map((w) => [w.memberId, w.balance]));
+
+    const data = users.map((user) => ({
+      ...user,
+      xp: xpMap.get(user.id) ?? 0,
+      points: pointMap.get(user.id) ?? 0,
+    }));
+
+    return { data, totalCount };
+  }
+
+  async updateUserStatus(userId: string, status: UserStatus): Promise<void> {
+    await this.findByIdOrFail(userId);
+    await this.userRepo.update(userId, { status });
+  }
+
+  async findAdminById(id: string): Promise<User> {
+    const user = await this.userRepo.findOne({ where: { id, type: UserType.ADMIN } });
+    if (!user) throw new NotFoundException('어드민 유저를 찾을 수 없습니다.');
+    return user;
+  }
+
+  async deleteAdmin(userId: string): Promise<void> {
+    await this.userRepo.delete(userId);
   }
 }

@@ -1,59 +1,63 @@
 // User types
+export type UserStatus = 'active' | 'withdrawn';
+export type UserType = 'member' | 'admin';
+
 export interface User {
   id: string;
+  status: UserStatus;
+  type: UserType;
   email: string | null;
   nickname: string | null;
-  profileImageUrl?: string | null;
-  role?: 'member' | 'admin';
-  type?: 'member' | 'admin';
+  surveyCompleted?: boolean;
+  createdAt: string;
+  // 서비스 회원 전용
   xp?: number;
   points?: number;
-  createdAt?: string;
-  updatedAt?: string;
 }
 
 export interface CreateUserAdminDto {
   email: string;
   password: string;
-  type?: 'member' | 'admin';
+  type: UserType;
 }
 
 // Channel types
+export type ChannelPlatform = 'youtube';
+export type ChannelStatus = 'active' | 'inactive';
+
 export interface Channel {
   id: string;
   name: string;
-  youtubeChannelId?: string;
-  addedAt?: string;
-  platformType?: 'youtube' | 'chzzk';
-  channelId?: string;
-  profileImageUrl?: string | null;
-  subscriberCount?: number;
-  createdAt?: string;
-  updatedAt?: string;
+  platform: ChannelPlatform;
+  sourceChannelId: string;
+  status: ChannelStatus;
+  addedAt: string;
 }
 
 export interface CreateChannelDto {
-  platformType: 'youtube' | 'chzzk';
-  channelId: string;
+  platform: ChannelPlatform;
+  sourceChannelId: string;
+  name: string;
 }
 
 export interface UpdateChannelDto {
   name?: string;
-  profileImageUrl?: string;
-  subscriberCount?: number;
+  status?: ChannelStatus;
 }
 
 // Content types
 export type ContentType = 'symbol' | 'free' | 'normal';
+export type ContentStatus = 'active' | 'inactive';
 export type UserInterests = 'crochet' | 'knitting';
 
 export interface Content {
   id: string;
-  channelId: string;
-  channel?: Channel;
-  youtubeVideoId: string;
+  channelId: string | null;
+  channel?: { id: string; name: string; platform?: string; sourceChannelId?: string; status?: string } | null;
+  sourceVideoId: string;
   name: string;
   type: ContentType;
+  status: ContentStatus;
   interests: UserInterests | null;
   imageUrl: string | null;
   pointApplyable: boolean;
@@ -64,9 +68,10 @@ export interface Content {
 
 export interface CreateContentDto {
   channelId: string;
-  youtubeVideoId: string;
+  sourceVideoId: string;
   name: string;
   type: ContentType;
+  status?: ContentStatus;
   interests?: UserInterests;
   sortOrder?: number;
   pointApplyable?: boolean;
@@ -75,9 +80,12 @@ export interface CreateContentDto {
 
 export interface UpdateContentDto {
   name?: string;
+  sourceVideoId?: string;
+  channelId?: string;
   sortOrder?: number;
   pointApplyable?: boolean;
   mediaId?: string;
+  status?: ContentStatus;
 }
 
 // Category types
@@ -168,7 +176,7 @@ export interface UpdateXpLevelDto {
 export interface PaginatedResponse<T> {
   data: T[];
   meta: {
-    total: number;
+    totalCount: number;
     page: number;
     limit: number;
     totalPages: number;

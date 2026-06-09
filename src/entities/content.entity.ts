@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { ContentType } from "@enums/content.enum";
+import { ContentType, ContentStatus } from "@enums/content.enum";
 import { UserInterests } from "@enums/user.enum";
 import { Channel } from "./channel.entity";
 import { WatchHistory } from "./watch-history.entity";
@@ -28,13 +28,16 @@ export class Content {
   channel: Channel;
 
   @Column({ unique: true })
-  youtubeVideoId: string;
+  sourceVideoId: string;
 
   @Column({ length: 255 })
   name: string;
 
   @Column({ type: "enum", enum: ContentType })
   type: ContentType;
+
+  @Column({ type: "enum", enum: ContentStatus, default: ContentStatus.ACTIVE })
+  status: ContentStatus;
 
   @Column({ type: "enum", enum: UserInterests, nullable: true })
   interests: UserInterests | null;

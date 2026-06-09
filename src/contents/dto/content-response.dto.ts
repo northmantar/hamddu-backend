@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { ContentType } from "@enums/content.enum";
+import { ContentType, ContentStatus } from "@enums/content.enum";
+import { ChannelPlatform, ChannelStatus } from "@enums/channel.enum";
 import { UserInterests } from "@enums/user.enum";
 import { Content } from "@entities/content.entity";
 import { WatchHistory } from "@entities/watch-history.entity";
@@ -11,8 +12,14 @@ export class ChannelDto {
   @ApiProperty({ example: "함뜨 공식채널" })
   name: string;
 
+  @ApiPropertyOptional({ enum: ChannelPlatform, example: ChannelPlatform.YOUTUBE })
+  platform?: ChannelPlatform;
+
   @ApiPropertyOptional({ example: "UC..." })
-  youtubeChannelId?: string;
+  sourceChannelId?: string;
+
+  @ApiPropertyOptional({ enum: ChannelStatus, example: ChannelStatus.ACTIVE })
+  status?: ChannelStatus;
 }
 
 export class WatchHistoryDto {
@@ -31,13 +38,16 @@ export class ContentListItemDto {
   id: string;
 
   @ApiProperty({ example: "dQw4w9WgXcQ" })
-  youtubeVideoId: string;
+  sourceVideoId: string;
 
   @ApiProperty({ example: "코바늘 기초 - 사슬뜨기" })
   name: string;
 
   @ApiProperty({ enum: ContentType })
   type: ContentType;
+
+  @ApiProperty({ enum: ContentStatus, example: ContentStatus.ACTIVE })
+  status: ContentStatus;
 
   @ApiProperty({ type: ChannelDto })
   channel: ChannelDto;
@@ -63,9 +73,10 @@ export class ContentListItemDto {
   static from(content: Content): ContentListItemDto {
     return {
       id: content.id,
-      youtubeVideoId: content.youtubeVideoId,
+      sourceVideoId: content.sourceVideoId,
       name: content.name,
       type: content.type,
+      status: content.status,
       channel: content.channel
         ? { id: content.channel.id, name: content.channel.name }
         : { id: '', name: '(삭제된 채널)' },
@@ -96,7 +107,13 @@ export class ContentDetailDto extends ContentListItemDto {
     const dto: ContentDetailDto = {
       ...base,
       channel: content.channel
-        ? { id: content.channel.id, name: content.channel.name, youtubeChannelId: content.channel.youtubeChannelId }
+        ? {
+            id: content.channel.id,
+            name: content.channel.name,
+            platform: content.channel.platform,
+            sourceChannelId: content.channel.sourceChannelId,
+            status: content.channel.status,
+          }
         : { id: '', name: '(삭제된 채널)' },
     };
 

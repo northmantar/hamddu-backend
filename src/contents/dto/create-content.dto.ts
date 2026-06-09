@@ -20,10 +20,10 @@ export class CreateContentDto {
   @IsNotEmpty()
   channelId: string;
 
-  @ApiProperty({ description: "유튜브 비디오 ID" })
+  @ApiProperty({ description: "플랫폼 비디오 ID" })
   @IsString()
   @IsNotEmpty()
-  youtubeVideoId: string;
+  sourceVideoId: string;
 
   @ApiProperty({ description: "콘텐츠 제목", minLength: 1, maxLength: 200 })
   @IsString()

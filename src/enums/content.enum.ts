@@ -3,3 +3,8 @@ export enum ContentType {
   FREE = "free",
   NORMAL = "normal",
 }
+
+export enum ContentStatus {
+  ACTIVE = "active",
+  INACTIVE = "inactive",
+}

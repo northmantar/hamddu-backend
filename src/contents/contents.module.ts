@@ -10,6 +10,7 @@ import { WatchHistory } from "@entities/watch-history.entity";
 import { Challenge } from "@entities/challenge.entity";
 import { User } from "@entities/user.entity";
 import { RewardsModule } from "../rewards/rewards.module";
+import { AdminGuard } from "../common/guards/admin.guard";
 
 @Module({
   imports: [
@@ -23,7 +24,7 @@ import { RewardsModule } from "../rewards/rewards.module";
     RewardsModule,
   ],
   controllers: [ContentsController, WatchHistoryController],
-  providers: [ContentsService, WatchHistoryService],
+  providers: [ContentsService, WatchHistoryService, AdminGuard],
   exports: [ContentsService, WatchHistoryService],
 })
 export class ContentsModule {}

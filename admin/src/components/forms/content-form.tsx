@@ -14,19 +14,19 @@ interface ContentFormProps {
 }
 
 const CONTENT_TYPE_OPTIONS: { value: ContentType; label: string }[] = [
-  { value: 'symbol', label: 'Symbol (튜토리얼)' },
-  { value: 'free', label: 'Free' },
-  { value: 'normal', label: 'Normal' },
+  { value: 'symbol', label: '튜토리얼 (symbol)' },
+  { value: 'free', label: '무료 도안 (free)' },
+  { value: 'normal', label: '일반 (normal)' },
 ];
 
 const INTERESTS_OPTIONS: { value: UserInterests; label: string }[] = [
-  { value: 'crochet', label: '코바늘 (Crochet)' },
-  { value: 'knitting', label: '대바늘 (Knitting)' },
+  { value: 'crochet', label: '코바늘' },
+  { value: 'knitting', label: '대바늘' },
 ];
 
 export function ContentForm({ channels, onSubmit, isLoading, onCancel }: ContentFormProps) {
   const [channelId, setChannelId] = useState('');
-  const [youtubeVideoId, setYoutubeVideoId] = useState('');
+  const [sourceVideoId, setSourceVideoId] = useState('');
   const [name, setName] = useState('');
   const [type, setType] = useState<ContentType>('normal');
   const [interests, setInterests] = useState<UserInterests | ''>('');
@@ -36,12 +36,9 @@ export function ContentForm({ channels, onSubmit, isLoading, onCancel }: Content
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-
-    if (!channelId) newErrors.channelId = 'Channel is required';
-    if (!youtubeVideoId.trim()) newErrors.youtubeVideoId = 'YouTube Video ID is required';
-    if (!name.trim()) newErrors.name = 'Name is required';
-    if (!type) newErrors.type = 'Type is required';
-
+    if (!channelId) newErrors.channelId = '채널을 선택해주세요.';
+    if (!sourceVideoId.trim()) newErrors.sourceVideoId = 'Video ID를 입력해주세요.';
+    if (!name.trim()) newErrors.name = '제목을 입력해주세요.';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -50,70 +47,63 @@ export function ContentForm({ channels, onSubmit, isLoading, onCancel }: Content
     e.preventDefault();
     if (!validate()) return;
 
-    const dto: CreateContentDto = {
+    await onSubmit({
       channelId,
-      youtubeVideoId: youtubeVideoId.trim(),
+      sourceVideoId: sourceVideoId.trim(),
       name: name.trim(),
       type,
       ...(interests && { interests }),
       ...(sortOrder && { sortOrder: parseInt(sortOrder, 10) }),
       pointApplyable,
-    };
-
-    await onSubmit(dto);
+      status: 'active',
+    });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Select
-        label="Channel"
+        label="채널"
         value={channelId}
         onChange={(e) => setChannelId(e.target.value)}
         error={errors.channelId}
-        placeholder="채널 선택"
-        options={channels.map((ch) => ({ value: ch.id, label: ch.name }))}
+        options={[
+          { value: '', label: '채널 선택' },
+          ...channels.map((ch) => ({ value: ch.id, label: ch.name })),
+        ]}
       />
-
       <Input
-        label="YouTube Video ID"
-        value={youtubeVideoId}
-        onChange={(e) => setYoutubeVideoId(e.target.value)}
-        error={errors.youtubeVideoId}
-        placeholder="dQw4w9WgXcQ"
+        label="Video ID"
+        value={sourceVideoId}
+        onChange={(e) => setSourceVideoId(e.target.value)}
+        error={errors.sourceVideoId}
+        placeholder="플랫폼 비디오 ID"
       />
-
       <Input
-        label="Name"
+        label="제목"
         value={name}
         onChange={(e) => setName(e.target.value)}
         error={errors.name}
         placeholder="콘텐츠 제목"
       />
-
       <Select
-        label="Type"
+        label="유형"
         value={type}
         onChange={(e) => setType(e.target.value as ContentType)}
-        error={errors.type}
         options={CONTENT_TYPE_OPTIONS}
       />
-
       <Select
-        label="Interests (선택)"
+        label="관심사 (선택)"
         value={interests}
         onChange={(e) => setInterests(e.target.value as UserInterests | '')}
-        placeholder="선택 안 함"
-        options={INTERESTS_OPTIONS}
+        options={[{ value: '', label: '선택 안 함' }, ...INTERESTS_OPTIONS]}
       />
-
       <Input
-        label="Sort Order (선택, 1부터 시작)"
+        label="순서 (선택, 1부터 시작)"
         type="number"
         value={sortOrder}
         onChange={(e) => setSortOrder(e.target.value)}
         placeholder="1"
       />
-
       <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
         <input
           type="checkbox"
@@ -123,14 +113,9 @@ export function ContentForm({ channels, onSubmit, isLoading, onCancel }: Content
         />
         포인트 지급 대상
       </label>
-
       <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit" isLoading={isLoading}>
-          Add Content
-        </Button>
+        <Button type="button" variant="secondary" onClick={onCancel}>취소</Button>
+        <Button type="submit" isLoading={isLoading}>추가</Button>
       </div>
     </form>
   );

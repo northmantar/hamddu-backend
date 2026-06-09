@@ -12,7 +12,8 @@ import { RedisService } from '../redis/redis.service';
 import { Platform, UserType } from '@enums/user.enum';
 import { OAuthProfile } from './interfaces/oauth-profile.interface';
 import { User } from '@entities/user.entity';
-const REFRESH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
+const REFRESH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 180; // 180 days
+const ADMIN_ACCESS_TOKEN_TTL = '3d';
 
 export interface TokenPair {
   accessToken: string;
@@ -33,7 +34,18 @@ export class AuthService {
 
   async issueTokens(userId: string): Promise<TokenPair> {
     const accessToken = this.jwtService.sign({ sub: userId });
+    return this.buildTokenPair(userId, accessToken);
+  }
 
+  async issueAdminTokens(userId: string): Promise<TokenPair> {
+    const accessToken = this.jwtService.sign(
+      { sub: userId },
+      { expiresIn: ADMIN_ACCESS_TOKEN_TTL },
+    );
+    return this.buildTokenPair(userId, accessToken);
+  }
+
+  private async buildTokenPair(userId: string, accessToken: string): Promise<TokenPair> {
     const refreshToken = randomBytes(32).toString('hex');
     const tokenHash = this.hash(refreshToken);
 
@@ -84,7 +96,7 @@ export class AuthService {
     if (adminCount === 0) {
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = await this.usersService.createAdminUser(email, hashedPassword);
-      const tokens = await this.issueTokens(user.id);
+      const tokens = await this.issueAdminTokens(user.id);
       return { user, tokens };
     }
 
@@ -98,7 +110,7 @@ export class AuthService {
       throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다.');
     }
 
-    const tokens = await this.issueTokens(user.id);
+    const tokens = await this.issueAdminTokens(user.id);
     return { user, tokens };
   }
 
@@ -139,5 +151,33 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await this.usersService.setPassword(userId, hashedPassword);
+  }
+
+  async resetAdminPassword(
+    callerId: string,
+    targetId: string,
+    newPassword: string,
+  ): Promise<void> {
+    if (callerId === targetId) {
+      throw new BadRequestException('본인의 비밀번호는 비밀번호 변경 API를 사용하세요.');
+    }
+
+    await this.usersService.findAdminById(targetId);
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.usersService.setPassword(targetId, hashedPassword);
+  }
+
+  async deleteAdminUser(callerId: string, targetId: string): Promise<void> {
+    if (callerId === targetId) {
+      throw new BadRequestException('본인의 계정은 삭제할 수 없습니다.');
+    }
+
+    await this.usersService.findAdminById(targetId);
+
+    const hashes = await this.redis.smembers(`user_rts:${targetId}`);
+    await this.redis.del(...hashes.map((h) => `rt:${h}`), `user_rts:${targetId}`);
+
+    await this.usersService.deleteAdmin(targetId);
   }
 }

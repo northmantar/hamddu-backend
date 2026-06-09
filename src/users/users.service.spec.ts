@@ -4,6 +4,8 @@ import { DataSource, Repository } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from '@entities/user.entity';
+import { XpWallet } from '@entities/xp-wallet.entity';
+import { PointWallet } from '@entities/point-wallet.entity';
 import { NicknameAdjective } from '@entities/nickname-adjective.entity';
 import { NicknameNoun } from '@entities/nickname-noun.entity';
 import { RedisService } from '../redis/redis.service';
@@ -70,6 +72,8 @@ describe('UsersService', () => {
         { provide: getRepositoryToken(User), useValue: mockUserRepo },
         { provide: getRepositoryToken(NicknameAdjective), useValue: mockAdjectiveRepo },
         { provide: getRepositoryToken(NicknameNoun), useValue: mockNounRepo },
+        { provide: getRepositoryToken(XpWallet), useValue: { find: jest.fn().mockResolvedValue([]) } },
+        { provide: getRepositoryToken(PointWallet), useValue: { find: jest.fn().mockResolvedValue([]) } },
         { provide: DataSource, useValue: mockDataSource },
         { provide: RedisService, useValue: mockRedisService },
         { provide: NicknameSequenceService, useValue: mockNicknameSequenceService },

@@ -8,7 +8,7 @@
 
 - **프레임워크**: NestJS + TypeORM
 - **데이터베이스**: PostgreSQL
-- **인증**: JWT (access_token 15분, refresh_token 30일)
+- **인증**: JWT (일반 유저 access_token 30분 / 어드민 access_token 3일, refresh_token 180일)
 
 ---
 
@@ -25,6 +25,9 @@
 
 ### 2단계: 코드 구현
 아래 코드 패턴을 따라 구현합니다.
+
+> **DB 변경(테이블/컬럼 추가·수정·삭제, Enum 추가)이 발생하면 반드시 마이그레이션 파일을 작성합니다.**
+> 파일명 형식: `src/migrations/{timestamp}-{PascalCaseDescription}.ts`
 
 ### 3단계: 테스트 작성
 Service에 대한 Jest 테스트를 작성하고 커버리지를 측정합니다.
@@ -456,11 +459,31 @@ npm run test:cov          # 커버리지 측정
 ## 검증
 
 ```bash
-npm run build          # 빌드 확인
-npm run migration:run  # 마이그레이션 실행
-npm run test           # 테스트 실행
-npm run test:cov       # 커버리지 확인
+npm run build     # 빌드 확인
+npm run test      # 테스트 실행
+npm run test:cov  # 커버리지 확인
 ```
+
+### 마이그레이션 적용 (Docker 환경)
+
+이 프로젝트는 Docker 컨테이너에서 운영됩니다. 마이그레이션 파일 작성 후 아래 순서로 적용합니다.
+
+```bash
+# 1. 로컬에서 컴파일
+npm run build
+
+# 2. 컴파일된 마이그레이션 파일만 컨테이너에 복사 (전체 재빌드 불필요)
+docker compose cp dist/migrations/. app:/app/dist/migrations/
+
+# 3. 컨테이너 내에서 마이그레이션 실행
+docker compose exec --env-file .env.prod app npm run migration:run:prod
+```
+
+> 앱 코드 변경이 함께 있는 경우에는 전체 이미지 재빌드가 필요합니다.
+> ```bash
+> docker compose build app && docker compose up -d app
+> docker compose exec --env-file .env.prod app npm run migration:run:prod
+> ```
 
 - Swagger: 서버 실행 후 `/api-docs` 접속하여 모든 엔드포인트 표시 확인
 

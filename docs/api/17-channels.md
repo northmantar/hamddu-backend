@@ -2,7 +2,7 @@
 
 ## 17.1 `GET /channels`
 
-채널 목록을 조회합니다.
+채널 목록을 조회합니다. (관리자 전용 — 모든 상태의 채널 반환)
 
 **Request**
 
@@ -22,13 +22,17 @@
     {
       "id": "channel-uuid-1",
       "name": "함뜨 공식채널",
-      "youtubeChannelId": "UC...",
+      "platform": "youtube",
+      "sourceChannelId": "UC...",
+      "status": "active",
       "addedAt": "2026-01-01T00:00:00.000Z"
     },
     {
       "id": "channel-uuid-2",
       "name": "뜨개질 장인",
-      "youtubeChannelId": "UC...",
+      "platform": "youtube",
+      "sourceChannelId": "UC...",
+      "status": "inactive",
       "addedAt": "2026-02-15T00:00:00.000Z"
     }
   ]
@@ -54,14 +58,16 @@
     ```json
     {
       "name": "함뜨 공식채널",
-      "youtubeChannelId": "UC..."
+      "platform": "youtube",
+      "sourceChannelId": "UC..."
     }
     ```
 
     | 필드 | 타입 | 필수 | 유효성 조건 |
     | --- | --- | --- | --- |
     | `name` | string | Yes | 최대 255자 |
-    | `youtubeChannelId` | string | Yes | 유튜브 채널 ID |
+    | `platform` | enum | Yes | `channelPlatform` 참고 |
+    | `sourceChannelId` | string | Yes | 플랫폼 채널 ID |
 
 **Response (201)**
 
@@ -69,7 +75,9 @@
 {
   "id": "channel-uuid",
   "name": "함뜨 공식채널",
-  "youtubeChannelId": "UC...",
+  "platform": "youtube",
+  "sourceChannelId": "UC...",
+  "status": "active",
   "addedAt": "2026-04-09T12:00:00.000Z"
 }
 ```
@@ -85,7 +93,7 @@
 
 ## 17.3 `PATCH /channels/:id` (관리자 전용)
 
-채널 정보를 수정합니다.
+채널 정보를 수정합니다. `status`를 `inactive`로 변경하면 해당 채널의 콘텐츠가 일반 유저 조회에서 제외됩니다.
 
 **Request**
 
@@ -103,13 +111,15 @@
 
     ```json
     {
-      "name": "수정된 채널명"
+      "name": "수정된 채널명",
+      "status": "inactive"
     }
     ```
 
     | 필드 | 타입 | 필수 | 유효성 조건 |
     | --- | --- | --- | --- |
     | `name` | string | No | 최대 255자 |
+    | `status` | enum | No | `channelStatus` 참고 |
 
 **Response (200)**
 
@@ -117,7 +127,9 @@
 {
   "id": "channel-uuid",
   "name": "수정된 채널명",
-  "youtubeChannelId": "UC...",
+  "platform": "youtube",
+  "sourceChannelId": "UC...",
+  "status": "inactive",
   "addedAt": "2026-01-01T00:00:00.000Z"
 }
 ```
