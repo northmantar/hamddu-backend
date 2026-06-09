@@ -22,15 +22,15 @@ export class AddCommentReportsAndHiddenFields1749450000000
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "commentId" uuid NOT NULL,
         "reporterId" uuid NOT NULL,
-        "reason" "public"."board_reports_reason_enum" NOT NULL,
+        "reason" "report_reason_enum" NOT NULL,
         "description" text,
-        "status" "public"."board_reports_status_enum" NOT NULL DEFAULT 'pending',
+        "status" "report_status_enum" NOT NULL DEFAULT 'pending',
         "createdAt" TIMESTAMP NOT NULL DEFAULT now(),
         "processedAt" TIMESTAMP WITH TIME ZONE,
         CONSTRAINT "PK_comment_reports" PRIMARY KEY ("id"),
         CONSTRAINT "UQ_comment_reports_comment_reporter" UNIQUE ("commentId", "reporterId"),
         CONSTRAINT "FK_comment_reports_comment" FOREIGN KEY ("commentId") REFERENCES "board_comments"("id") ON DELETE CASCADE ON UPDATE NO ACTION,
-        CONSTRAINT "FK_comment_reports_reporter" FOREIGN KEY ("reporterId") REFERENCES "member"("id") ON DELETE CASCADE ON UPDATE NO ACTION
+        CONSTRAINT "FK_comment_reports_reporter" FOREIGN KEY ("reporterId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION
       )
     `);
 
