@@ -20,14 +20,14 @@ export class BoardCommentLike {
   commentId: string;
 
   @ManyToOne(() => BoardComment, (comment) => comment.likes)
-  @JoinColumn({ name: "commentId" })
+  @JoinColumn({ name: "comment_id" })
   comment: BoardComment;
 
   @Column()
   memberId: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: "memberId" })
+  @JoinColumn({ name: "member_id" })
   member: User;
 
   @CreateDateColumn()

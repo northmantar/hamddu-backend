@@ -20,14 +20,14 @@ export class BoardLike {
   boardId: string;
 
   @ManyToOne(() => Board, (board) => board.likes)
-  @JoinColumn({ name: "boardId" })
+  @JoinColumn({ name: "board_id" })
   board: Board;
 
   @Column()
   memberId: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: "memberId" })
+  @JoinColumn({ name: "member_id" })
   member: User;
 
   @CreateDateColumn()

@@ -21,14 +21,14 @@ export class BoardComment {
   boardId: string;
 
   @ManyToOne(() => Board, (board) => board.comments)
-  @JoinColumn({ name: "boardId" })
+  @JoinColumn({ name: "board_id" })
   board: Board;
 
   @Column()
   memberId: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: "memberId" })
+  @JoinColumn({ name: "member_id" })
   member: User;
 
   @Column({ type: "uuid", nullable: true })
@@ -37,7 +37,7 @@ export class BoardComment {
   @ManyToOne(() => BoardComment, (comment) => comment.children, {
     nullable: true,
   })
-  @JoinColumn({ name: "parentId" })
+  @JoinColumn({ name: "parent_id" })
   parent: BoardComment | null;
 
   @OneToMany(() => BoardComment, (comment) => comment.parent)

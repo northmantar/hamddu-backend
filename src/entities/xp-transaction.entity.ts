@@ -19,21 +19,21 @@ export class XpTransaction {
   memberId: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: "memberId" })
+  @JoinColumn({ name: "member_id" })
   member: User;
 
   @Column()
   walletId: string;
 
   @ManyToOne(() => XpWallet, (wallet) => wallet.transactions)
-  @JoinColumn({ name: "walletId" })
+  @JoinColumn({ name: "wallet_id" })
   wallet: XpWallet;
 
   @Column()
   policyId: string;
 
   @ManyToOne(() => XpLevelPolicy)
-  @JoinColumn({ name: "policyId" })
+  @JoinColumn({ name: "policy_id" })
   policy: XpLevelPolicy;
 
   @Column({ type: "uuid", nullable: true })

@@ -22,14 +22,14 @@ export class XpWallet {
   memberId: string;
 
   @OneToOne(() => User)
-  @JoinColumn({ name: "memberId" })
+  @JoinColumn({ name: "member_id" })
   member: User;
 
   @Column()
   policyId: string;
 
   @ManyToOne(() => XpLevelPolicy, (policy) => policy.wallets)
-  @JoinColumn({ name: "policyId" })
+  @JoinColumn({ name: "policy_id" })
   policy: XpLevelPolicy;
 
   @Column({ type: "int", default: 0 })

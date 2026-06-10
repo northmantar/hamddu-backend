@@ -16,14 +16,14 @@ export class PointUseDetail {
   useTxId: string;
 
   @ManyToOne(() => PointTransaction, (tx) => tx.useDetails)
-  @JoinColumn({ name: "useTxId" })
+  @JoinColumn({ name: "use_tx_id" })
   useTx: PointTransaction;
 
   @Column()
   earnTxId: string;
 
   @ManyToOne(() => PointTransaction, (tx) => tx.earnDetails)
-  @JoinColumn({ name: "earnTxId" })
+  @JoinColumn({ name: "earn_tx_id" })
   earnTx: PointTransaction;
 
   @Column({ type: "int" })

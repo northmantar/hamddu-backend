@@ -22,7 +22,7 @@ export class PointTransaction {
   memberId: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: "memberId" })
+  @JoinColumn({ name: "member_id" })
   member: User;
 
   @Column({ nullable: true })
@@ -31,7 +31,7 @@ export class PointTransaction {
   @ManyToOne(() => PointEarningPolicy, (policy) => policy.transactions, {
     nullable: true,
   })
-  @JoinColumn({ name: "policyId" })
+  @JoinColumn({ name: "policy_id" })
   policy: PointEarningPolicy | null;
 
   @Column({ nullable: true })
@@ -40,7 +40,7 @@ export class PointTransaction {
   @ManyToOne(() => PointWallet, (wallet) => wallet.transactions, {
     nullable: true,
   })
-  @JoinColumn({ name: "walletId" })
+  @JoinColumn({ name: "wallet_id" })
   wallet: PointWallet | null;
 
   @Column({ type: "uuid", nullable: true })
@@ -53,7 +53,7 @@ export class PointTransaction {
   cancelTargetId: string | null;
 
   @ManyToOne(() => PointTransaction, { nullable: true })
-  @JoinColumn({ name: "cancelTargetId" })
+  @JoinColumn({ name: "cancel_target_id" })
   cancelTarget: PointTransaction | null;
 
   @Column({ type: "enum", enum: PointTransactionType })

@@ -21,14 +21,14 @@ export class Challenge {
   memberId: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: "memberId" })
+  @JoinColumn({ name: "member_id" })
   member: User;
 
   @Column()
   contentId: string;
 
   @ManyToOne(() => Content, (content) => content.challenges)
-  @JoinColumn({ name: "contentId" })
+  @JoinColumn({ name: "content_id" })
   content: Content;
 
   @Column({ type: "text", nullable: true })

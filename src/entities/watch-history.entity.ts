@@ -21,14 +21,14 @@ export class WatchHistory {
   memberId: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: "memberId" })
+  @JoinColumn({ name: "member_id" })
   member: User;
 
   @Column()
   contentId: string;
 
   @ManyToOne(() => Content, (content) => content.watchHistories)
-  @JoinColumn({ name: "contentId" })
+  @JoinColumn({ name: "content_id" })
   content: Content;
 
   @Column({ type: "int" })
@@ -43,6 +43,6 @@ export class WatchHistory {
   @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn({ name: "lastWatchedAt" })
+  @UpdateDateColumn()
   lastWatchedAt: Date;
 }

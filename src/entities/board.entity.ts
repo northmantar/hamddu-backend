@@ -32,14 +32,14 @@ export class Board {
   memberId: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: "memberId" })
+  @JoinColumn({ name: "member_id" })
   member: User;
 
   @Column()
   categoryId: string;
 
   @ManyToOne(() => BoardCategory, (category) => category.boards)
-  @JoinColumn({ name: "categoryId" })
+  @JoinColumn({ name: "category_id" })
   category: BoardCategory;
 
   @Column({ type: "text" })

@@ -20,7 +20,7 @@ export class PointWallet {
   memberId: string;
 
   @OneToOne(() => User)
-  @JoinColumn({ name: "memberId" })
+  @JoinColumn({ name: "member_id" })
   member: User;
 
   @Column({ type: "int", default: 0 })
