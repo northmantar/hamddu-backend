@@ -16,7 +16,7 @@ import { UserInterests } from "@enums/user.enum";
 
 export class CreateContentDto {
   @ApiProperty({ description: "채널 ID" })
-  @IsUUID('all')
+  @IsUUID()
   @IsNotEmpty()
   channelId: string;
 
@@ -54,6 +54,6 @@ export class CreateContentDto {
 
   @ApiPropertyOptional({ description: "미디어 ID (POST /media/upload 응답의 id)", example: "media-uuid" })
   @IsOptional()
-  @IsUUID('all')
+  @IsUUID()
   mediaId?: string;
 }

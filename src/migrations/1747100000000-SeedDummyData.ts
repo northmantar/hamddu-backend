@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-const CHANNEL_KNITTING_ID = 'c0000001-0000-0000-0000-000000000001';
-const CHANNEL_CROCHET_ID  = 'c0000002-0000-0000-0000-000000000002';
+const CHANNEL_KNITTING_ID = '09c808ce-40bf-4569-8ac5-e43372a6679b';
+const CHANNEL_CROCHET_ID  = 'a2d037f2-2d60-4c9c-a794-0bb7d0be8352';
 
 export class SeedDummyData1747100000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
