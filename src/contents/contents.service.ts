@@ -165,6 +165,8 @@ export class ContentsService {
 
     await this.contentRepo.update(contentId, {
       ...(dto.name !== undefined && { name: dto.name }),
+      ...(dto.sourceVideoId !== undefined && { sourceVideoId: dto.sourceVideoId }),
+      ...(dto.channelId !== undefined && { channelId: dto.channelId }),
       ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
       ...(dto.pointApplyable !== undefined && { pointApplyable: dto.pointApplyable }),
       ...(dto.mediaId !== undefined && { mediaId: dto.mediaId }),

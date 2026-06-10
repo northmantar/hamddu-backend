@@ -10,6 +10,16 @@ export class UpdateContentDto {
   @MaxLength(200)
   name?: string;
 
+  @ApiPropertyOptional({ description: "플랫폼 비디오 ID" })
+  @IsOptional()
+  @IsString()
+  sourceVideoId?: string;
+
+  @ApiPropertyOptional({ description: "채널 ID" })
+  @IsOptional()
+  @IsUUID()
+  channelId?: string;
+
   @ApiPropertyOptional({ description: "interests 내 정렬 순서 (1부터 시작)" })
   @IsOptional()
   @IsInt()
