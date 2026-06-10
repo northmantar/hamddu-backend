@@ -172,6 +172,36 @@ export interface UpdateXpLevelDto {
   maxXp?: number;
 }
 
+// Report types
+export type ReportReason = 'spam' | 'harassment' | 'inappropriate' | 'copyright' | 'other';
+export type ReportStatus = 'pending' | 'resolved' | 'rejected';
+
+export interface BoardReport {
+  id: string;
+  reason: ReportReason;
+  description: string | null;
+  status: ReportStatus;
+  createdAt: string;
+  processedAt: string | null;
+  reporter: { id: string; nickname: string };
+  board: { id: string; title: string };
+}
+
+export interface CommentReport {
+  id: string;
+  reason: ReportReason;
+  description: string | null;
+  status: ReportStatus;
+  createdAt: string;
+  processedAt: string | null;
+  reporter: { id: string; nickname: string };
+  comment: { id: string; body: string; boardId: string };
+}
+
+export interface UpdateReportDto {
+  status: 'resolved' | 'rejected';
+}
+
 // Pagination types
 export interface PaginatedResponse<T> {
   data: T[];
