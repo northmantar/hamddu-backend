@@ -104,10 +104,7 @@ export class ContentsController {
     @Body() dto: UpdateContentDto,
   ): Promise<ContentDetailDto> {
     const content = await this.contentsService.update(id, payload.sub, dto);
-    const watchHistory = await this.contentsService.findWatchHistory(id, payload.sub);
-    const challengeCompleted = await this.contentsService.isChallengeCompleted(id, payload.sub);
-
-    return ContentDetailDto.fromWithDetails(content, watchHistory, challengeCompleted);
+    return ContentDetailDto.fromWithDetails(content, null, false);
   }
 
   @ApiOperation({ summary: "튜토리얼 순서 일괄 변경 (관리자)" })
@@ -139,10 +136,7 @@ export class ContentsController {
     @Body() dto: UpdateOrderDto,
   ): Promise<ContentDetailDto> {
     const content = await this.contentsService.updateSortOrder(id, payload.sub, dto);
-    const watchHistory = await this.contentsService.findWatchHistory(id, payload.sub);
-    const challengeCompleted = await this.contentsService.isChallengeCompleted(id, payload.sub);
-
-    return ContentDetailDto.fromWithDetails(content, watchHistory, challengeCompleted);
+    return ContentDetailDto.fromWithDetails(content, null, false);
   }
 
   @ApiOperation({ summary: "콘텐츠 삭제 (관리자)" })
