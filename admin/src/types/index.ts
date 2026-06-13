@@ -60,6 +60,7 @@ export interface Content {
   status: ContentStatus;
   interests: UserInterests | null;
   imageUrl: string | null;
+  mediaId: string | null;
   pointApplyable: boolean;
   sortOrder: number | null;
   uploadedAt: string | null;
@@ -200,6 +201,14 @@ export interface CommentReport {
 
 export interface UpdateReportDto {
   status: 'resolved' | 'rejected';
+}
+
+// Media types
+export interface Media {
+  id: string;
+  url: string;
+  mimeType: string | null;
+  createdAt: string;
 }
 
 // Pagination types

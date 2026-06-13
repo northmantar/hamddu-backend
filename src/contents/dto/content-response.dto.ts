@@ -58,6 +58,9 @@ export class ContentListItemDto {
   @ApiPropertyOptional({ example: "https://cdn.hamddu.online/symbols/chain.png", nullable: true })
   imageUrl: string | null;
 
+  @ApiPropertyOptional({ example: "media-uuid", nullable: true, description: "연결된 미디어 ID (어드민 수정용)" })
+  mediaId: string | null;
+
   @ApiProperty({ example: true })
   pointApplyable: boolean;
 
@@ -82,6 +85,7 @@ export class ContentListItemDto {
         : { id: '', name: '(삭제된 채널)' },
       interests: content.interests,
       imageUrl: content.media?.url ?? null,
+      mediaId: content.mediaId,
       pointApplyable: content.pointApplyable,
       sortOrder: content.sortOrder,
       uploadedAt: content.uploadedAt,

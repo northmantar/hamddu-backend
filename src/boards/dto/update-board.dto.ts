@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
+import { IsArray, IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
 
 export class UpdateBoardDto {
   @ApiPropertyOptional({ description: "카테고리 ID" })
@@ -20,4 +20,14 @@ export class UpdateBoardDto {
   @MinLength(1)
   @MaxLength(10000)
   body?: string;
+
+  @ApiPropertyOptional({
+    description: "첨부할 미디어 ID 목록 (기존 미디어는 삭제되고 새로 등록)",
+    type: [String],
+    example: ["media-uuid-1", "media-uuid-2"],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID("4", { each: true })
+  mediaIds?: string[];
 }

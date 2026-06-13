@@ -168,4 +168,48 @@ describe('MediaService', () => {
       );
     });
   });
+
+  describe('create', () => {
+    const createDto = {
+      url: 'https://cdn.hamddu.online/media/abc123.jpg',
+      mimeType: 'image/jpeg',
+    };
+
+    it('should create media with provided URL and mimeType', async () => {
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      await service.create(createDto, 'user-1');
+
+      expect(mediaRepo.create).toHaveBeenCalledWith({
+        uploaderId: 'user-1',
+        url: createDto.url,
+        mimeType: createDto.mimeType,
+      });
+    });
+
+    it('should set mimeType to null when not provided', async () => {
+      const dtoWithoutMimeType = { url: 'https://cdn.hamddu.online/media/abc123.jpg' };
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      await service.create(dtoWithoutMimeType, 'user-1');
+
+      expect(mediaRepo.create).toHaveBeenCalledWith({
+        uploaderId: 'user-1',
+        url: dtoWithoutMimeType.url,
+        mimeType: null,
+      });
+    });
+
+    it('should save and return the media entity', async () => {
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      const result = await service.create(createDto, 'user-1');
+
+      expect(mediaRepo.save).toHaveBeenCalledWith(mockMedia);
+      expect(result).toEqual(mockMedia);
+    });
+  });
 });

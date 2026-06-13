@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
+import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
 import { BoardStatus } from "@enums/board.enum";
 
 export class CreateBoardDto {
@@ -26,4 +26,14 @@ export class CreateBoardDto {
   @IsOptional()
   @IsEnum([BoardStatus.DRAFT, BoardStatus.PUBLISHED])
   status?: BoardStatus.DRAFT | BoardStatus.PUBLISHED = BoardStatus.PUBLISHED;
+
+  @ApiPropertyOptional({
+    description: "첨부할 미디어 ID 목록 (순서대로 저장)",
+    type: [String],
+    example: ["media-uuid-1", "media-uuid-2"],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsUUID("4", { each: true })
+  mediaIds?: string[];
 }

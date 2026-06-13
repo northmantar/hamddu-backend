@@ -39,6 +39,13 @@
         "id": "author-uuid",
         "nickname": "실뭉치장인"
       },
+      "media": [
+        {
+          "id": "media-uuid",
+          "url": "https://cdn.hamddu.online/media/abc123.jpg",
+          "mimeType": "image/jpeg"
+        }
+      ],
       "createdAt": "2026-04-09T12:00:00.000Z",
       "updatedAt": "2026-04-09T12:00:00.000Z"
     }
@@ -124,6 +131,13 @@
     "id": "author-uuid",
     "nickname": "실뭉치장인"
   },
+  "media": [
+    {
+      "id": "media-uuid",
+      "url": "https://cdn.hamddu.online/media/abc123.jpg",
+      "mimeType": "image/jpeg"
+    }
+  ],
   "isLiked": false,
   "createdAt": "2026-04-09T12:00:00.000Z",
   "updatedAt": "2026-04-09T12:00:00.000Z"
@@ -157,7 +171,8 @@
       "categoryId": "category-uuid",
       "title": "코바늘 시작하기 질문이요!",
       "body": "안녕하세요, 코바늘 입문자입니다...",
-      "status": "published"
+      "status": "published",
+      "mediaIds": ["media-uuid-1", "media-uuid-2"]
     }
     ```
 
@@ -167,6 +182,7 @@
     | `title` | string | Yes | 1–200자 |
     | `body` | string | Yes | 1–10000자 |
     | `status` | string | No | `draft` \| `published` (기본값: `published`) |
+    | `mediaIds` | string[] (UUID[]) | No | 첨부할 미디어 ID 목록 (순서대로 저장) |
 
 **Response (201)**
 
@@ -185,6 +201,13 @@
     "id": "author-uuid",
     "nickname": "실뭉치장인"
   },
+  "media": [
+    {
+      "id": "media-uuid-1",
+      "url": "https://cdn.hamddu.online/media/abc123.jpg",
+      "mimeType": "image/jpeg"
+    }
+  ],
   "isLiked": false,
   "createdAt": "2026-04-09T12:00:00.000Z",
   "updatedAt": "2026-04-09T12:00:00.000Z"
@@ -196,6 +219,7 @@
 | **상태 코드** | **errorMessage** |
 | --- | --- |
 | 400 | "유효하지 않은 요청입니다." |
+| 400 | "유효하지 않은 미디어 ID가 포함되어 있습니다." |
 
 ---
 
@@ -221,7 +245,8 @@
     {
       "categoryId": "category-uuid",
       "title": "수정된 제목",
-      "body": "수정된 본문 내용"
+      "body": "수정된 본문 내용",
+      "mediaIds": ["media-uuid-1", "media-uuid-2"]
     }
     ```
 
@@ -230,6 +255,7 @@
     | `categoryId` | string (UUID) | No | 유효한 UUID |
     | `title` | string | No | 1–200자 |
     | `body` | string | No | 1–10000자 |
+    | `mediaIds` | string[] (UUID[]) | No | 첨부할 미디어 ID 목록 (기존 미디어 대체) |
 
 **Response (200)**
 
@@ -248,6 +274,13 @@
     "id": "author-uuid",
     "nickname": "실뭉치장인"
   },
+  "media": [
+    {
+      "id": "media-uuid-1",
+      "url": "https://cdn.hamddu.online/media/abc123.jpg",
+      "mimeType": "image/jpeg"
+    }
+  ],
   "isLiked": true,
   "createdAt": "2026-04-09T12:00:00.000Z",
   "updatedAt": "2026-04-09T13:00:00.000Z"
@@ -258,6 +291,7 @@
 
 | **상태 코드** | **errorMessage** |
 | --- | --- |
+| 400 | "유효하지 않은 미디어 ID가 포함되어 있습니다." |
 | 403 | "접근 권한이 없습니다." |
 | 404 | "게시글을 찾을 수 없습니다." |
 

@@ -132,6 +132,52 @@ async function request<T>(
   return JSON.parse(text);
 }
 
+async function uploadFile<T>(endpoint: string, file: File): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const headers: Record<string, string> = {};
+  const accessToken = getAccessToken();
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+
+  let response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  if (response.status === 401 && accessToken) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      headers['Authorization'] = `Bearer ${newToken}`;
+      response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+    } else {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
+      throw new ApiError(401, 'Unauthorized');
+    }
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new ApiError(
+      response.status,
+      errorData.message || 'An error occurred',
+      errorData
+    );
+  }
+
+  return response.json();
+}
+
 export const api = {
   get: <T>(endpoint: string, options?: RequestOptions) =>
     request<T>(endpoint, { ...options, method: 'GET' }),
@@ -152,6 +198,8 @@ export const api = {
 
   delete: <T>(endpoint: string, options?: RequestOptions) =>
     request<T>(endpoint, { ...options, method: 'DELETE' }),
+
+  upload: <T>(endpoint: string, file: File) => uploadFile<T>(endpoint, file),
 
   setTokens,
   clearTokens,

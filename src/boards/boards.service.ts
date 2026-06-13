@@ -6,10 +6,12 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { IsNull, Repository } from "typeorm";
+import { In, IsNull, Repository } from "typeorm";
 import { Board } from "@entities/board.entity";
 import { BoardLike } from "@entities/board-like.entity";
 import { BoardCategory } from "@entities/board-category.entity";
+import { BoardMedia } from "@entities/board-media.entity";
+import { Media } from "@entities/media.entity";
 import { BoardStatus, BoardCategoryStatus } from "@enums/board.enum";
 import { UserType } from "@enums/user.enum";
 import { CreateBoardDto } from "./dto/create-board.dto";
@@ -31,6 +33,10 @@ export class BoardsService {
     private readonly boardLikeRepo: Repository<BoardLike>,
     @InjectRepository(BoardCategory)
     private readonly categoryRepo: Repository<BoardCategory>,
+    @InjectRepository(BoardMedia)
+    private readonly boardMediaRepo: Repository<BoardMedia>,
+    @InjectRepository(Media)
+    private readonly mediaRepo: Repository<Media>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     private readonly rewardsService: RewardsService,
@@ -46,6 +52,8 @@ export class BoardsService {
       .createQueryBuilder("board")
       .leftJoinAndSelect("board.member", "member")
       .leftJoinAndSelect("board.category", "category")
+      .leftJoinAndSelect("board.boardMedia", "boardMedia")
+      .leftJoinAndSelect("boardMedia.media", "media")
       .where("board.status = :status", { status: BoardStatus.PUBLISHED })
       .andWhere("board.deletedAt IS NULL")
       .andWhere("board.isHidden = :isHidden", { isHidden: false });
@@ -62,6 +70,12 @@ export class BoardsService {
 
     const [data, totalCount] = await qb.skip(skip).take(limit).getManyAndCount();
 
+    data.forEach((board) => {
+      if (board.boardMedia) {
+        board.boardMedia.sort((a, b) => a.sortOrder - b.sortOrder);
+      }
+    });
+
     return {
       data,
       meta: {
@@ -76,11 +90,15 @@ export class BoardsService {
   async findById(id: string): Promise<Board> {
     const board = await this.boardRepo.findOne({
       where: { id, deletedAt: IsNull(), isHidden: false },
-      relations: ["member", "category"],
+      relations: ["member", "category", "boardMedia", "boardMedia.media"],
     });
 
     if (!board) {
       throw new NotFoundException("게시글을 찾을 수 없습니다.");
+    }
+
+    if (board.boardMedia) {
+      board.boardMedia.sort((a, b) => a.sortOrder - b.sortOrder);
     }
 
     return board;
@@ -99,6 +117,13 @@ export class BoardsService {
       throw new BadRequestException("유효하지 않은 카테고리입니다.");
     }
 
+    if (dto.mediaIds?.length) {
+      const mediaCount = await this.mediaRepo.countBy({ id: In(dto.mediaIds) });
+      if (mediaCount !== dto.mediaIds.length) {
+        throw new BadRequestException("유효하지 않은 미디어 ID가 포함되어 있습니다.");
+      }
+    }
+
     const board = this.boardRepo.create({
       memberId,
       categoryId: dto.categoryId,
@@ -108,6 +133,17 @@ export class BoardsService {
     });
 
     const saved = await this.boardRepo.save(board);
+
+    if (dto.mediaIds?.length) {
+      const boardMediaEntities = dto.mediaIds.map((mediaId, index) =>
+        this.boardMediaRepo.create({
+          boardId: saved.id,
+          mediaId,
+          sortOrder: index,
+        }),
+      );
+      await this.boardMediaRepo.save(boardMediaEntities);
+    }
 
     await this.rewardsService.enqueueReward({
       memberId,
@@ -133,6 +169,28 @@ export class BoardsService {
       });
       if (!category) {
         throw new BadRequestException("유효하지 않은 카테고리입니다.");
+      }
+    }
+
+    if (dto.mediaIds !== undefined) {
+      if (dto.mediaIds.length) {
+        const mediaCount = await this.mediaRepo.countBy({ id: In(dto.mediaIds) });
+        if (mediaCount !== dto.mediaIds.length) {
+          throw new BadRequestException("유효하지 않은 미디어 ID가 포함되어 있습니다.");
+        }
+      }
+
+      await this.boardMediaRepo.delete({ boardId });
+
+      if (dto.mediaIds.length) {
+        const boardMediaEntities = dto.mediaIds.map((mediaId, index) =>
+          this.boardMediaRepo.create({
+            boardId,
+            mediaId,
+            sortOrder: index,
+          }),
+        );
+        await this.boardMediaRepo.save(boardMediaEntities);
       }
     }
 

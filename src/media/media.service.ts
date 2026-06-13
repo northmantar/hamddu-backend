@@ -4,6 +4,7 @@ import { Repository } from "typeorm";
 import { ConfigService } from "@nestjs/config";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { Media } from "@entities/media.entity";
+import { CreateMediaDto } from "./dto/create-media.dto";
 
 @Injectable()
 export class MediaService {
@@ -47,6 +48,16 @@ export class MediaService {
       uploaderId,
       url,
       mimeType: file.mimetype || null,
+    });
+
+    return this.mediaRepo.save(media);
+  }
+
+  async create(dto: CreateMediaDto, uploaderId: string): Promise<Media> {
+    const media = this.mediaRepo.create({
+      uploaderId,
+      url: dto.url,
+      mimeType: dto.mimeType || null,
     });
 
     return this.mediaRepo.save(media);

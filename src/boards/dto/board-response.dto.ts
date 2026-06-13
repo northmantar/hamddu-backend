@@ -18,6 +18,17 @@ export class CategoryDto {
   label: string;
 }
 
+export class MediaItemDto {
+  @ApiProperty({ example: "media-uuid" })
+  id: string;
+
+  @ApiProperty({ example: "https://cdn.hamddu.online/media/abc123.jpg" })
+  url: string;
+
+  @ApiPropertyOptional({ example: "image/jpeg", nullable: true })
+  mimeType: string | null;
+}
+
 export class BoardListItemDto {
   @ApiProperty({ example: "550e8400-e29b-41d4-a716-446655440000" })
   id: string;
@@ -36,6 +47,9 @@ export class BoardListItemDto {
 
   @ApiProperty({ type: AuthorDto })
   author: AuthorDto;
+
+  @ApiPropertyOptional({ type: [MediaItemDto], description: "첨부 이미지 목록" })
+  media?: MediaItemDto[];
 
   @ApiProperty({ example: "2026-04-09T12:00:00.000Z" })
   createdAt: Date;
@@ -57,6 +71,11 @@ export class BoardListItemDto {
         id: board.member.id,
         nickname: board.member.nickname ?? "",
       },
+      media: board.boardMedia?.map((bm) => ({
+        id: bm.media.id,
+        url: bm.media.url,
+        mimeType: bm.media.mimeType,
+      })),
       createdAt: board.createdAt,
       updatedAt: board.updatedAt,
     };

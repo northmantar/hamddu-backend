@@ -14,6 +14,8 @@ import { BoardComment } from "@entities/board-comment.entity";
 import { BoardCommentLike } from "@entities/board-comment-like.entity";
 import { BoardReport } from "@entities/board-report.entity";
 import { CommentReport } from "@entities/comment-report.entity";
+import { BoardMedia } from "@entities/board-media.entity";
+import { Media } from "@entities/media.entity";
 import { User } from "@entities/user.entity";
 
 @Module({
@@ -26,6 +28,8 @@ import { User } from "@entities/user.entity";
       BoardCommentLike,
       BoardReport,
       CommentReport,
+      BoardMedia,
+      Media,
       User,
     ]),
     RewardsModule,

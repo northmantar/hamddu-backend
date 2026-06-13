@@ -22,8 +22,10 @@ import { Select } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
+import { ImageUpload } from '@/components/ui/image-upload';
 import { useTutorials, useCreateContent, useUpdateContent, useDeleteContent, useReorderTutorials } from '@/hooks/queries/use-contents';
 import { useChannels } from '@/hooks/queries/use-channels';
+import { useUploadMedia } from '@/hooks/queries/use-media';
 import { useToast } from '@/components/ui/toast';
 import type { Content, ContentStatus, UserInterests, CreateContentDto } from '@/types';
 
@@ -36,16 +38,20 @@ interface SortableRowProps {
   content: Content;
   channels: Array<{ id: string; name: string }>;
   onStatusChange: (content: Content, status: ContentStatus) => void;
-  onUpdate: (content: Content, name: string, sourceVideoId: string, channelId: string) => void;
+  onUpdate: (content: Content, name: string, sourceVideoId: string, channelId: string, mediaId?: string | null) => void;
   onDelete: (content: Content) => void;
+  onUploadMedia: (file: File) => Promise<{ id: string; url: string }>;
+  isUploading: boolean;
 }
 
-function SortableRow({ content, channels, onStatusChange, onUpdate, onDelete }: SortableRowProps) {
+function SortableRow({ content, channels, onStatusChange, onUpdate, onDelete, onUploadMedia, isUploading }: SortableRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: content.id });
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(content.name);
   const [editVideoId, setEditVideoId] = useState(content.sourceVideoId);
   const [editChannelId, setEditChannelId] = useState(content.channelId ?? '');
+  const [editMediaId, setEditMediaId] = useState<string | null>(content.mediaId);
+  const [editImageUrl, setEditImageUrl] = useState<string | null>(content.imageUrl);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -54,7 +60,7 @@ function SortableRow({ content, channels, onStatusChange, onUpdate, onDelete }: 
   };
 
   const handleSave = () => {
-    onUpdate(content, editName, editVideoId, editChannelId);
+    onUpdate(content, editName, editVideoId, editChannelId, editMediaId);
     setIsEditing(false);
   };
 
@@ -62,12 +68,41 @@ function SortableRow({ content, channels, onStatusChange, onUpdate, onDelete }: 
     setEditName(content.name);
     setEditVideoId(content.sourceVideoId);
     setEditChannelId(content.channelId ?? '');
+    setEditMediaId(content.mediaId);
+    setEditImageUrl(content.imageUrl);
     setIsEditing(false);
+  };
+
+  const handleImageChange = (mediaId: string | null, imageUrl: string | null) => {
+    setEditMediaId(mediaId);
+    setEditImageUrl(imageUrl);
   };
 
   return (
     <tr ref={setNodeRef} style={style} className="border-t hover:bg-gray-50">
       <td className="px-4 py-3 text-sm text-gray-500 w-12 text-center">{content.sortOrder ?? '-'}</td>
+      <td className="px-4 py-3 w-16">
+        {isEditing ? (
+          <ImageUpload
+            value={editImageUrl}
+            onChange={handleImageChange}
+            onUpload={onUploadMedia}
+            isUploading={isUploading}
+            label=""
+            className="scale-75 origin-top-left"
+          />
+        ) : (
+          <div className="w-12 h-12 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
+            {content.imageUrl ? (
+              <img src={content.imageUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            )}
+          </div>
+        )}
+      </td>
       <td className="px-4 py-3">
         {isEditing ? (
           <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full" />
@@ -139,7 +174,7 @@ function SortableRow({ content, channels, onStatusChange, onUpdate, onDelete }: 
 export default function TutorialsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('crochet');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [createForm, setCreateForm] = useState<Partial<CreateContentDto>>({});
+  const [createForm, setCreateForm] = useState<Partial<CreateContentDto> & { imageUrl?: string | null }>({});
 
   const { data: tutorials, isLoading } = useTutorials(activeTab);
   const { data: channels } = useChannels();
@@ -147,7 +182,13 @@ export default function TutorialsPage() {
   const updateContent = useUpdateContent();
   const deleteContent = useDeleteContent();
   const reorderTutorials = useReorderTutorials();
+  const uploadMedia = useUploadMedia();
   const { addToast } = useToast();
+
+  const handleUploadMedia = async (file: File) => {
+    const result = await uploadMedia.mutateAsync(file);
+    return { id: result.id, url: result.url };
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -185,11 +226,16 @@ export default function TutorialsPage() {
     }
   };
 
-  const handleUpdate = async (content: Content, name: string, sourceVideoId: string, channelId: string) => {
+  const handleUpdate = async (content: Content, name: string, sourceVideoId: string, channelId: string, mediaId?: string | null) => {
     try {
       await updateContent.mutateAsync({
         id: content.id,
-        dto: { name, sourceVideoId, channelId: channelId || undefined },
+        dto: {
+          name,
+          sourceVideoId,
+          channelId: channelId || undefined,
+          ...(mediaId !== undefined && { mediaId: mediaId || undefined }),
+        },
       });
       addToast('수정되었습니다.', 'success');
     } catch {
@@ -270,6 +316,7 @@ export default function TutorialsPage() {
                 <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
                   <tr>
                     <th className="px-4 py-3 text-center w-12">No.</th>
+                    <th className="px-4 py-3 text-left w-16">아이콘</th>
                     <th className="px-4 py-3 text-left">이름</th>
                     <th className="px-4 py-3 text-left">Video ID</th>
                     <th className="px-4 py-3 text-left">채널명</th>
@@ -288,6 +335,8 @@ export default function TutorialsPage() {
                       onStatusChange={handleStatusChange}
                       onUpdate={handleUpdate}
                       onDelete={handleDelete}
+                      onUploadMedia={handleUploadMedia}
+                      isUploading={uploadMedia.isPending}
                     />
                   ))}
                 </tbody>
@@ -332,6 +381,12 @@ export default function TutorialsPage() {
             value={createForm.channelId ?? ''}
             onChange={(e) => setCreateForm((f) => ({ ...f, channelId: e.target.value }))}
             options={channelOptions}
+          />
+          <ImageUpload
+            value={createForm.imageUrl}
+            onChange={(mediaId, imageUrl) => setCreateForm((f) => ({ ...f, mediaId: mediaId ?? undefined, imageUrl }))}
+            onUpload={handleUploadMedia}
+            isUploading={uploadMedia.isPending}
           />
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="secondary" onClick={() => { setIsCreateModalOpen(false); setCreateForm({}); }}>취소</Button>

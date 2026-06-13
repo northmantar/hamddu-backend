@@ -12,6 +12,8 @@ import { RewardsService } from '../rewards/rewards.service';
 import { Board } from '@entities/board.entity';
 import { BoardLike } from '@entities/board-like.entity';
 import { BoardCategory } from '@entities/board-category.entity';
+import { BoardMedia } from '@entities/board-media.entity';
+import { Media } from '@entities/media.entity';
 import { User } from '@entities/user.entity';
 import { BoardStatus, BoardCategoryStatus } from '@enums/board.enum';
 import { UserType } from '@enums/user.enum';
@@ -21,6 +23,8 @@ describe('BoardsService', () => {
   let boardRepo: jest.Mocked<Repository<Board>>;
   let boardLikeRepo: jest.Mocked<Repository<BoardLike>>;
   let categoryRepo: jest.Mocked<Repository<BoardCategory>>;
+  let boardMediaRepo: jest.Mocked<Repository<BoardMedia>>;
+  let mediaRepo: jest.Mocked<Repository<Media>>;
   let userRepo: jest.Mocked<Repository<User>>;
 
   const mockCategory: Partial<BoardCategory> = {
@@ -84,12 +88,24 @@ describe('BoardsService', () => {
       findOne: jest.fn(),
     };
 
+    const mockBoardMediaRepo = {
+      create: jest.fn(),
+      save: jest.fn(),
+      delete: jest.fn(),
+    };
+
+    const mockMediaRepo = {
+      countBy: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BoardsService,
         { provide: getRepositoryToken(Board), useValue: mockBoardRepo },
         { provide: getRepositoryToken(BoardLike), useValue: mockBoardLikeRepo },
         { provide: getRepositoryToken(BoardCategory), useValue: mockCategoryRepo },
+        { provide: getRepositoryToken(BoardMedia), useValue: mockBoardMediaRepo },
+        { provide: getRepositoryToken(Media), useValue: mockMediaRepo },
         { provide: getRepositoryToken(User), useValue: mockUserRepo },
         { provide: RewardsService, useValue: { enqueueReward: jest.fn().mockResolvedValue(undefined) } },
       ],
@@ -99,6 +115,8 @@ describe('BoardsService', () => {
     boardRepo = module.get(getRepositoryToken(Board));
     boardLikeRepo = module.get(getRepositoryToken(BoardLike));
     categoryRepo = module.get(getRepositoryToken(BoardCategory));
+    boardMediaRepo = module.get(getRepositoryToken(BoardMedia));
+    mediaRepo = module.get(getRepositoryToken(Media));
     userRepo = module.get(getRepositoryToken(User));
   });
 
@@ -159,6 +177,40 @@ describe('BoardsService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('should create board with mediaIds', async () => {
+      categoryRepo.findOne.mockResolvedValue(mockCategory as BoardCategory);
+      mediaRepo.countBy.mockResolvedValue(2);
+      boardRepo.create.mockReturnValue(mockBoard as Board);
+      boardRepo.save.mockResolvedValue(mockBoard as Board);
+      boardMediaRepo.create.mockImplementation((data) => data as BoardMedia);
+      boardMediaRepo.save.mockResolvedValue([] as any);
+      boardRepo.findOne.mockResolvedValue({ ...mockBoard, boardMedia: [] } as Board);
+
+      await service.create('user-123', {
+        categoryId: 'cat-123',
+        title: 'Test Board',
+        body: 'Test Content',
+        mediaIds: ['media-1', 'media-2'],
+      });
+
+      expect(mediaRepo.countBy).toHaveBeenCalled();
+      expect(boardMediaRepo.save).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException for invalid mediaIds', async () => {
+      categoryRepo.findOne.mockResolvedValue(mockCategory as BoardCategory);
+      mediaRepo.countBy.mockResolvedValue(1);
+
+      await expect(
+        service.create('user-123', {
+          categoryId: 'cat-123',
+          title: 'Test',
+          body: 'Test',
+          mediaIds: ['media-1', 'invalid-media'],
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('update', () => {
@@ -187,6 +239,33 @@ describe('BoardsService', () => {
       await expect(
         service.update('board-123', 'other-user', { title: 'Updated' }),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should update board with mediaIds', async () => {
+      boardRepo.findOne.mockResolvedValue({ ...mockBoard, boardMedia: [] } as Board);
+      userRepo.findOne.mockResolvedValue(mockUser as User);
+      mediaRepo.countBy.mockResolvedValue(2);
+      boardMediaRepo.create.mockImplementation((data) => data as BoardMedia);
+      boardMediaRepo.save.mockResolvedValue([] as any);
+
+      await service.update('board-123', 'user-123', {
+        mediaIds: ['media-1', 'media-2'],
+      });
+
+      expect(boardMediaRepo.delete).toHaveBeenCalledWith({ boardId: 'board-123' });
+      expect(boardMediaRepo.save).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException for invalid mediaIds on update', async () => {
+      boardRepo.findOne.mockResolvedValue({ ...mockBoard, boardMedia: [] } as Board);
+      userRepo.findOne.mockResolvedValue(mockUser as User);
+      mediaRepo.countBy.mockResolvedValue(1);
+
+      await expect(
+        service.update('board-123', 'user-123', {
+          mediaIds: ['media-1', 'invalid-media'],
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
