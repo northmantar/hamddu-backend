@@ -1,15 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsEnum, IsInt, IsOptional, Min } from "class-validator";
-import { PointActionType } from "@enums/point.enum";
+import { IsBoolean, IsInt, IsOptional, IsString, MaxLength, Min, MinLength } from "class-validator";
 
 export class CreatePointPolicyDto {
   @ApiProperty({
-    description: "포인트 적립 액션 타입",
-    enum: PointActionType,
-    example: PointActionType.WATCH,
+    description: "포인트 적립 액션 타입 코드 (point_action_types.code 참조)",
+    example: "WATCH",
   })
-  @IsEnum(PointActionType)
-  actionType: PointActionType;
+  @IsString()
+  @MinLength(1)
+  @MaxLength(50)
+  actionType: string;
 
   @ApiProperty({ description: "적립 포인트", example: 100 })
   @IsInt()

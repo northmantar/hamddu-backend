@@ -28,12 +28,14 @@ import { EarnPointDto } from "./dto/earn-point.dto";
 import { CreatePointPolicyDto } from "./dto/create-policy.dto";
 import { UpdatePointPolicyDto } from "./dto/update-policy.dto";
 import { PointTransactionQueryDto } from "./dto/point-query.dto";
+import { CreatePointActionTypeDto, UpdatePointActionTypeDto } from "./dto/action-type.dto";
 import { PaginationMeta } from "../boards/dto/pagination.dto";
 import {
   PointWalletResponseDto,
   PointTransactionResponseDto,
   PointEarnResponseDto,
   PointPolicyResponseDto,
+  PointActionTypeResponseDto,
 } from "./dto/point-response.dto";
 
 @ApiTags("points")
@@ -129,5 +131,50 @@ export class PointsController {
   @UseGuards(AdminGuard)
   async deletePolicy(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     await this.pointsService.deletePolicy(id);
+  }
+
+  @ApiOperation({ summary: "포인트 액션 타입 목록 조회" })
+  @ApiResponse({ status: 200, description: "액션 타입 목록 반환" })
+  @Get("action-types")
+  async getActionTypes(): Promise<{ data: PointActionTypeResponseDto[] }> {
+    const actionTypes = await this.pointsService.getActionTypes();
+    return { data: actionTypes.map(PointActionTypeResponseDto.from) };
+  }
+
+  @ApiOperation({ summary: "포인트 액션 타입 생성 (관리자)" })
+  @ApiResponse({ status: 201, description: "액션 타입 생성 완료" })
+  @ApiResponse({ status: 409, description: "이미 존재하는 액션 코드" })
+  @Post("action-types")
+  @UseGuards(AdminGuard)
+  async createActionType(
+    @Body() dto: CreatePointActionTypeDto,
+  ): Promise<PointActionTypeResponseDto> {
+    const at = await this.pointsService.createActionType(dto);
+    return PointActionTypeResponseDto.from(at);
+  }
+
+  @ApiOperation({ summary: "포인트 액션 타입 수정 (관리자)" })
+  @ApiParam({ name: "code", description: "액션 코드" })
+  @ApiResponse({ status: 200, description: "액션 타입 수정 완료" })
+  @ApiResponse({ status: 404, description: "액션 타입을 찾을 수 없음" })
+  @Patch("action-types/:code")
+  @UseGuards(AdminGuard)
+  async updateActionType(
+    @Param("code") code: string,
+    @Body() dto: UpdatePointActionTypeDto,
+  ): Promise<PointActionTypeResponseDto> {
+    const at = await this.pointsService.updateActionType(code, dto);
+    return PointActionTypeResponseDto.from(at);
+  }
+
+  @ApiOperation({ summary: "포인트 액션 타입 삭제 (관리자)" })
+  @ApiParam({ name: "code", description: "액션 코드" })
+  @ApiResponse({ status: 204, description: "액션 타입 삭제 완료" })
+  @ApiResponse({ status: 409, description: "사용 중인 정책이 있어 삭제 불가" })
+  @Delete("action-types/:code")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(AdminGuard)
+  async deleteActionType(@Param("code") code: string): Promise<void> {
+    await this.pointsService.deleteActionType(code);
   }
 }

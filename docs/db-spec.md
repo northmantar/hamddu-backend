@@ -329,7 +329,7 @@
 | platform | varchar | 가입 플랫폼(kakao, naver, google) |
 | email | varchar | 가입 이메일(*암호화 고려) |
 | name | varchar | 유저명(*암호화 고려) |
-| nickname | varchar | 유저 닉네임 |
+| nickname | varchar | `<<unique>>` 유저 닉네임 (전역 유일, 닉네임 점유의 기준. `register`/닉네임 변경 시 이 컬럼에 기록) |
 | age | enum | 유저 연령대 (`1418` ~ `50+`) |
 | gender | enum | 유저 성별 (`M` | `F`) |
 | interests | enum | 유저 관심사 (`crochet` | `knitting`) |
@@ -353,6 +353,15 @@
 | id | uuid_short() | `<<pkey>>` 명사 ID |
 | word | text | `<<unique>>` 명사 |
 | is_active | boolean | 현재 사용 여부 |
+
+### 닉네임 접미사 카운터 테이블 (`nickname_bases`)
+
+base 닉네임이 중복될 때 붙일 다음 숫자 접미사를 관리하는 카운터 테이블입니다. `register`/닉네임 변경 시 동일 base가 겹치면 `next_suffix` 값을 원자적으로 증가시켜 `실뭉치장인_1`, `실뭉치장인_2` … 형태로 점유합니다. (닉네임 점유 자체의 유일성은 `member.nickname` 의 UNIQUE 제약으로 보장)
+
+| name | type | description |
+| --- | --- | --- |
+| base_nickname | text | `<<pkey>>` 접미사 없는 기준 닉네임 |
+| next_suffix | bigint | 다음에 부여할 접미사 숫자 (기본값 2) |
 
 ### 채널 테이블 (`channels`)
 
@@ -526,14 +535,26 @@
 | created_at | timestamp | 최초 시청 일시 |
 | last_watched_at | timestamp | 마지막 시청 일시 |
 
-### 포인트 정책 테이블 (`point_earning_policy`)
+### 포인트 액션 타입 lookup (`point_action_types`)
 
 | name | type | description |
 | --- | --- | --- |
-| id | uuid_short() | `<<pkey>>` 정책 ID |
-| action_type | enum | 포인트 적립 액션 유형 (`WATCH` | `CHALLENGE` | `COMMENT`) |
+| code | varchar(50) | `<<pkey>>` 액션 코드 (예: `WATCH`, `CHALLENGE`, `COMMENT`) |
+| label_ko | varchar(100) | 한글 라벨 (예: `시청`, `챌린지`, `댓글`) |
+| is_active | boolean | 활성화 여부 |
+| created_at | timestamp | 생성 일시 |
+| updated_at | timestamp | 수정 일시 |
+- 어드민에서 런타임에 추가/수정/삭제 가능 (어드민 → 포인트 정책 → 액션 타입 관리)
+- 기존 `point_action_type_enum` Postgres enum은 1750100000000 마이그레이션으로 제거됨.
+
+### 포인트 정책 테이블 (`point_earning_policies`)
+
+| name | type | description |
+| --- | --- | --- |
+| id | uuid | `<<pkey>>` 정책 ID |
+| action_type | varchar(50) | FK → `point_action_types.code`. 정책 발동 액션 코드 |
 | point_amount | integer | 지급 포인트량 |
-| is_one_time | boolean | 최초 1회 적립 여부 (action_type이 `WATCH`인 경우 true) |
+| is_one_time | boolean | 최초 1회 적립 여부 |
 | is_active | boolean | 정책 유효여부 |
 | created_at | timestamp | 정책 생성 일시 |
 | updated_at | timestamp | 정책 수정 일시 |
@@ -579,6 +600,32 @@
 | earn_tx_id | uuid_short() | `EARN` 트랜잭션 ID (`USE` 트랜잭션과 1:N 관계) |
 | consumed_amount | integer | 해당 `EARN` 트랜잭션으로 적립된 값 중 소진 양 |
 - 포인트 사용과 적립의 M:N 관계 정립을 위한 테이블
+
+### XP 액션 타입 lookup (`xp_action_types`)
+
+| name | type | description |
+| --- | --- | --- |
+| code | varchar(50) | `<<pkey>>` 액션 코드 (예: `SIGNUP`, `DAILY_LOGIN`) |
+| label_ko | varchar(100) | 한글 라벨 |
+| is_active | boolean | 활성화 여부 |
+| created_at | timestamp | 생성 일시 |
+| updated_at | timestamp | 수정 일시 |
+- 포인트 액션 타입과 **독립적으로 관리** (서비스 정책상 별도 코드 체계 가능)
+- 1750200000000 마이그레이션에서 신설.
+
+### XP 지급 정책 테이블 (`xp_earning_policies`)
+
+| name | type | description |
+| --- | --- | --- |
+| id | uuid | `<<pkey>>` 정책 ID |
+| action_type | varchar(50) | FK → `xp_action_types.code` |
+| xp_amount | integer | 지급 XP량 |
+| is_one_time | boolean | 최초 1회 적립 여부 |
+| is_active | boolean | 정책 유효여부 |
+| created_at | timestamp | 생성 일시 |
+| updated_at | timestamp | 수정 일시 |
+- `point_earning_policies` 구조를 그대로 미러링.
+- 현재 `xp.service.ts`의 하드코딩 지급 로직은 정책 테이블을 참조하지 않음 → 후속 작업으로 통합 예정.
 
 ### 경험치-레벨 정책 테이블 (`xp_level_policy`)
 

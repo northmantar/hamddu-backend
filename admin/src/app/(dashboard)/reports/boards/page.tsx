@@ -65,7 +65,7 @@ export default function BoardReportsPage() {
             { value: 'resolved', label: '미노출 처리됨' },
             { value: 'rejected', label: '기각됨' },
           ]}
-          className="w-40"
+          className="w-auto"
         />
       </div>
 

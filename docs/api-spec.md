@@ -134,11 +134,22 @@ Authorization: Bearer <access_token>
 
 ### `pointActionType`
 
-| 값 | 설명 |
+> 어드민에서 런타임 추가/삭제 가능 (`point_action_types` lookup table). 기본 시드 값:
+
+| 값 | 한글 라벨 |
 | --- | --- |
-| `WATCH` | 콘텐츠 시청 |
-| `CHALLENGE` | 챌린지 완료 |
-| `COMMENT` | 댓글 작성 |
+| `WATCH` | 시청 |
+| `CHALLENGE` | 챌린지 |
+| `COMMENT` | 댓글 |
+
+### `xpActionType`
+
+> 어드민에서 런타임 추가/삭제 가능 (`xp_action_types` lookup table, 포인트와 독립). 기본 시드 값:
+
+| 값 | 한글 라벨 |
+| --- | --- |
+| `SIGNUP` | 회원가입 |
+| `DAILY_LOGIN` | 일일 로그인 |
 
 ### `reportReason`
 
@@ -223,10 +234,10 @@ Authorization: Bearer <access_token>
 |  | DELETE | /users/me | 인증 | 회원 탈퇴 |
 |  | GET | /users/:id | 관리자 | 특정 유저 조회 |
 |  | GET | /users | 관리자 | 유저 목록 조회 |
-| **닉네임** | GET | /nicknames/check | 인증 | 중복 체크 |
-|  | GET | /nicknames/candidates | 인증 | 후보 목록 조회 |
-|  | POST | /nicknames/issue | 인증 | 자동 발급 |
-|  | POST | /nicknames/register | 인증 | 수동 등록 |
+| **닉네임** | GET | /nicknames/check | 인증 | 닉네임 중복 체크 |
+|  | GET | /nicknames/candidates | 인증 | 추천 후보 목록 조회 |
+|  | POST | /nicknames/issue | 인증 | 랜덤 닉네임 추천 (점유 안 함) |
+|  | POST | /nicknames/register | 인증 | 입력한 닉네임 점유(확정) |
 | **게시판** | GET | /boards | 인증 | 게시글 목록 |
 |  | GET | /boards/categories | 인증 | 카테고리 목록 |
 |  | GET | /boards/:id | 인증 | 게시글 상세 |
@@ -260,11 +271,14 @@ Authorization: Bearer <access_token>
 | **포인트** | GET | /points/wallet | 인증 | 포인트 지갑 조회 |
 |  | GET | /points/transactions | 인증 | 거래 내역 조회 |
 |  | POST | /points/earn | 관리자 | 포인트 지급 |
-|  | GET | /points/policies | 관리자 | 정책 목록 |
+|  | GET | /points/policies | 관리자 | 지급 정책 목록 |
+|  | GET | /points/action-types | 인증 | 액션 타입 목록 (lookup) |
 | **XP** | GET | /xp/wallet | 인증 | XP 지갑 조회 |
 |  | GET | /xp/transactions | 인증 | 거래 내역 조회 |
 |  | POST | /xp/earn | 관리자 | XP 지급 |
 |  | GET | /xp/levels | 인증 | 레벨 정책 목록 |
+|  | GET | /xp/policies | 관리자 | XP 지급 정책 목록 |
+|  | GET | /xp/action-types | 인증 | 액션 타입 목록 (lookup) |
 | **어드민 인증** | POST | /auth/admin/login | - | 어드민 로그인 |
 |  | POST | /auth/admin/set-password | 어드민 | 비밀번호 최초 설정 |
 |  | PATCH | /auth/admin/change-password | 어드민 | 비밀번호 변경 |
@@ -282,12 +296,21 @@ Authorization: Bearer <access_token>
 |  | GET | /boards/admin/comment-reports | 관리자 | 전체 댓글 신고 목록 |
 |  | GET | /boards/admin/comments/:commentId/reports | 관리자 | 댓글별 신고 목록 |
 |  | PATCH | /boards/admin/comment-reports/:reportId | 관리자 | 댓글 신고 처리 |
-| **포인트 정책** | POST | /points/policies | 관리자 | 정책 생성 |
-|  | PATCH | /points/policies/:id | 관리자 | 정책 수정 |
-|  | DELETE | /points/policies/:id | 관리자 | 정책 삭제 |
+| **포인트 정책** | POST | /points/policies | 관리자 | 지급 정책 생성 |
+|  | PATCH | /points/policies/:id | 관리자 | 지급 정책 수정 |
+|  | DELETE | /points/policies/:id | 관리자 | 지급 정책 삭제 |
+|  | POST | /points/action-types | 관리자 | 액션 타입 생성 |
+|  | PATCH | /points/action-types/:code | 관리자 | 액션 타입 수정 |
+|  | DELETE | /points/action-types/:code | 관리자 | 액션 타입 삭제 |
 | **XP 정책** | POST | /xp/levels | 관리자 | 레벨 정책 생성 |
 |  | PATCH | /xp/levels/:id | 관리자 | 레벨 정책 수정 |
 |  | DELETE | /xp/levels/:id | 관리자 | 레벨 정책 삭제 |
+|  | POST | /xp/policies | 관리자 | XP 지급 정책 생성 |
+|  | PATCH | /xp/policies/:id | 관리자 | XP 지급 정책 수정 |
+|  | DELETE | /xp/policies/:id | 관리자 | XP 지급 정책 삭제 |
+|  | POST | /xp/action-types | 관리자 | 액션 타입 생성 |
+|  | PATCH | /xp/action-types/:code | 관리자 | 액션 타입 수정 |
+|  | DELETE | /xp/action-types/:code | 관리자 | 액션 타입 삭제 |
 | **채널** | GET | /channels | 인증 | 채널 목록 |
 |  | POST | /channels | 관리자 | 채널 등록 |
 |  | PATCH | /channels/:id | 관리자 | 채널 수정 |

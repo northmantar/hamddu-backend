@@ -5,11 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import type { XpLevel } from '@/types';
 
-interface XpLevelFormData {
+export interface XpLevelFormData {
   level?: number;
-  name: string;
-  minXp: number;
-  maxXp?: number;
+  label: string;
+  xpThreshold: number;
 }
 
 interface XpLevelFormProps {
@@ -21,58 +20,39 @@ interface XpLevelFormProps {
 
 export function XpLevelForm({ initialData, onSubmit, isLoading, onCancel }: XpLevelFormProps) {
   const [level, setLevel] = useState('');
-  const [name, setName] = useState('');
-  const [minXp, setMinXp] = useState('0');
-  const [maxXp, setMaxXp] = useState('');
+  const [label, setLabel] = useState('');
+  const [xpThreshold, setXpThreshold] = useState('0');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (initialData) {
       setLevel(String(initialData.level));
-      setName(initialData.name ?? initialData.label ?? '');
-      setMinXp(String(initialData.minXp ?? initialData.xpThreshold ?? 0));
-      setMaxXp(initialData.maxXp != null ? String(initialData.maxXp) : '');
+      setLabel(initialData.label ?? initialData.name ?? '');
+      setXpThreshold(String(initialData.xpThreshold ?? initialData.minXp ?? 0));
     }
   }, [initialData]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-
     if (!initialData && (!level || isNaN(parseInt(level)) || parseInt(level) < 1)) {
-      newErrors.level = 'Level must be a positive number';
+      newErrors.level = '1 이상의 정수를 입력해주세요.';
     }
-
-    if (!name.trim()) {
-      newErrors.name = 'Name is required';
+    if (!label.trim()) newErrors.label = '레벨 이름을 입력해주세요.';
+    if (!xpThreshold || isNaN(parseInt(xpThreshold)) || parseInt(xpThreshold) < 0) {
+      newErrors.xpThreshold = '0 이상의 정수를 입력해주세요.';
     }
-
-    if (!minXp || isNaN(parseInt(minXp)) || parseInt(minXp) < 0) {
-      newErrors.minXp = 'Min XP must be a non-negative number';
-    }
-
-    if (maxXp && (isNaN(parseInt(maxXp)) || parseInt(maxXp) <= parseInt(minXp))) {
-      newErrors.maxXp = 'Max XP must be greater than Min XP';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-
     if (!validate()) return;
-
     const dto: XpLevelFormData = {
-      name: name.trim(),
-      minXp: parseInt(minXp),
-      maxXp: maxXp ? parseInt(maxXp) : undefined,
+      label: label.trim(),
+      xpThreshold: parseInt(xpThreshold),
     };
-
-    if (!initialData) {
-      dto.level = parseInt(level);
-    }
-
+    if (!initialData) dto.level = parseInt(level);
     await onSubmit(dto);
   };
 
@@ -81,48 +61,39 @@ export function XpLevelForm({ initialData, onSubmit, isLoading, onCancel }: XpLe
       {!initialData && (
         <Input
           type="number"
-          label="Level"
+          label="레벨"
           value={level}
           onChange={(e) => setLevel(e.target.value)}
           error={errors.level}
           placeholder="1"
-          min="1"
+          min={1}
         />
       )}
 
       <Input
-        label="Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        error={errors.name}
-        placeholder="Level name (e.g., Beginner, Intermediate)"
+        label="이름"
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        error={errors.label}
+        placeholder="새싹 뜨개러"
       />
 
       <Input
         type="number"
-        label="Min XP"
-        value={minXp}
-        onChange={(e) => setMinXp(e.target.value)}
-        error={errors.minXp}
+        label="XP 임계값"
+        value={xpThreshold}
+        onChange={(e) => setXpThreshold(e.target.value)}
+        error={errors.xpThreshold}
         placeholder="0"
-        min="0"
-      />
-
-      <Input
-        type="number"
-        label="Max XP (leave empty for no limit)"
-        value={maxXp}
-        onChange={(e) => setMaxXp(e.target.value)}
-        error={errors.maxXp}
-        placeholder="Optional"
+        min={0}
       />
 
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="secondary" onClick={onCancel}>
-          Cancel
+          취소
         </Button>
         <Button type="submit" isLoading={isLoading}>
-          {initialData ? 'Update' : 'Create'}
+          {initialData ? '수정' : '추가'}
         </Button>
       </div>
     </form>

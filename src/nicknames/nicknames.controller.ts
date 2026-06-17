@@ -1,10 +1,15 @@
-import { Controller, Get, Query, Post, Body } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from "@nestjs/swagger";
+import { Controller, Get, Query, Post, Body, UseGuards } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from "@nestjs/swagger";
 import { NicknamesService } from "./nicknames.service";
 import { RegisterNicknameDto } from "@dto/register-nickname.dto";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { CurrentUser } from "../common/decorators/current-user.decorator";
+import { JwtPayload } from "../auth/interfaces/jwt-payload.interface";
 
 @ApiTags('nicknames')
+@ApiBearerAuth()
 @Controller("nicknames")
+@UseGuards(JwtAuthGuard)
 export class NicknamesController {
   constructor(private readonly nicknamesService: NicknamesService) {}
 
@@ -25,16 +30,27 @@ export class NicknamesController {
     return this.nicknamesService.getCandidates(Math.min(Number(count), 20));
   }
 
-  @ApiOperation({ summary: '닉네임 자동 발급 (서버가 생성하여 즉시 등록)' })
+  @ApiOperation({ summary: '랜덤 닉네임 추천 (점유하지 않고 후보만 반환)' })
   @ApiResponse({ status: 200, schema: { example: { nickname: '포근한 실뭉치' } } })
   @Post("issue")
   async issue() {
-    return this.nicknamesService.issueNickname();
+    const nickname = await this.nicknamesService.issueNickname();
+    return { nickname };
   }
 
-  @ApiOperation({ summary: '닉네임 직접 등록 (중복 시 접미사 부여)' })
+  @ApiOperation({ summary: '닉네임 직접 등록 (인증 유저가 입력한 닉네임 점유, 중복 시 접미사 부여)' })
   @ApiResponse({ status: 200, schema: { example: { nickname: '실뭉치장인' } } })
   @ApiResponse({ status: 400, description: '유효성 검사 실패' })
+  @ApiResponse({ status: 401, description: '인증 실패' })
   @Post("register")
-  async register(@Body() dto: RegisterNicknameDto) {}
+  async register(
+    @CurrentUser() payload: JwtPayload,
+    @Body() dto: RegisterNicknameDto,
+  ) {
+    const nickname = await this.nicknamesService.registerNickname(
+      payload.sub,
+      dto.nickname,
+    );
+    return { nickname };
+  }
 }

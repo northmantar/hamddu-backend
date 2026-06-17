@@ -5,6 +5,7 @@ import { PointsService } from "./points.service";
 import { PointWallet } from "@entities/point-wallet.entity";
 import { PointTransaction } from "@entities/point-transaction.entity";
 import { PointEarningPolicy } from "@entities/point-earning-policy.entity";
+import { PointActionTypeEntity } from "@entities/point-action-type.entity";
 import { User } from "@entities/user.entity";
 
 @Module({
@@ -13,6 +14,7 @@ import { User } from "@entities/user.entity";
       PointWallet,
       PointTransaction,
       PointEarningPolicy,
+      PointActionTypeEntity,
       User,
     ]),
   ],

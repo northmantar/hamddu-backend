@@ -4,57 +4,49 @@ import { useState, FormEvent, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { usePointActionTypes } from '@/hooks/queries/use-point-action-types';
-import type { PointPolicy } from '@/types';
+import { useXpActionTypes } from '@/hooks/queries/use-xp-policies';
+import type { XpEarningPolicy } from '@/types';
 
-export interface PointPolicyFormData {
+export interface XpPolicyFormData {
   actionType?: string;
-  pointAmount: number;
+  xpAmount: number;
   isOneTime: boolean;
   isActive: boolean;
 }
 
-interface PointPolicyFormProps {
-  initialData?: PointPolicy;
-  onSubmit: (dto: PointPolicyFormData) => Promise<void>;
+interface XpPolicyFormProps {
+  initialData?: XpEarningPolicy;
+  onSubmit: (dto: XpPolicyFormData) => Promise<void>;
   isLoading?: boolean;
   onCancel: () => void;
 }
 
-export function PointPolicyForm({ initialData, onSubmit, isLoading, onCancel }: PointPolicyFormProps) {
-  const { data: actionTypes } = usePointActionTypes();
+export function XpPolicyForm({ initialData, onSubmit, isLoading, onCancel }: XpPolicyFormProps) {
+  const { data: actionTypes } = useXpActionTypes();
   const [actionType, setActionType] = useState('');
-  const [pointAmount, setPointAmount] = useState('1');
+  const [xpAmount, setXpAmount] = useState('1');
   const [isOneTime, setIsOneTime] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (initialData) {
-      setActionType(initialData.actionType ?? '');
-      setPointAmount(String(initialData.pointAmount ?? initialData.points ?? 1));
-      setIsOneTime(!!initialData.isOneTime);
+      setActionType(initialData.actionType);
+      setXpAmount(String(initialData.xpAmount));
+      setIsOneTime(initialData.isOneTime);
       setIsActive(initialData.isActive);
     }
   }, [initialData]);
 
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-    if (!initialData && !actionType) newErrors.actionType = '액션 타입을 선택해주세요.';
-    const n = parseInt(pointAmount);
-    if (!pointAmount || isNaN(n) || n < 1) newErrors.pointAmount = '1 이상의 정수를 입력해주세요.';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
-    const dto: PointPolicyFormData = {
-      pointAmount: parseInt(pointAmount),
-      isOneTime,
-      isActive,
-    };
+    const newErrors: Record<string, string> = {};
+    if (!initialData && !actionType) newErrors.actionType = '액션 타입을 선택해주세요.';
+    const n = parseInt(xpAmount);
+    if (!xpAmount || isNaN(n) || n < 1) newErrors.xpAmount = '1 이상의 정수를 입력해주세요.';
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+    const dto: XpPolicyFormData = { xpAmount: parseInt(xpAmount), isOneTime, isActive };
     if (!initialData) dto.actionType = actionType;
     await onSubmit(dto);
   };
@@ -78,10 +70,10 @@ export function PointPolicyForm({ initialData, onSubmit, isLoading, onCancel }: 
 
       <Input
         type="number"
-        label="지급 포인트"
-        value={pointAmount}
-        onChange={(e) => setPointAmount(e.target.value)}
-        error={errors.pointAmount}
+        label="지급 XP"
+        value={xpAmount}
+        onChange={(e) => setXpAmount(e.target.value)}
+        error={errors.xpAmount}
         placeholder="1"
         min={1}
       />

@@ -27,12 +27,16 @@ import { JwtPayload } from "../auth/interfaces/jwt-payload.interface";
 import { EarnXpDto } from "./dto/earn-xp.dto";
 import { CreateXpLevelDto } from "./dto/create-level.dto";
 import { UpdateXpLevelDto } from "./dto/update-level.dto";
+import { CreateXpPolicyDto, UpdateXpPolicyDto } from "./dto/xp-policy.dto";
+import { CreateXpActionTypeDto, UpdateXpActionTypeDto } from "./dto/xp-action-type.dto";
 import { PaginationQueryDto, PaginationMeta } from "../boards/dto/pagination.dto";
 import {
   XpWalletResponseDto,
   XpTransactionResponseDto,
   XpEarnResponseDto,
   XpLevelPolicyResponseDto,
+  XpEarningPolicyResponseDto,
+  XpActionTypeResponseDto,
 } from "./dto/xp-response.dto";
 
 @ApiTags("xp")
@@ -126,5 +130,94 @@ export class XpController {
   @UseGuards(AdminGuard)
   async deleteLevel(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     await this.xpService.deleteLevel(id);
+  }
+
+  // ─── XP 지급 정책 ────────────────────────────────────────────────────────
+  @ApiOperation({ summary: "XP 지급 정책 목록 조회 (관리자)" })
+  @ApiResponse({ status: 200, description: "XP 지급 정책 목록 반환" })
+  @Get("policies")
+  @UseGuards(AdminGuard)
+  async getEarningPolicies(): Promise<{ data: XpEarningPolicyResponseDto[] }> {
+    const policies = await this.xpService.getEarningPolicies();
+    return { data: policies.map(XpEarningPolicyResponseDto.from) };
+  }
+
+  @ApiOperation({ summary: "XP 지급 정책 생성 (관리자)" })
+  @ApiResponse({ status: 201, description: "정책 생성 완료" })
+  @Post("policies")
+  @UseGuards(AdminGuard)
+  async createEarningPolicy(
+    @Body() dto: CreateXpPolicyDto,
+  ): Promise<XpEarningPolicyResponseDto> {
+    const policy = await this.xpService.createEarningPolicy(dto);
+    return XpEarningPolicyResponseDto.from(policy);
+  }
+
+  @ApiOperation({ summary: "XP 지급 정책 수정 (관리자)" })
+  @ApiParam({ name: "id", description: "정책 ID" })
+  @ApiResponse({ status: 200, description: "정책 수정 완료" })
+  @Patch("policies/:id")
+  @UseGuards(AdminGuard)
+  async updateEarningPolicy(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: UpdateXpPolicyDto,
+  ): Promise<XpEarningPolicyResponseDto> {
+    const policy = await this.xpService.updateEarningPolicy(id, dto);
+    return XpEarningPolicyResponseDto.from(policy);
+  }
+
+  @ApiOperation({ summary: "XP 지급 정책 삭제 (관리자)" })
+  @ApiParam({ name: "id", description: "정책 ID" })
+  @ApiResponse({ status: 204, description: "정책 삭제 완료" })
+  @Delete("policies/:id")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(AdminGuard)
+  async deleteEarningPolicy(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
+    await this.xpService.deleteEarningPolicy(id);
+  }
+
+  // ─── XP 액션 타입 lookup ─────────────────────────────────────────────────
+  @ApiOperation({ summary: "XP 액션 타입 목록 조회" })
+  @ApiResponse({ status: 200, description: "액션 타입 목록 반환" })
+  @Get("action-types")
+  async getActionTypes(): Promise<{ data: XpActionTypeResponseDto[] }> {
+    const types = await this.xpService.getActionTypes();
+    return { data: types.map(XpActionTypeResponseDto.from) };
+  }
+
+  @ApiOperation({ summary: "XP 액션 타입 생성 (관리자)" })
+  @ApiResponse({ status: 201, description: "액션 타입 생성 완료" })
+  @ApiResponse({ status: 409, description: "이미 존재하는 액션 코드" })
+  @Post("action-types")
+  @UseGuards(AdminGuard)
+  async createActionType(
+    @Body() dto: CreateXpActionTypeDto,
+  ): Promise<XpActionTypeResponseDto> {
+    const at = await this.xpService.createActionType(dto);
+    return XpActionTypeResponseDto.from(at);
+  }
+
+  @ApiOperation({ summary: "XP 액션 타입 수정 (관리자)" })
+  @ApiParam({ name: "code", description: "액션 코드" })
+  @ApiResponse({ status: 200, description: "액션 타입 수정 완료" })
+  @Patch("action-types/:code")
+  @UseGuards(AdminGuard)
+  async updateActionType(
+    @Param("code") code: string,
+    @Body() dto: UpdateXpActionTypeDto,
+  ): Promise<XpActionTypeResponseDto> {
+    const at = await this.xpService.updateActionType(code, dto);
+    return XpActionTypeResponseDto.from(at);
+  }
+
+  @ApiOperation({ summary: "XP 액션 타입 삭제 (관리자)" })
+  @ApiParam({ name: "code", description: "액션 코드" })
+  @ApiResponse({ status: 204, description: "삭제 완료" })
+  @ApiResponse({ status: 409, description: "사용 중인 정책이 있어 삭제 불가" })
+  @Delete("action-types/:code")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(AdminGuard)
+  async deleteActionType(@Param("code") code: string): Promise<void> {
+    await this.xpService.deleteActionType(code);
   }
 }

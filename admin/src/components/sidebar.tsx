@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/use-auth';
 
 const CONTENTS_ICON = 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10';
 const REPORTS_ICON = 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z';
+const XP_ICON = 'M13 10V3L4 14h7v7l9-11h-7z';
 
 const topMenuItems = [
   { href: '/users', label: '유저 관리', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
@@ -23,10 +24,14 @@ const reportsSubItems = [
   { href: '/reports/comments', label: '댓글 신고 관리' },
 ];
 
+const xpSubItems = [
+  { href: '/xp/policies', label: 'XP 지급 정책' },
+  { href: '/xp/levels', label: '누적 XP 레벨' },
+];
+
 const bottomMenuItems = [
   { href: '/categories', label: '카테고리 관리', icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z' },
   { href: '/points', label: '포인트 정책', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
-  { href: '/xp', label: 'XP 레벨', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
   { href: '/password', label: '비밀번호 변경', icon: 'M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z' },
 ];
 
@@ -35,8 +40,10 @@ export function Sidebar() {
   const { logout, user } = useAuth();
   const isContentsActive = pathname.startsWith('/contents');
   const isReportsActive = pathname.startsWith('/reports');
+  const isXpActive = pathname.startsWith('/xp');
   const [contentsOpen, setContentsOpen] = useState(isContentsActive);
   const [reportsOpen, setReportsOpen] = useState(isReportsActive);
+  const [xpOpen, setXpOpen] = useState(isXpActive);
 
   return (
     <aside className="w-64 bg-gray-900 text-white min-h-screen flex flex-col">
@@ -174,6 +181,50 @@ export function Sidebar() {
               </li>
             );
           })}
+
+          {/* XP 정책 accordion */}
+          <li>
+            <button
+              onClick={() => setXpOpen((v) => !v)}
+              className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${
+                isXpActive ? 'bg-primary-700 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+              }`}
+            >
+              <span className="flex items-center gap-3">
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={XP_ICON} />
+                </svg>
+                XP 정책
+              </span>
+              <svg
+                className={`w-4 h-4 transition-transform ${xpOpen ? 'rotate-180' : ''}`}
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {xpOpen && (
+              <ul className="mt-1 ml-4 space-y-1">
+                {xpSubItems.map((sub) => {
+                  const isActive = pathname === sub.href;
+                  return (
+                    <li key={sub.href}>
+                      <Link
+                        href={sub.href}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                          isActive ? 'bg-primary-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                        }`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" />
+                        {sub.label}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </li>
         </ul>
       </nav>
 

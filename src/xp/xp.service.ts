@@ -1,4 +1,6 @@
 import {
+  BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -7,10 +9,14 @@ import { Repository, DataSource, LessThanOrEqual, MoreThan } from "typeorm";
 import { XpWallet } from "@entities/xp-wallet.entity";
 import { XpTransaction } from "@entities/xp-transaction.entity";
 import { XpLevelPolicy } from "@entities/xp-level-policy.entity";
+import { XpEarningPolicy } from "@entities/xp-earning-policy.entity";
+import { XpActionTypeEntity } from "@entities/xp-action-type.entity";
 import { User } from "@entities/user.entity";
 import { EarnXpDto } from "./dto/earn-xp.dto";
 import { CreateXpLevelDto } from "./dto/create-level.dto";
 import { UpdateXpLevelDto } from "./dto/update-level.dto";
+import { CreateXpPolicyDto, UpdateXpPolicyDto } from "./dto/xp-policy.dto";
+import { CreateXpActionTypeDto, UpdateXpActionTypeDto } from "./dto/xp-action-type.dto";
 import { PaginationQueryDto, PaginationMeta } from "../boards/dto/pagination.dto";
 
 @Injectable()
@@ -22,6 +28,10 @@ export class XpService {
     private readonly transactionRepo: Repository<XpTransaction>,
     @InjectRepository(XpLevelPolicy)
     private readonly policyRepo: Repository<XpLevelPolicy>,
+    @InjectRepository(XpEarningPolicy)
+    private readonly earningPolicyRepo: Repository<XpEarningPolicy>,
+    @InjectRepository(XpActionTypeEntity)
+    private readonly actionTypeRepo: Repository<XpActionTypeEntity>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     private readonly dataSource: DataSource,
@@ -229,5 +239,97 @@ export class XpService {
     await this.findLevelById(id);
     // 레벨 정책을 비활성화 처리 (soft delete)
     await this.policyRepo.update(id, { isActive: false });
+  }
+
+  // ─── XP 지급 정책 ────────────────────────────────────────────────────────
+  async getEarningPolicies(): Promise<XpEarningPolicy[]> {
+    return this.earningPolicyRepo.find({
+      relations: ["actionTypeRef"],
+      order: { createdAt: "ASC" },
+    });
+  }
+
+  async findEarningPolicyById(id: string): Promise<XpEarningPolicy> {
+    const policy = await this.earningPolicyRepo.findOne({
+      where: { id },
+      relations: ["actionTypeRef"],
+    });
+    if (!policy) {
+      throw new NotFoundException("XP 지급 정책을 찾을 수 없습니다.");
+    }
+    return policy;
+  }
+
+  async createEarningPolicy(dto: CreateXpPolicyDto): Promise<XpEarningPolicy> {
+    const actionType = await this.actionTypeRepo.findOne({ where: { code: dto.actionType } });
+    if (!actionType) {
+      throw new BadRequestException(`존재하지 않는 액션 타입입니다: ${dto.actionType}`);
+    }
+    const policy = this.earningPolicyRepo.create({
+      actionType: dto.actionType,
+      xpAmount: dto.xpAmount,
+      isOneTime: dto.isOneTime ?? false,
+      isActive: dto.isActive ?? true,
+    });
+    const saved = await this.earningPolicyRepo.save(policy);
+    return this.findEarningPolicyById(saved.id);
+  }
+
+  async updateEarningPolicy(id: string, dto: UpdateXpPolicyDto): Promise<XpEarningPolicy> {
+    await this.findEarningPolicyById(id);
+    await this.earningPolicyRepo.update(id, {
+      ...(dto.xpAmount !== undefined && { xpAmount: dto.xpAmount }),
+      ...(dto.isOneTime !== undefined && { isOneTime: dto.isOneTime }),
+      ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+    });
+    return this.findEarningPolicyById(id);
+  }
+
+  async deleteEarningPolicy(id: string): Promise<void> {
+    await this.findEarningPolicyById(id);
+    await this.earningPolicyRepo.update(id, { isActive: false });
+  }
+
+  // ─── XP 액션 타입 (lookup) ───────────────────────────────────────────────
+  async getActionTypes(): Promise<XpActionTypeEntity[]> {
+    return this.actionTypeRepo.find({ order: { code: "ASC" } });
+  }
+
+  async createActionType(dto: CreateXpActionTypeDto): Promise<XpActionTypeEntity> {
+    const exists = await this.actionTypeRepo.findOne({ where: { code: dto.code } });
+    if (exists) {
+      throw new ConflictException(`이미 존재하는 액션 코드입니다: ${dto.code}`);
+    }
+    const at = this.actionTypeRepo.create({
+      code: dto.code,
+      labelKo: dto.labelKo,
+      isActive: true,
+    });
+    return this.actionTypeRepo.save(at);
+  }
+
+  async updateActionType(code: string, dto: UpdateXpActionTypeDto): Promise<XpActionTypeEntity> {
+    const at = await this.actionTypeRepo.findOne({ where: { code } });
+    if (!at) {
+      throw new NotFoundException(`액션 타입을 찾을 수 없습니다: ${code}`);
+    }
+    await this.actionTypeRepo.update(code, {
+      ...(dto.labelKo !== undefined && { labelKo: dto.labelKo }),
+      ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+    });
+    const updated = await this.actionTypeRepo.findOne({ where: { code } });
+    return updated!;
+  }
+
+  async deleteActionType(code: string): Promise<void> {
+    const at = await this.actionTypeRepo.findOne({ where: { code } });
+    if (!at) {
+      throw new NotFoundException(`액션 타입을 찾을 수 없습니다: ${code}`);
+    }
+    const usedBy = await this.earningPolicyRepo.count({ where: { actionType: code } });
+    if (usedBy > 0) {
+      throw new ConflictException("이 액션 타입을 사용 중인 정책이 있어 삭제할 수 없습니다.");
+    }
+    await this.actionTypeRepo.delete(code);
   }
 }

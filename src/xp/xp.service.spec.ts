@@ -6,6 +6,8 @@ import { XpService } from './xp.service';
 import { XpWallet } from '@entities/xp-wallet.entity';
 import { XpTransaction } from '@entities/xp-transaction.entity';
 import { XpLevelPolicy } from '@entities/xp-level-policy.entity';
+import { XpEarningPolicy } from '@entities/xp-earning-policy.entity';
+import { XpActionTypeEntity } from '@entities/xp-action-type.entity';
 import { User } from '@entities/user.entity';
 
 describe('XpService', () => {
@@ -64,6 +66,24 @@ describe('XpService', () => {
       findOne: jest.fn(),
     };
 
+    const mockEarningPolicyRepo = {
+      find: jest.fn(),
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      update: jest.fn(),
+      count: jest.fn(),
+    };
+
+    const mockActionTypeRepo = {
+      find: jest.fn(),
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    };
+
     const mockDataSource = {
       transaction: jest.fn(),
     };
@@ -74,6 +94,8 @@ describe('XpService', () => {
         { provide: getRepositoryToken(XpWallet), useValue: mockWalletRepo },
         { provide: getRepositoryToken(XpTransaction), useValue: mockTransactionRepo },
         { provide: getRepositoryToken(XpLevelPolicy), useValue: mockPolicyRepo },
+        { provide: getRepositoryToken(XpEarningPolicy), useValue: mockEarningPolicyRepo },
+        { provide: getRepositoryToken(XpActionTypeEntity), useValue: mockActionTypeRepo },
         { provide: getRepositoryToken(User), useValue: mockUserRepo },
         { provide: DataSource, useValue: mockDataSource },
       ],

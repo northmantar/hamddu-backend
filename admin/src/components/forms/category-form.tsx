@@ -3,13 +3,12 @@
 import { useState, FormEvent, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
 import type { Category } from '@/types';
 
 interface CategoryFormData {
-  name: string;
-  slug: string;
-  description?: string;
-  sortOrder: number;
+  label: string;
+  status?: 'enabled' | 'disabled';
 }
 
 interface CategoryFormProps {
@@ -20,104 +19,59 @@ interface CategoryFormProps {
 }
 
 export function CategoryForm({ initialData, onSubmit, isLoading, onCancel }: CategoryFormProps) {
-  const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
-  const [description, setDescription] = useState('');
-  const [sortOrder, setSortOrder] = useState('0');
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [label, setLabel] = useState('');
+  const [status, setStatus] = useState<'enabled' | 'disabled'>('enabled');
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
     if (initialData) {
-      setName(initialData.name ?? initialData.label ?? '');
-      setSlug(initialData.slug ?? '');
-      setDescription(initialData.description || '');
-      setSortOrder(String(initialData.sortOrder ?? 0));
+      setLabel(initialData.label ?? initialData.name ?? '');
+      const initStatus = (initialData.status === 'disabled' ? 'disabled' : 'enabled') as 'enabled' | 'disabled';
+      setStatus(initStatus);
     }
   }, [initialData]);
 
-  const generateSlug = (text: string) => {
-    return text
-      .toLowerCase()
-      .replace(/[^a-z0-9가-힣]+/g, '-')
-      .replace(/^-|-$/g, '');
-  };
-
-  const handleNameChange = (value: string) => {
-    setName(value);
-    if (!initialData) {
-      setSlug(generateSlug(value));
-    }
-  };
-
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!name.trim()) {
-      newErrors.name = 'Name is required';
-    }
-
-    if (!slug.trim()) {
-      newErrors.slug = 'Slug is required';
-    } else if (!/^[a-z0-9-]+$/.test(slug)) {
-      newErrors.slug = 'Slug must contain only lowercase letters, numbers, and hyphens';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-
-    if (!validate()) return;
-
+    if (!label.trim()) {
+      setError('이름을 입력해주세요.');
+      return;
+    }
+    setError('');
     await onSubmit({
-      name: name.trim(),
-      slug: slug.trim(),
-      description: description.trim() || undefined,
-      sortOrder: parseInt(sortOrder) || 0,
+      label: label.trim(),
+      ...(initialData ? { status } : {}),
     });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
-        label="Name"
-        value={name}
-        onChange={(e) => handleNameChange(e.target.value)}
-        error={errors.name}
-        placeholder="Category name"
+        label="이름"
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        error={error}
+        placeholder="카테고리 이름"
       />
 
-      <Input
-        label="Slug"
-        value={slug}
-        onChange={(e) => setSlug(e.target.value)}
-        error={errors.slug}
-        placeholder="category-slug"
-      />
-
-      <Input
-        label="Description"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        placeholder="Optional description"
-      />
-
-      <Input
-        type="number"
-        label="Sort Order"
-        value={sortOrder}
-        onChange={(e) => setSortOrder(e.target.value)}
-        placeholder="0"
-      />
+      {initialData && (
+        <Select
+          label="상태"
+          value={status}
+          onChange={(e) => setStatus(e.target.value as 'enabled' | 'disabled')}
+          options={[
+            { value: 'enabled', label: '활성' },
+            { value: 'disabled', label: '비활성' },
+          ]}
+        />
+      )}
 
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="secondary" onClick={onCancel}>
-          Cancel
+          취소
         </Button>
         <Button type="submit" isLoading={isLoading}>
-          {initialData ? 'Update' : 'Create'}
+          {initialData ? '수정' : '추가'}
         </Button>
       </div>
     </form>

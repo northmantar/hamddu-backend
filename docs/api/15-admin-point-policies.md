@@ -25,7 +25,7 @@
 
     | 필드 | 타입 | 필수 | 유효성 조건 |
     | --- | --- | --- | --- |
-    | `actionType` | string | Yes | `pointActionType` enum 값 (`WATCH` \| `CHALLENGE` \| `COMMENT`) |
+    | `actionType` | string | Yes | `point_action_types.code` lookup에 등록된 활성 코드 (예: `WATCH`, `CHALLENGE`, `COMMENT`). 신규 코드는 `POST /points/action-types`로 추가 |
     | `pointAmount` | number | Yes | 1 이상의 정수 |
     | `isOneTime` | boolean | No | 1회성 적립 여부 (기본값: false) |
     | `isActive` | boolean | No | 활성화 여부 (기본값: true) |

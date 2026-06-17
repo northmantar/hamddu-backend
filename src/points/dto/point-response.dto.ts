@@ -1,8 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { PointTransactionType, PointTransactionStatus, PointActionType } from "@enums/point.enum";
+import { PointTransactionType, PointTransactionStatus } from "@enums/point.enum";
 import { PointWallet } from "@entities/point-wallet.entity";
 import { PointTransaction } from "@entities/point-transaction.entity";
 import { PointEarningPolicy } from "@entities/point-earning-policy.entity";
+import { PointActionTypeEntity } from "@entities/point-action-type.entity";
 
 export class PointWalletResponseDto {
   @ApiProperty({ example: "wallet-uuid" })
@@ -105,8 +106,11 @@ export class PointPolicyResponseDto {
   @ApiProperty({ example: "policy-uuid" })
   id: string;
 
-  @ApiProperty({ enum: PointActionType })
-  actionType: PointActionType;
+  @ApiProperty({ example: "WATCH" })
+  actionType: string;
+
+  @ApiPropertyOptional({ example: "시청" })
+  actionTypeLabelKo: string | null;
 
   @ApiProperty({ example: 100 })
   pointAmount: number;
@@ -127,11 +131,39 @@ export class PointPolicyResponseDto {
     return {
       id: policy.id,
       actionType: policy.actionType,
+      actionTypeLabelKo: policy.actionTypeRef?.labelKo ?? null,
       pointAmount: policy.pointAmount,
       isOneTime: policy.isOneTime,
       isActive: policy.isActive,
       createdAt: policy.createdAt,
       updatedAt: policy.updatedAt,
+    };
+  }
+}
+
+export class PointActionTypeResponseDto {
+  @ApiProperty({ example: "WATCH" })
+  code: string;
+
+  @ApiProperty({ example: "시청" })
+  labelKo: string;
+
+  @ApiProperty({ example: true })
+  isActive: boolean;
+
+  @ApiProperty({ example: "2026-01-01T00:00:00.000Z" })
+  createdAt: Date;
+
+  @ApiProperty({ example: "2026-01-01T00:00:00.000Z" })
+  updatedAt: Date;
+
+  static from(at: PointActionTypeEntity): PointActionTypeResponseDto {
+    return {
+      code: at.code,
+      labelKo: at.labelKo,
+      isActive: at.isActive,
+      createdAt: at.createdAt,
+      updatedAt: at.updatedAt,
     };
   }
 }

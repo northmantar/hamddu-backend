@@ -145,7 +145,7 @@ function SortableRow({ content, channels, onStatusChange, onUpdate, onDelete, on
       <td className="px-4 py-3">
         {isEditing ? (
           <div className="flex gap-1">
-            <Button size="sm" onClick={handleSave}>저장</Button>
+            <Button size="sm" onClick={handleSave} isLoading={isUploading}>저장</Button>
             <Button size="sm" variant="secondary" onClick={handleCancel}>취소</Button>
           </div>
         ) : (
@@ -253,6 +253,10 @@ export default function TutorialsPage() {
     }
   };
 
+  const resetCreateForm = () => {
+    setCreateForm({});
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!createForm.name || !createForm.sourceVideoId || !createForm.interests) return;
@@ -269,7 +273,7 @@ export default function TutorialsPage() {
       });
       addToast('콘텐츠가 생성되었습니다.', 'success');
       setIsCreateModalOpen(false);
-      setCreateForm({});
+      resetCreateForm();
     } catch {
       addToast('생성에 실패했습니다.', 'error');
     }
@@ -347,7 +351,7 @@ export default function TutorialsPage() {
       </div>
 
       {/* 튜토리얼 생성 모달 */}
-      <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="튜토리얼 추가">
+      <Modal isOpen={isCreateModalOpen} onClose={() => { setIsCreateModalOpen(false); resetCreateForm(); }} title="튜토리얼 추가">
         <form onSubmit={handleCreate} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">관심사</label>
@@ -389,7 +393,7 @@ export default function TutorialsPage() {
             isUploading={uploadMedia.isPending}
           />
           <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="secondary" onClick={() => { setIsCreateModalOpen(false); setCreateForm({}); }}>취소</Button>
+            <Button type="button" variant="secondary" onClick={() => { setIsCreateModalOpen(false); resetCreateForm(); }}>취소</Button>
             <Button type="submit" isLoading={createContent.isPending}>추가</Button>
           </div>
         </form>

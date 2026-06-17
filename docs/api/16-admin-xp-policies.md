@@ -103,7 +103,104 @@ XP 레벨 정책을 수정합니다 (관리자 전용).
 
 ---
 
-## 16.3 `DELETE /xp/levels/:id`
+## 16.3 `GET /xp/policies` (관리자)
+
+XP 지급 정책 목록 조회. point 지급 정책과 동일한 구조.
+
+**Response (200)**
+
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "actionType": "SIGNUP",
+      "actionTypeLabelKo": "회원가입",
+      "xpAmount": 100,
+      "isOneTime": true,
+      "isActive": true,
+      "createdAt": "...",
+      "updatedAt": "..."
+    }
+  ]
+}
+```
+
+---
+
+## 16.4 `POST /xp/policies` (관리자)
+
+**Body**
+
+```json
+{ "actionType": "DAILY_LOGIN", "xpAmount": 10, "isOneTime": false, "isActive": true }
+```
+
+| 필드 | 타입 | 필수 | 유효성 |
+| --- | --- | --- | --- |
+| `actionType` | string | Yes | `xp_action_types.code` 참조 |
+| `xpAmount` | number | Yes | 1 이상 정수 |
+| `isOneTime` | boolean | No | 기본 false |
+| `isActive` | boolean | No | 기본 true |
+
+---
+
+## 16.5 `PATCH /xp/policies/:id` (관리자)
+
+**Body** — `xpAmount`, `isOneTime`, `isActive` 부분 수정.
+
+---
+
+## 16.6 `DELETE /xp/policies/:id` (관리자)
+
+정책을 비활성화 처리 (soft delete).
+
+---
+
+## 16.7 `GET /xp/action-types`
+
+XP 액션 타입 lookup 전체 조회. `point_action_types`와 독립.
+
+```json
+{
+  "data": [
+    { "code": "SIGNUP", "labelKo": "회원가입", "isActive": true, "createdAt": "...", "updatedAt": "..." },
+    { "code": "DAILY_LOGIN", "labelKo": "일일 로그인", "isActive": true, "createdAt": "...", "updatedAt": "..." }
+  ]
+}
+```
+
+---
+
+## 16.8 `POST /xp/action-types` (관리자)
+
+**Body**
+
+```json
+{ "code": "REVIEW_WRITE", "labelKo": "후기 작성" }
+```
+
+**Errors**
+
+| 상태 코드 | errorMessage |
+| --- | --- |
+| 409 | "이미 존재하는 액션 코드입니다: {code}" |
+
+---
+
+## 16.9 `PATCH /xp/action-types/:code` (관리자)
+
+**Body** — `labelKo`, `isActive` 부분 수정.
+
+---
+
+## 16.10 `DELETE /xp/action-types/:code` (관리자)
+
+해당 코드를 참조하는 정책이 있으면 409.
+
+---
+
+## 16.11 `DELETE /xp/levels/:id`
 
 XP 레벨 정책을 삭제합니다 (관리자 전용).
 

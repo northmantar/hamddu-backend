@@ -4,27 +4,25 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
-  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { PointTransaction } from "./point-transaction.entity";
-import { PointActionTypeEntity } from "./point-action-type.entity";
+import { XpActionTypeEntity } from "./xp-action-type.entity";
 
-@Entity("point_earning_policies")
-export class PointEarningPolicy {
+@Entity("xp_earning_policies")
+export class XpEarningPolicy {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
   @Column({ type: "varchar", length: 50 })
   actionType: string;
 
-  @ManyToOne(() => PointActionTypeEntity, (t) => t.policies, { onDelete: "RESTRICT" })
+  @ManyToOne(() => XpActionTypeEntity, (t) => t.policies, { onDelete: "RESTRICT" })
   @JoinColumn({ name: "action_type", referencedColumnName: "code" })
-  actionTypeRef: PointActionTypeEntity;
+  actionTypeRef: XpActionTypeEntity;
 
   @Column({ type: "int" })
-  pointAmount: number;
+  xpAmount: number;
 
   @Column({ default: false })
   isOneTime: boolean;
@@ -37,7 +35,4 @@ export class PointEarningPolicy {
 
   @UpdateDateColumn()
   updatedAt: Date;
-
-  @OneToMany(() => PointTransaction, (tx) => tx.policy)
-  transactions: PointTransaction[];
 }

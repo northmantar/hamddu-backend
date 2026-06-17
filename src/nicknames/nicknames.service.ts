@@ -3,7 +3,6 @@ import { NicknameNoun } from "@entities/nickname-noun.entity";
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { NicknameBase } from "@entities/nickname-base.entity";
 import { NicknameSequenceService } from "./nickname-sequence.service";
 
 @Injectable()
@@ -13,17 +12,12 @@ export class NicknamesService {
     private readonly adjectiveRepo: Repository<NicknameAdjective>,
     @InjectRepository(NicknameNoun)
     private readonly nounRepo: Repository<NicknameNoun>,
-    @InjectRepository(NicknameBase)
-    private readonly nicknameBaseRepo: Repository<NicknameBase>,
     private readonly nicknameSequenceService: NicknameSequenceService,
   ) {}
 
-  // 닉네임 중복 체크
+  // 닉네임 중복 체크 (사용 중인 유저가 있는지 확인)
   async check(value: string): Promise<boolean> {
-    const base = await this.nicknameBaseRepo.findOne({
-      where: { baseNickname: value },
-    });
-    return !!base;
+    return this.nicknameSequenceService.isNicknameTaken(value);
   }
 
   // 닉네임 후보 목록 (랜덤, 시퀀스 소비 없음)
@@ -47,35 +41,25 @@ export class NicknamesService {
     return results;
   }
 
-  // 닉네임 생성 (랜덤)
+  // 닉네임 자동 발급 (사용 가능한 닉네임 후보만 반환, 유저 생성 없음)
   async issueNickname(): Promise<string> {
     const base = await this.generateBaseNickname();
-    if (await this.nicknameSequenceService.tryInsertNickname(base)) {
+    if (!(await this.nicknameSequenceService.isNicknameTaken(base))) {
       return base;
     }
 
     while (true) {
       const suffix = await this.nicknameSequenceService.allocateSuffix(base);
       const nickname = `${base}${suffix}`;
-      if (await this.nicknameSequenceService.tryInsertNickname(nickname)) {
+      if (!(await this.nicknameSequenceService.isNicknameTaken(nickname))) {
         return nickname;
       }
     }
   }
 
-  // 닉네임 등록 (수동 입력)
-  async registerNickname(value: string) {
-    if (await this.nicknameSequenceService.tryInsertNickname(value)) {
-      return value;
-    }
-
-    while (true) {
-      const suffix = await this.nicknameSequenceService.allocateSuffix(value);
-      const nickname = `${value}${suffix}`;
-      if (await this.nicknameSequenceService.tryInsertNickname(nickname)) {
-        return nickname;
-      }
-    }
+  // 닉네임 등록 (인증 유저가 입력한 닉네임을 자기 계정에 점유, 중복 시 접미사 부여)
+  async registerNickname(userId: string, value: string): Promise<string> {
+    return this.nicknameSequenceService.claimNicknameWithSuffix(userId, value);
   }
 
   //======================================

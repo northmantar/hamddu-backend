@@ -6,17 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { useXpLevels, useCreateXpLevel, useUpdateXpLevel, useDeleteXpLevel } from '@/hooks/queries/use-xp';
 import { useToast } from '@/components/ui/toast';
-import { XpLevelForm } from '@/components/forms/xp-level-form';
+import { XpLevelForm, type XpLevelFormData } from '@/components/forms/xp-level-form';
 import type { XpLevel, CreateXpLevelDto, UpdateXpLevelDto } from '@/types';
 
-interface XpLevelFormData {
-  level?: number;
-  name: string;
-  minXp: number;
-  maxXp?: number;
-}
-
-export default function XpPage() {
+export default function XpLevelsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLevel, setEditingLevel] = useState<XpLevel | null>(null);
   const { data: levels, isLoading } = useXpLevels();
@@ -28,33 +21,32 @@ export default function XpPage() {
   const handleCreate = async (dto: XpLevelFormData) => {
     try {
       await createLevel.mutateAsync(dto as CreateXpLevelDto);
-      addToast('Level created successfully', 'success');
+      addToast('레벨이 추가되었습니다.', 'success');
       setIsModalOpen(false);
     } catch {
-      addToast('Failed to create level', 'error');
+      addToast('레벨 추가에 실패했습니다.', 'error');
     }
   };
 
   const handleUpdate = async (dto: XpLevelFormData) => {
     if (!editingLevel) return;
-
     try {
-      await updateLevel.mutateAsync({ id: editingLevel.id, dto: dto as UpdateXpLevelDto });
-      addToast('Level updated successfully', 'success');
+      const { level: _omit, ...rest } = dto;
+      await updateLevel.mutateAsync({ id: editingLevel.id, dto: rest as UpdateXpLevelDto });
+      addToast('레벨이 수정되었습니다.', 'success');
       setEditingLevel(null);
     } catch {
-      addToast('Failed to update level', 'error');
+      addToast('레벨 수정에 실패했습니다.', 'error');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this level?')) return;
-
+    if (!confirm('이 레벨을 비활성화하시겠습니까?')) return;
     try {
       await deleteLevel.mutateAsync(id);
-      addToast('Level deleted successfully', 'success');
+      addToast('레벨이 비활성화되었습니다.', 'success');
     } catch {
-      addToast('Failed to delete level', 'error');
+      addToast('레벨 삭제에 실패했습니다.', 'error');
     }
   };
 
@@ -63,52 +55,33 @@ export default function XpPage() {
   const columns = [
     {
       key: 'level',
-      header: 'Level',
-      render: (level: XpLevel) => (
-        <span className="font-bold text-lg">{level.level}</span>
-      ),
+      header: '레벨',
+      render: (level: XpLevel) => <span className="font-bold text-lg">{level.level}</span>,
     },
     {
-      key: 'name',
-      header: 'Name',
+      key: 'label',
+      header: '이름',
       render: (level: XpLevel) => (
         <span className="font-medium">{level.label ?? level.name ?? '-'}</span>
       ),
     },
     {
-      key: 'minXp',
-      header: 'Min XP',
+      key: 'xpThreshold',
+      header: 'XP 임계값',
       render: (level: XpLevel) => (
         <span className="font-mono">{(level.xpThreshold ?? level.minXp ?? 0).toLocaleString()}</span>
       ),
     },
     {
-      key: 'maxXp',
-      header: 'Max XP',
-      render: (level: XpLevel) => (
-        <span className="font-mono">
-          {level.maxXp ? level.maxXp.toLocaleString() : '-'}
-        </span>
-      ),
-    },
-    {
       key: 'actions',
-      header: 'Actions',
+      header: '작업',
       render: (level: XpLevel) => (
         <div className="flex gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setEditingLevel(level)}
-          >
-            Edit
+          <Button variant="secondary" size="sm" onClick={() => setEditingLevel(level)}>
+            수정
           </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={() => handleDelete(level.id)}
-          >
-            Delete
+          <Button variant="danger" size="sm" onClick={() => handleDelete(level.id)}>
+            비활성화
           </Button>
         </div>
       ),
@@ -118,8 +91,8 @@ export default function XpPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">XP Levels</h1>
-        <Button onClick={() => setIsModalOpen(true)}>Add Level</Button>
+        <h1 className="text-2xl font-bold text-gray-900">누적 XP 레벨</h1>
+        <Button onClick={() => setIsModalOpen(true)}>레벨 추가</Button>
       </div>
 
       <div className="bg-white rounded-lg shadow">
@@ -128,15 +101,11 @@ export default function XpPage() {
           data={sortedLevels}
           keyExtractor={(level) => level.id}
           isLoading={isLoading}
-          emptyMessage="No levels found"
+          emptyMessage="등록된 레벨이 없습니다."
         />
       </div>
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Add XP Level"
-      >
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="레벨 추가">
         <XpLevelForm
           onSubmit={handleCreate}
           isLoading={createLevel.isPending}
@@ -144,11 +113,7 @@ export default function XpPage() {
         />
       </Modal>
 
-      <Modal
-        isOpen={!!editingLevel}
-        onClose={() => setEditingLevel(null)}
-        title="Edit XP Level"
-      >
+      <Modal isOpen={!!editingLevel} onClose={() => setEditingLevel(null)} title="레벨 수정">
         {editingLevel && (
           <XpLevelForm
             initialData={editingLevel}

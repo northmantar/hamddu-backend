@@ -2,6 +2,8 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { XpWallet } from "@entities/xp-wallet.entity";
 import { XpTransaction } from "@entities/xp-transaction.entity";
 import { XpLevelPolicy } from "@entities/xp-level-policy.entity";
+import { XpEarningPolicy } from "@entities/xp-earning-policy.entity";
+import { XpActionTypeEntity } from "@entities/xp-action-type.entity";
 
 export class XpWalletResponseDto {
   @ApiProperty({ example: "wallet-uuid" })
@@ -119,6 +121,72 @@ export class XpLevelPolicyResponseDto {
       xpThreshold: policy.xpThreshold,
       label: policy.label,
       isActive: policy.isActive,
+    };
+  }
+}
+
+export class XpEarningPolicyResponseDto {
+  @ApiProperty({ example: "policy-uuid" })
+  id: string;
+
+  @ApiProperty({ example: "SIGNUP" })
+  actionType: string;
+
+  @ApiPropertyOptional({ example: "회원가입" })
+  actionTypeLabelKo: string | null;
+
+  @ApiProperty({ example: 100 })
+  xpAmount: number;
+
+  @ApiProperty({ example: false })
+  isOneTime: boolean;
+
+  @ApiProperty({ example: true })
+  isActive: boolean;
+
+  @ApiProperty({ example: "2026-01-01T00:00:00.000Z" })
+  createdAt: Date;
+
+  @ApiProperty({ example: "2026-01-01T00:00:00.000Z" })
+  updatedAt: Date;
+
+  static from(policy: XpEarningPolicy): XpEarningPolicyResponseDto {
+    return {
+      id: policy.id,
+      actionType: policy.actionType,
+      actionTypeLabelKo: policy.actionTypeRef?.labelKo ?? null,
+      xpAmount: policy.xpAmount,
+      isOneTime: policy.isOneTime,
+      isActive: policy.isActive,
+      createdAt: policy.createdAt,
+      updatedAt: policy.updatedAt,
+    };
+  }
+}
+
+export class XpActionTypeResponseDto {
+  @ApiProperty({ example: "SIGNUP" })
+  code: string;
+
+  @ApiProperty({ example: "회원가입" })
+  labelKo: string;
+
+  @ApiProperty({ example: true })
+  isActive: boolean;
+
+  @ApiProperty({ example: "2026-01-01T00:00:00.000Z" })
+  createdAt: Date;
+
+  @ApiProperty({ example: "2026-01-01T00:00:00.000Z" })
+  updatedAt: Date;
+
+  static from(at: XpActionTypeEntity): XpActionTypeResponseDto {
+    return {
+      code: at.code,
+      labelKo: at.labelKo,
+      isActive: at.isActive,
+      createdAt: at.createdAt,
+      updatedAt: at.updatedAt,
     };
   }
 }

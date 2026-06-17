@@ -6,6 +6,7 @@ import { PointsService } from './points.service';
 import { PointWallet } from '@entities/point-wallet.entity';
 import { PointTransaction } from '@entities/point-transaction.entity';
 import { PointEarningPolicy } from '@entities/point-earning-policy.entity';
+import { PointActionTypeEntity } from '@entities/point-action-type.entity';
 import { User } from '@entities/user.entity';
 import { PointActionType, PointTransactionType, PointTransactionStatus } from '@enums/point.enum';
 
@@ -66,6 +67,16 @@ describe('PointsService', () => {
       create: jest.fn(),
       save: jest.fn(),
       update: jest.fn(),
+      count: jest.fn(),
+    };
+
+    const mockActionTypeRepo = {
+      findOne: jest.fn().mockResolvedValue({ code: 'WATCH', labelKo: '시청', isActive: true }),
+      find: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
     };
 
     const mockUserRepo = {
@@ -82,6 +93,7 @@ describe('PointsService', () => {
         { provide: getRepositoryToken(PointWallet), useValue: mockWalletRepo },
         { provide: getRepositoryToken(PointTransaction), useValue: mockTransactionRepo },
         { provide: getRepositoryToken(PointEarningPolicy), useValue: mockPolicyRepo },
+        { provide: getRepositoryToken(PointActionTypeEntity), useValue: mockActionTypeRepo },
         { provide: getRepositoryToken(User), useValue: mockUserRepo },
         { provide: DataSource, useValue: mockDataSource },
       ],
@@ -207,6 +219,8 @@ describe('PointsService', () => {
       it('should create policy successfully', async () => {
         policyRepo.create.mockReturnValue(mockPolicy as PointEarningPolicy);
         policyRepo.save.mockResolvedValue(mockPolicy as PointEarningPolicy);
+        // findPolicyById reload after save
+        policyRepo.findOne.mockResolvedValue(mockPolicy as PointEarningPolicy);
 
         const result = await service.createPolicy({
           actionType: PointActionType.WATCH,

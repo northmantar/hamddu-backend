@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Not, IsNull, Repository } from 'typeorm';
+import { In, Not, IsNull, Repository } from 'typeorm';
 import { User } from '@entities/user.entity';
 import { XpWallet } from '@entities/xp-wallet.entity';
 import { PointWallet } from '@entities/point-wallet.entity';
@@ -30,7 +30,6 @@ export class UsersService {
     private readonly xpWalletRepo: Repository<XpWallet>,
     @InjectRepository(PointWallet)
     private readonly pointWalletRepo: Repository<PointWallet>,
-    private readonly dataSource: DataSource,
     private readonly redis: RedisService,
     private readonly nicknameSequenceService: NicknameSequenceService,
   ) {}
@@ -64,32 +63,8 @@ export class UsersService {
   }
 
   async updateNickname(userId: string, dto: UpdateNicknameDto): Promise<User> {
-    const base = dto.nickname;
-
-    if (await this.tryUpdateNickname(userId, base)) {
-      return this.findByIdOrFail(userId);
-    }
-
-    while (true) {
-      const suffix = await this.nicknameSequenceService.allocateSuffix(base);
-      const nickname = `${base}${suffix}`;
-      if (await this.tryUpdateNickname(userId, nickname)) {
-        return this.findByIdOrFail(userId);
-      }
-    }
-  }
-
-  private async tryUpdateNickname(userId: string, nickname: string): Promise<boolean> {
-    const result = await this.dataSource.query(
-      `UPDATE users SET nickname = $1
-       WHERE id = $2
-         AND NOT EXISTS (
-           SELECT 1 FROM users WHERE nickname = $1 AND id != $2
-         )
-       RETURNING id`,
-      [nickname, userId],
-    );
-    return result.length > 0;
+    await this.nicknameSequenceService.claimNicknameWithSuffix(userId, dto.nickname);
+    return this.findByIdOrFail(userId);
   }
 
   async completeSurvey(userId: string, dto: SurveyDto): Promise<User> {

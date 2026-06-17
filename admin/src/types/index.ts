@@ -103,46 +103,60 @@ export interface Category {
 }
 
 export interface CreateCategoryDto {
-  name: string;
-  slug: string;
-  description?: string;
-  sortOrder?: number;
+  label: string;
 }
 
 export interface UpdateCategoryDto {
-  name?: string;
-  slug?: string;
-  description?: string;
-  sortOrder?: number;
+  label?: string;
+  status?: 'enabled' | 'disabled';
 }
 
 // Point Policy types
 export interface PointPolicy {
   id: string;
-  actionType?: string;
-  pointAmount?: number;
-  isOneTime?: boolean;
-  eventType?: string;
+  actionType: string;
+  actionTypeLabelKo?: string | null;
+  pointAmount: number;
+  isOneTime: boolean;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  // legacy frontend-only fields (kept for transition)
   name?: string;
   description?: string | null;
   points?: number;
+  eventType?: string;
+}
+
+export interface CreatePointPolicyDto {
+  actionType: string;
+  pointAmount: number;
+  isOneTime?: boolean;
+  isActive?: boolean;
+}
+
+export interface UpdatePointPolicyDto {
+  pointAmount?: number;
+  isOneTime?: boolean;
+  isActive?: boolean;
+}
+
+// Point action type lookup
+export interface PointActionType {
+  code: string;
+  labelKo: string;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
 
-export interface CreatePointPolicyDto {
-  eventType: string;
-  name: string;
-  description?: string;
-  points: number;
-  isActive?: boolean;
+export interface CreateActionTypeDto {
+  code: string;
+  labelKo: string;
 }
 
-export interface UpdatePointPolicyDto {
-  name?: string;
-  description?: string;
-  points?: number;
+export interface UpdateActionTypeDto {
+  labelKo?: string;
   isActive?: boolean;
 }
 
@@ -150,27 +164,61 @@ export interface UpdatePointPolicyDto {
 export interface XpLevel {
   id: string;
   level: number;
-  xpThreshold?: number;
-  label?: string;
+  xpThreshold: number;
+  label: string;
   isActive?: boolean;
-  name?: string;
-  minXp?: number;
-  maxXp?: number | null;
   createdAt?: string;
   updatedAt?: string;
+  // legacy frontend-only fields (kept for transition)
+  name?: string;
+  minXp?: number;
 }
 
 export interface CreateXpLevelDto {
   level: number;
-  name: string;
-  minXp: number;
-  maxXp?: number;
+  label: string;
+  xpThreshold: number;
+  isActive?: boolean;
 }
 
 export interface UpdateXpLevelDto {
-  name?: string;
-  minXp?: number;
-  maxXp?: number;
+  label?: string;
+  xpThreshold?: number;
+  isActive?: boolean;
+}
+
+// XP earning policy types
+export interface XpEarningPolicy {
+  id: string;
+  actionType: string;
+  actionTypeLabelKo?: string | null;
+  xpAmount: number;
+  isOneTime: boolean;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateXpPolicyDto {
+  actionType: string;
+  xpAmount: number;
+  isOneTime?: boolean;
+  isActive?: boolean;
+}
+
+export interface UpdateXpPolicyDto {
+  xpAmount?: number;
+  isOneTime?: boolean;
+  isActive?: boolean;
+}
+
+// XP action type lookup (mirrors PointActionType structure)
+export interface XpActionType {
+  code: string;
+  labelKo: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Report types
