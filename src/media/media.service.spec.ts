@@ -5,9 +5,11 @@ import { ConfigService } from '@nestjs/config';
 import { MediaService } from './media.service';
 import { Media } from '@entities/media.entity';
 
+const mockS3Send = jest.fn();
+
 jest.mock('@aws-sdk/client-s3', () => ({
   S3Client: jest.fn().mockImplementation(() => ({
-    send: jest.fn().mockResolvedValue({}),
+    send: mockS3Send,
   })),
   PutObjectCommand: jest.fn().mockImplementation((input) => input),
 }));
@@ -16,6 +18,7 @@ describe('MediaService', () => {
   let service: MediaService;
   let mediaRepo: jest.Mocked<Repository<Media>>;
   let configService: jest.Mocked<ConfigService>;
+  let configValues: Record<string, string>;
 
   const mockFile = {
     originalname: 'photo.jpg',
@@ -34,6 +37,16 @@ describe('MediaService', () => {
   };
 
   beforeEach(async () => {
+    mockS3Send.mockReset();
+    mockS3Send.mockResolvedValue({});
+    configValues = {
+      CDN_BASE_URL: 'https://cdn.hamddu.online',
+      R2_ACCOUNT_ID: 'test-account-id',
+      R2_BUCKET_NAME: 'test-bucket',
+      R2_ACCESS_KEY_ID: 'test-access-key',
+      R2_SECRET_ACCESS_KEY: 'test-secret-key',
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MediaService,
@@ -48,12 +61,7 @@ describe('MediaService', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn((key: string, fallback?: string) => {
-              if (key === 'CDN_BASE_URL') return 'https://cdn.hamddu.online';
-              if (key === 'R2_ACCOUNT_ID') return 'test-account-id';
-              if (key === 'R2_BUCKET_NAME') return 'test-bucket';
-              if (key === 'R2_ACCESS_KEY_ID') return 'test-access-key';
-              if (key === 'R2_SECRET_ACCESS_KEY') return 'test-secret-key';
-              return fallback;
+              return configValues[key] ?? fallback;
             }),
           },
         },
@@ -76,7 +84,7 @@ describe('MediaService', () => {
 
       await service.upload(mockFile, 'user-1');
 
-      expect(configService.get).toHaveBeenCalledWith('CDN_BASE_URL', 'https://cdn.hamddu.online');
+      expect(configService.get).toHaveBeenCalledWith('CDN_BASE_URL');
     });
 
     it('should include original filename in generated URL', async () => {
@@ -122,6 +130,44 @@ describe('MediaService', () => {
       expect(createCall.url).toMatch(/^https:\/\/cdn\.hamddu\.online\/media\//);
     });
 
+    it('should fall back to the default CDN base URL when CDN_BASE_URL is blank', async () => {
+      const blankCdnRepo = {
+        create: jest.fn().mockReturnValue(mockMedia),
+        save: jest.fn().mockResolvedValue(mockMedia),
+      };
+      const module = await Test.createTestingModule({
+        providers: [
+          MediaService,
+          {
+            provide: getRepositoryToken(Media),
+            useValue: blankCdnRepo,
+          },
+          {
+            provide: ConfigService,
+            useValue: {
+              get: jest.fn((key: string, fallback?: string) => {
+                const values: Record<string, string> = {
+                  CDN_BASE_URL: '',
+                  R2_ACCOUNT_ID: 'test-account-id',
+                  R2_BUCKET_NAME: 'test-bucket',
+                  R2_ACCESS_KEY_ID: 'test-access-key',
+                  R2_SECRET_ACCESS_KEY: 'test-secret-key',
+                };
+
+                return values[key] ?? fallback;
+              }),
+            },
+          },
+        ],
+      }).compile();
+      const blankCdnService = module.get(MediaService);
+
+      await blankCdnService.upload(mockFile, 'user-1');
+
+      const createCall = blankCdnRepo.create.mock.calls[0][0] as Partial<Media>;
+      expect(createCall.url).toMatch(/^https:\/\/cdn\.hamddu\.online\/media\//);
+    });
+
     it('should save and return the media entity', async () => {
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
@@ -156,6 +202,30 @@ describe('MediaService', () => {
       );
     });
 
+    it('should include content length when uploading to S3', async () => {
+      const { PutObjectCommand } = require('@aws-sdk/client-s3');
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      await service.upload(mockFile, 'user-1');
+
+      expect(PutObjectCommand).toHaveBeenCalledWith(
+        expect.objectContaining({ ContentLength: mockFile.size }),
+      );
+    });
+
+    it('should send the upload request with an abort signal', async () => {
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      await service.upload(mockFile, 'user-1');
+
+      expect(mockS3Send).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({ abortSignal: expect.any(AbortSignal) }),
+      );
+    });
+
     it('should use file mimetype as ContentType when uploading to S3', async () => {
       const { PutObjectCommand } = require('@aws-sdk/client-s3');
       mediaRepo.create.mockReturnValue(mockMedia);
@@ -165,6 +235,50 @@ describe('MediaService', () => {
 
       expect(PutObjectCommand).toHaveBeenCalledWith(
         expect.objectContaining({ ContentType: 'image/jpeg' }),
+      );
+    });
+
+    it('should configure the S3 client for Cloudflare R2', async () => {
+      const { S3Client } = require('@aws-sdk/client-s3');
+
+      expect(S3Client).toHaveBeenCalledWith(
+        expect.objectContaining({
+          region: 'auto',
+          endpoint: 'https://test-account-id.r2.cloudflarestorage.com',
+          forcePathStyle: true,
+          requestChecksumCalculation: 'WHEN_REQUIRED',
+          credentials: {
+            accessKeyId: 'test-access-key',
+            secretAccessKey: 'test-secret-key',
+          },
+        }),
+      );
+    });
+
+    it('should surface R2 AccessDenied as a gateway error', async () => {
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+      mockS3Send.mockRejectedValueOnce({
+        name: 'AccessDenied',
+        message: 'Access Denied',
+        $metadata: { httpStatusCode: 403 },
+      });
+
+      await expect(service.upload(mockFile, 'user-1')).rejects.toThrow(
+        'R2 업로드 권한이 거부되었습니다.',
+      );
+    });
+
+    it('should surface R2 timeout as a gateway timeout error', async () => {
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+      mockS3Send.mockRejectedValueOnce({
+        name: 'AbortError',
+        message: 'The operation was aborted',
+      });
+
+      await expect(service.upload(mockFile, 'user-1')).rejects.toThrow(
+        'R2 업로드 요청이 시간 초과되었습니다.',
       );
     });
   });
