@@ -24,6 +24,8 @@ import { BoardLike } from "./entities/board-like.entity";
 import { BoardCategory } from "./entities/board-category.entity";
 import { BoardComment } from "./entities/board-comment.entity";
 import { BoardCommentLike } from "./entities/board-comment-like.entity";
+import { BoardReport } from "./entities/board-report.entity";
+import { CommentReport } from "./entities/comment-report.entity";
 import { Channel } from "./entities/channel.entity";
 import { Content } from "./entities/content.entity";
 import { WatchHistory } from "./entities/watch-history.entity";
@@ -31,10 +33,13 @@ import { Challenge } from "./entities/challenge.entity";
 import { PointWallet } from "./entities/point-wallet.entity";
 import { PointTransaction } from "./entities/point-transaction.entity";
 import { PointEarningPolicy } from "./entities/point-earning-policy.entity";
+import { PointActionTypeEntity } from "./entities/point-action-type.entity";
 import { PointUseDetail } from "./entities/point-use-detail.entity";
 import { XpWallet } from "./entities/xp-wallet.entity";
 import { XpTransaction } from "./entities/xp-transaction.entity";
 import { XpLevelPolicy } from "./entities/xp-level-policy.entity";
+import { XpEarningPolicy } from "./entities/xp-earning-policy.entity";
+import { XpActionTypeEntity } from "./entities/xp-action-type.entity";
 import { Media } from "./entities/media.entity";
 import { BoardMedia } from "./entities/board-media.entity";
 
@@ -70,6 +75,8 @@ import { BoardMedia } from "./entities/board-media.entity";
           BoardCategory,
           BoardComment,
           BoardCommentLike,
+          BoardReport,
+          CommentReport,
           Channel,
           Content,
           WatchHistory,
@@ -77,10 +84,13 @@ import { BoardMedia } from "./entities/board-media.entity";
           PointWallet,
           PointTransaction,
           PointEarningPolicy,
+          PointActionTypeEntity,
           PointUseDetail,
           XpWallet,
           XpTransaction,
           XpLevelPolicy,
+          XpEarningPolicy,
+          XpActionTypeEntity,
           Media,
           BoardMedia,
         ],
