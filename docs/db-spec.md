@@ -356,7 +356,7 @@
 
 ### 닉네임 접미사 카운터 테이블 (`nickname_bases`)
 
-base 닉네임이 중복될 때 붙일 다음 숫자 접미사를 관리하는 카운터 테이블입니다. `register`/닉네임 변경 시 동일 base가 겹치면 `next_suffix` 값을 원자적으로 증가시켜 `실뭉치장인_1`, `실뭉치장인_2` … 형태로 점유합니다. (닉네임 점유 자체의 유일성은 `member.nickname` 의 UNIQUE 제약으로 보장)
+base 닉네임이 중복될 때 붙일 다음 숫자 접미사를 관리하는 카운터 테이블입니다. `register`/닉네임 변경 시 동일 base가 겹치면 `next_suffix` 값을 원자적으로 증가시켜 `실뭉치장인1`, `실뭉치장인2` … 형태로 점유합니다. (닉네임 점유 자체의 유일성은 `member.nickname` 의 UNIQUE 제약으로 보장)
 
 | name | type | description |
 | --- | --- | --- |

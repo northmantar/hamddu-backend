@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
 @Injectable()
@@ -14,6 +14,7 @@ export class NicknameSequenceService {
   }
 
   async allocateSuffix(baseNickname: string): Promise<number> {
+    const normalizedBase = this.normalizeNickname(baseNickname);
     const result = await this.dataSource.query(
       `
       INSERT INTO nickname_bases (base_nickname, next_suffix)
@@ -22,7 +23,7 @@ export class NicknameSequenceService {
       DO UPDATE SET next_suffix = nickname_bases.next_suffix + 1
       RETURNING next_suffix - 1 AS suffix
       `,
-      [baseNickname],
+      [normalizedBase],
     );
 
     return Number(result[0].suffix);
@@ -30,9 +31,10 @@ export class NicknameSequenceService {
 
   // 닉네임이 이미 사용 중인지 확인 (유저를 생성하지 않음)
   async isNicknameTaken(nickname: string): Promise<boolean> {
+    const normalizedNickname = this.normalizeNickname(nickname);
     const result = await this.dataSource.query(
       `SELECT 1 FROM users WHERE nickname = $1 LIMIT 1`,
-      [nickname],
+      [normalizedNickname],
     );
 
     return result.length > 0;
@@ -43,6 +45,7 @@ export class NicknameSequenceService {
     userId: string,
     nickname: string,
   ): Promise<boolean> {
+    const normalizedNickname = this.normalizeNickname(nickname);
     try {
       const result = await this.dataSource.query(
         `UPDATE users SET nickname = $1
@@ -51,7 +54,7 @@ export class NicknameSequenceService {
              SELECT 1 FROM users WHERE nickname = $1 AND id != $2
            )
          RETURNING id`,
-        [nickname, userId],
+        [normalizedNickname, userId],
       );
       return result.length > 0;
     } catch (e: any) {
@@ -69,16 +72,26 @@ export class NicknameSequenceService {
     userId: string,
     base: string,
   ): Promise<string> {
-    if (await this.claimNicknameForUser(userId, base)) {
-      return base;
+    const normalizedBase = this.normalizeNickname(base);
+
+    if (await this.claimNicknameForUser(userId, normalizedBase)) {
+      return normalizedBase;
     }
 
     while (true) {
-      const suffix = await this.allocateSuffix(base);
-      const nickname = `${base}${suffix}`;
+      const suffix = await this.allocateSuffix(normalizedBase);
+      const nickname = `${normalizedBase}${suffix}`;
       if (await this.claimNicknameForUser(userId, nickname)) {
         return nickname;
       }
     }
+  }
+
+  private normalizeNickname(nickname: string): string {
+    const normalized = nickname.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+    if (normalized.length < 2 || normalized.length > 30) {
+      throw new BadRequestException('닉네임은 2자 이상 30자 이하로 입력해주세요.');
+    }
+    return normalized;
   }
 }
