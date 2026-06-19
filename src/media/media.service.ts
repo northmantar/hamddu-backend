@@ -9,6 +9,8 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { ConfigService } from "@nestjs/config";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { randomUUID } from "crypto";
+import { extname } from "path";
 import { Media } from "@entities/media.entity";
 import { CreateMediaDto } from "./dto/create-media.dto";
 
@@ -49,7 +51,7 @@ export class MediaService {
   }
 
   async upload(file: Express.Multer.File, uploaderId: string): Promise<Media> {
-    const key = `media/${Date.now()}-${file.originalname}`;
+    const key = this.createObjectKey(file);
     const abortController = new AbortController();
     const timeout = setTimeout(() => abortController.abort(), MediaService.R2_UPLOAD_TIMEOUT_MS);
 
@@ -128,5 +130,33 @@ export class MediaService {
     }
 
     throw new BadGatewayException("R2 업로드에 실패했습니다.");
+  }
+
+  private createObjectKey(file: Express.Multer.File): string {
+    const id = randomUUID().replace(/-/g, "");
+    const extension = this.getSafeExtension(file);
+
+    return `media/${Date.now()}-${id}${extension}`;
+  }
+
+  private getSafeExtension(file: Express.Multer.File): string {
+    const originalExtension = extname(file.originalname || "")
+      .toLowerCase()
+      .replace(/^\./, "");
+
+    if (/^[a-z0-9]{1,10}$/.test(originalExtension)) {
+      return `.${originalExtension}`;
+    }
+
+    const mimeExtensions: Record<string, string> = {
+      "image/jpeg": ".jpg",
+      "image/png": ".png",
+      "image/webp": ".webp",
+      "image/gif": ".gif",
+      "image/svg+xml": ".svg",
+      "image/avif": ".avif",
+    };
+
+    return mimeExtensions[file.mimetype] ?? "";
   }
 }

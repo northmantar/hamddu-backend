@@ -87,15 +87,17 @@ describe('MediaService', () => {
       expect(configService.get).toHaveBeenCalledWith('CDN_BASE_URL');
     });
 
-    it('should include original filename in generated URL', async () => {
+    it('should generate an ASCII object key without the original filename', async () => {
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
 
-      await service.upload(mockFile, 'user-1');
+      await service.upload({ ...mockFile, originalname: '뜨개 사진.jpg' } as Express.Multer.File, 'user-1');
 
       const createCall = mediaRepo.create.mock.calls[0][0] as Partial<Media>;
-      expect(createCall.url).toContain('photo.jpg');
-      expect(createCall.url).toMatch(/^https:\/\/cdn\.hamddu\.online\/media\//);
+      expect(createCall.url).not.toContain('뜨개 사진');
+      expect(createCall.url).toMatch(
+        /^https:\/\/cdn\.hamddu\.online\/media\/\d+-[a-f0-9]{32}\.jpg$/,
+      );
     });
 
     it('should set uploaderId from the caller', async () => {
@@ -199,6 +201,37 @@ describe('MediaService', () => {
 
       expect(PutObjectCommand).toHaveBeenCalledWith(
         expect.objectContaining({ Bucket: 'test-bucket', Body: mockFile.buffer }),
+      );
+    });
+
+    it('should use the generated ASCII object key when uploading to S3', async () => {
+      const { PutObjectCommand } = require('@aws-sdk/client-s3');
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      await service.upload({ ...mockFile, originalname: '한글 파일명.png' } as Express.Multer.File, 'user-1');
+
+      expect(PutObjectCommand).toHaveBeenCalledWith(
+        expect.objectContaining({
+          Key: expect.stringMatching(/^media\/\d+-[a-f0-9]{32}\.png$/),
+        }),
+      );
+    });
+
+    it('should fall back to mimetype extension when original extension is unsafe', async () => {
+      const { PutObjectCommand } = require('@aws-sdk/client-s3');
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      await service.upload(
+        { ...mockFile, originalname: '이미지.사진', mimetype: 'image/webp' } as Express.Multer.File,
+        'user-1',
+      );
+
+      expect(PutObjectCommand).toHaveBeenCalledWith(
+        expect.objectContaining({
+          Key: expect.stringMatching(/^media\/\d+-[a-f0-9]{32}\.webp$/),
+        }),
       );
     });
 
