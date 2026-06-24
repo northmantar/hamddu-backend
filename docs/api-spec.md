@@ -315,4 +315,5 @@ Authorization: Bearer <access_token>
 |  | POST | /channels | 관리자 | 채널 등록 |
 |  | PATCH | /channels/:id | 관리자 | 채널 수정 |
 |  | DELETE | /channels/:id | 관리자 | 채널 삭제 |
-| **미디어** | POST | /media/upload | 인증 | 이미지 업로드 |
+| **미디어** | POST | /media | 인증 | 이미지 업로드 (서비스용, 백엔드 압축 없음) |
+|  | POST | /media/upload | 관리자 | 이미지 업로드 (관리자용, 백엔드에서 압축) |

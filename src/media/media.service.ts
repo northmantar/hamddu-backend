@@ -1,5 +1,6 @@
 import {
   BadGatewayException,
+  BadRequestException,
   GatewayTimeoutException,
   Injectable,
   InternalServerErrorException,
@@ -11,8 +12,26 @@ import { ConfigService } from "@nestjs/config";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
 import { extname } from "path";
+import sharp from "sharp";
 import { Media } from "@entities/media.entity";
-import { CreateMediaDto } from "./dto/create-media.dto";
+
+// 프론트(expo-image-manipulator)와 동일한 정책: 긴 변 ≤ 1200px, JPEG 품질 75.
+const COMPRESS_MAX_DIMENSION = 1200;
+const COMPRESS_JPEG_QUALITY = 75;
+const COMPRESSED_MIME = "image/jpeg";
+const COMPRESSED_EXT = "jpg";
+
+export interface UploadOptions {
+  compress: boolean;
+}
+
+// upload 파이프라인에서 사용하는 정규화된 파일 표현. 압축/비압축 어느 경로든 동일한 형태로 다룬다.
+interface ProcessedFile {
+  buffer: Buffer;
+  mimetype: string;
+  originalname: string;
+  size: number;
+}
 
 @Injectable()
 export class MediaService {
@@ -50,19 +69,39 @@ export class MediaService {
     });
   }
 
-  async upload(file: Express.Multer.File, uploaderId: string): Promise<Media> {
-    const key = this.createObjectKey(file);
+  async upload(
+    file: Express.Multer.File,
+    uploaderId: string,
+    options: UploadOptions,
+  ): Promise<Media> {
+    if (!file) {
+      throw new BadRequestException("파일이 필요합니다.");
+    }
+
+    const processed: ProcessedFile = options.compress
+      ? await this.compress(file)
+      : {
+          buffer: file.buffer,
+          mimetype: file.mimetype || "",
+          originalname: file.originalname,
+          size: file.size,
+        };
+
+    const key = this.createObjectKey(processed);
     const abortController = new AbortController();
-    const timeout = setTimeout(() => abortController.abort(), MediaService.R2_UPLOAD_TIMEOUT_MS);
+    const timeout = setTimeout(
+      () => abortController.abort(),
+      MediaService.R2_UPLOAD_TIMEOUT_MS,
+    );
 
     try {
       await this.s3.send(
         new PutObjectCommand({
           Bucket: this.bucket,
           Key: key,
-          Body: file.buffer,
-          ContentType: file.mimetype || undefined,
-          ContentLength: file.size,
+          Body: processed.buffer,
+          ContentType: processed.mimetype || undefined,
+          ContentLength: processed.size,
         }),
         { abortSignal: abortController.signal },
       );
@@ -72,24 +111,41 @@ export class MediaService {
       clearTimeout(timeout);
     }
 
-    const url = `${this.cdnBase}/${key}`;
     const media = this.mediaRepo.create({
       uploaderId,
-      url,
-      mimeType: file.mimetype || null,
+      url: `${this.cdnBase}/${key}`,
+      mimeType: processed.mimetype || null,
     });
-
     return this.mediaRepo.save(media);
   }
 
-  async create(dto: CreateMediaDto, uploaderId: string): Promise<Media> {
-    const media = this.mediaRepo.create({
-      uploaderId,
-      url: dto.url,
-      mimeType: dto.mimeType || null,
-    });
+  // 프론트의 expo-image-manipulator 압축과 동일한 정책으로 이미지를 리사이즈/재인코딩한다.
+  private async compress(file: Express.Multer.File): Promise<ProcessedFile> {
+    let pipeline = sharp(file.buffer).rotate(); // EXIF orientation 보정
+    const { width, height } = await pipeline.metadata();
 
-    return this.mediaRepo.save(media);
+    if (
+      (width ?? 0) > COMPRESS_MAX_DIMENSION ||
+      (height ?? 0) > COMPRESS_MAX_DIMENSION
+    ) {
+      const resizeOptions =
+        (width ?? 0) >= (height ?? 0)
+          ? { width: COMPRESS_MAX_DIMENSION }
+          : { height: COMPRESS_MAX_DIMENSION };
+      pipeline = pipeline.resize({ ...resizeOptions, withoutEnlargement: true });
+    }
+
+    const buffer = await pipeline
+      .jpeg({ quality: COMPRESS_JPEG_QUALITY })
+      .toBuffer();
+
+    const baseName = file.originalname?.replace(/\.[^.]+$/, "") ?? "image";
+    return {
+      buffer,
+      mimetype: COMPRESSED_MIME,
+      originalname: `${baseName}.${COMPRESSED_EXT}`,
+      size: buffer.length,
+    };
   }
 
   private assertR2Config(accountId: string, accessKeyId: string, secretAccessKey: string): void {
@@ -132,14 +188,14 @@ export class MediaService {
     throw new BadGatewayException("R2 업로드에 실패했습니다.");
   }
 
-  private createObjectKey(file: Express.Multer.File): string {
+  private createObjectKey(file: ProcessedFile): string {
     const id = randomUUID().replace(/-/g, "");
     const extension = this.getSafeExtension(file);
 
     return `media/${Date.now()}-${id}${extension}`;
   }
 
-  private getSafeExtension(file: Express.Multer.File): string {
+  private getSafeExtension(file: ProcessedFile): string {
     const originalExtension = extname(file.originalname || "")
       .toLowerCase()
       .replace(/^\./, "");

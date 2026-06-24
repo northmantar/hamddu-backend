@@ -14,6 +14,23 @@ jest.mock('@aws-sdk/client-s3', () => ({
   PutObjectCommand: jest.fn().mockImplementation((input) => input),
 }));
 
+// 압축 경로 검증을 위해 sharp 를 모킹: resize/jpeg 호출만 추적하고 결정적 결과를 돌려준다.
+const sharpJpeg = jest.fn().mockReturnThis();
+const sharpResize = jest.fn().mockReturnThis();
+const sharpRotate = jest.fn().mockReturnThis();
+const sharpMetadata = jest.fn();
+const sharpToBuffer = jest.fn();
+jest.mock('sharp', () => {
+  const ctor = jest.fn(() => ({
+    rotate: sharpRotate,
+    resize: sharpResize,
+    jpeg: sharpJpeg,
+    metadata: sharpMetadata,
+    toBuffer: sharpToBuffer,
+  }));
+  return { __esModule: true, default: ctor };
+});
+
 describe('MediaService', () => {
   let service: MediaService;
   let mediaRepo: jest.Mocked<Repository<Media>>;
@@ -39,6 +56,13 @@ describe('MediaService', () => {
   beforeEach(async () => {
     mockS3Send.mockReset();
     mockS3Send.mockResolvedValue({});
+    sharpJpeg.mockClear();
+    sharpResize.mockClear();
+    sharpRotate.mockClear();
+    sharpMetadata.mockReset();
+    sharpToBuffer.mockReset();
+    sharpToBuffer.mockResolvedValue(Buffer.from('compressed'));
+
     configValues = {
       CDN_BASE_URL: 'https://cdn.hamddu.online',
       R2_ACCOUNT_ID: 'test-account-id',
@@ -77,12 +101,12 @@ describe('MediaService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('upload', () => {
+  describe('upload (compress: false)', () => {
     it('should build URL from CDN_BASE_URL config', async () => {
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
 
-      await service.upload(mockFile, 'user-1');
+      await service.upload(mockFile, 'user-1', { compress: false });
 
       expect(configService.get).toHaveBeenCalledWith('CDN_BASE_URL');
     });
@@ -91,7 +115,11 @@ describe('MediaService', () => {
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
 
-      await service.upload({ ...mockFile, originalname: '뜨개 사진.jpg' } as Express.Multer.File, 'user-1');
+      await service.upload(
+        { ...mockFile, originalname: '뜨개 사진.jpg' } as Express.Multer.File,
+        'user-1',
+        { compress: false },
+      );
 
       const createCall = mediaRepo.create.mock.calls[0][0] as Partial<Media>;
       expect(createCall.url).not.toContain('뜨개 사진');
@@ -104,7 +132,7 @@ describe('MediaService', () => {
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
 
-      await service.upload(mockFile, 'user-42');
+      await service.upload(mockFile, 'user-42', { compress: false });
 
       expect(mediaRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ uploaderId: 'user-42' }),
@@ -115,7 +143,7 @@ describe('MediaService', () => {
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
 
-      await service.upload(mockFile, 'user-1');
+      await service.upload(mockFile, 'user-1', { compress: false });
 
       expect(mediaRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ mimeType: 'image/jpeg' }),
@@ -126,7 +154,7 @@ describe('MediaService', () => {
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
 
-      await service.upload(mockFile, 'user-1');
+      await service.upload(mockFile, 'user-1', { compress: false });
 
       const createCall = mediaRepo.create.mock.calls[0][0] as Partial<Media>;
       expect(createCall.url).toMatch(/^https:\/\/cdn\.hamddu\.online\/media\//);
@@ -164,7 +192,7 @@ describe('MediaService', () => {
       }).compile();
       const blankCdnService = module.get(MediaService);
 
-      await blankCdnService.upload(mockFile, 'user-1');
+      await blankCdnService.upload(mockFile, 'user-1', { compress: false });
 
       const createCall = blankCdnRepo.create.mock.calls[0][0] as Partial<Media>;
       expect(createCall.url).toMatch(/^https:\/\/cdn\.hamddu\.online\/media\//);
@@ -174,7 +202,7 @@ describe('MediaService', () => {
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
 
-      const result = await service.upload(mockFile, 'user-1');
+      const result = await service.upload(mockFile, 'user-1', { compress: false });
 
       expect(mediaRepo.save).toHaveBeenCalledWith(mockMedia);
       expect(result).toEqual(mockMedia);
@@ -185,23 +213,25 @@ describe('MediaService', () => {
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
 
-      await service.upload(fileWithoutMime as Express.Multer.File, 'user-1');
+      await service.upload(fileWithoutMime as Express.Multer.File, 'user-1', { compress: false });
 
       expect(mediaRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ mimeType: null }),
       );
     });
 
-    it('should use R2_BUCKET_NAME when uploading to S3', async () => {
+    it('should upload original buffer to R2 (no compression)', async () => {
       const { PutObjectCommand } = require('@aws-sdk/client-s3');
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
 
-      await service.upload(mockFile, 'user-1');
+      await service.upload(mockFile, 'user-1', { compress: false });
 
       expect(PutObjectCommand).toHaveBeenCalledWith(
         expect.objectContaining({ Bucket: 'test-bucket', Body: mockFile.buffer }),
       );
+      expect(sharpResize).not.toHaveBeenCalled();
+      expect(sharpJpeg).not.toHaveBeenCalled();
     });
 
     it('should use the generated ASCII object key when uploading to S3', async () => {
@@ -209,7 +239,11 @@ describe('MediaService', () => {
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
 
-      await service.upload({ ...mockFile, originalname: '한글 파일명.png' } as Express.Multer.File, 'user-1');
+      await service.upload(
+        { ...mockFile, originalname: '한글 파일명.png' } as Express.Multer.File,
+        'user-1',
+        { compress: false },
+      );
 
       expect(PutObjectCommand).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -226,6 +260,7 @@ describe('MediaService', () => {
       await service.upload(
         { ...mockFile, originalname: '이미지.사진', mimetype: 'image/webp' } as Express.Multer.File,
         'user-1',
+        { compress: false },
       );
 
       expect(PutObjectCommand).toHaveBeenCalledWith(
@@ -240,7 +275,7 @@ describe('MediaService', () => {
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
 
-      await service.upload(mockFile, 'user-1');
+      await service.upload(mockFile, 'user-1', { compress: false });
 
       expect(PutObjectCommand).toHaveBeenCalledWith(
         expect.objectContaining({ ContentLength: mockFile.size }),
@@ -251,7 +286,7 @@ describe('MediaService', () => {
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
 
-      await service.upload(mockFile, 'user-1');
+      await service.upload(mockFile, 'user-1', { compress: false });
 
       expect(mockS3Send).toHaveBeenCalledWith(
         expect.any(Object),
@@ -264,7 +299,7 @@ describe('MediaService', () => {
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
 
-      await service.upload(mockFile, 'user-1');
+      await service.upload(mockFile, 'user-1', { compress: false });
 
       expect(PutObjectCommand).toHaveBeenCalledWith(
         expect.objectContaining({ ContentType: 'image/jpeg' }),
@@ -297,7 +332,7 @@ describe('MediaService', () => {
         $metadata: { httpStatusCode: 403 },
       });
 
-      await expect(service.upload(mockFile, 'user-1')).rejects.toThrow(
+      await expect(service.upload(mockFile, 'user-1', { compress: false })).rejects.toThrow(
         'R2 업로드 권한이 거부되었습니다.',
       );
     });
@@ -310,53 +345,63 @@ describe('MediaService', () => {
         message: 'The operation was aborted',
       });
 
-      await expect(service.upload(mockFile, 'user-1')).rejects.toThrow(
+      await expect(service.upload(mockFile, 'user-1', { compress: false })).rejects.toThrow(
         'R2 업로드 요청이 시간 초과되었습니다.',
       );
     });
   });
 
-  describe('create', () => {
-    const createDto = {
-      url: 'https://cdn.hamddu.online/media/abc123.jpg',
-      mimeType: 'image/jpeg',
-    };
-
-    it('should create media with provided URL and mimeType', async () => {
+  describe('upload (compress: true)', () => {
+    it('should resize when the longer side exceeds the max dimension and re-encode as JPEG q75', async () => {
+      sharpMetadata.mockResolvedValue({ width: 4000, height: 3000 });
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
 
-      await service.create(createDto, 'user-1');
+      await service.upload(mockFile, 'user-1', { compress: true });
 
-      expect(mediaRepo.create).toHaveBeenCalledWith({
-        uploaderId: 'user-1',
-        url: createDto.url,
-        mimeType: createDto.mimeType,
-      });
+      // 가로가 더 길면 width: 1200 로 리사이즈
+      expect(sharpResize).toHaveBeenCalledWith(
+        expect.objectContaining({ width: 1200, withoutEnlargement: true }),
+      );
+      expect(sharpJpeg).toHaveBeenCalledWith({ quality: 75 });
     });
 
-    it('should set mimeType to null when not provided', async () => {
-      const dtoWithoutMimeType = { url: 'https://cdn.hamddu.online/media/abc123.jpg' };
+    it('should skip resize when image already fits within max dimension', async () => {
+      sharpMetadata.mockResolvedValue({ width: 800, height: 600 });
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
 
-      await service.create(dtoWithoutMimeType, 'user-1');
+      await service.upload(mockFile, 'user-1', { compress: true });
 
-      expect(mediaRepo.create).toHaveBeenCalledWith({
-        uploaderId: 'user-1',
-        url: dtoWithoutMimeType.url,
-        mimeType: null,
-      });
+      expect(sharpResize).not.toHaveBeenCalled();
+      expect(sharpJpeg).toHaveBeenCalledWith({ quality: 75 });
     });
 
-    it('should save and return the media entity', async () => {
+    it('should store compressed buffer as image/jpeg regardless of input mimetype', async () => {
+      const { PutObjectCommand } = require('@aws-sdk/client-s3');
+      sharpMetadata.mockResolvedValue({ width: 500, height: 500 });
+      const pngFile = { ...mockFile, originalname: 'pic.png', mimetype: 'image/png' };
       mediaRepo.create.mockReturnValue(mockMedia);
       mediaRepo.save.mockResolvedValue(mockMedia);
 
-      const result = await service.create(createDto, 'user-1');
+      await service.upload(pngFile as Express.Multer.File, 'user-1', { compress: true });
 
-      expect(mediaRepo.save).toHaveBeenCalledWith(mockMedia);
-      expect(result).toEqual(mockMedia);
+      expect(PutObjectCommand).toHaveBeenCalledWith(
+        expect.objectContaining({ ContentType: 'image/jpeg' }),
+      );
+      expect(mediaRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ mimeType: 'image/jpeg' }),
+      );
+      const createCall = mediaRepo.create.mock.calls[0][0] as Partial<Media>;
+      expect(createCall.url).toMatch(/\.jpg$/);
+    });
+  });
+
+  describe('upload (no file)', () => {
+    it('should throw 400 when file is missing', async () => {
+      await expect(
+        service.upload(undefined as unknown as Express.Multer.File, 'user-1', { compress: false }),
+      ).rejects.toThrow('파일이 필요합니다.');
     });
   });
 });
