@@ -21,14 +21,14 @@ const sharpRotate = jest.fn().mockReturnThis();
 const sharpMetadata = jest.fn();
 const sharpToBuffer = jest.fn();
 jest.mock('sharp', () => {
-  const ctor = jest.fn(() => ({
+  // 서비스가 `import sharp = require("sharp")` 로 가져오므로 모듈 자체가 callable 이어야 한다.
+  return jest.fn(() => ({
     rotate: sharpRotate,
     resize: sharpResize,
     jpeg: sharpJpeg,
     metadata: sharpMetadata,
     toBuffer: sharpToBuffer,
   }));
-  return { __esModule: true, default: ctor };
 });
 
 describe('MediaService', () => {

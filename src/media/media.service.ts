@@ -12,7 +12,10 @@ import { ConfigService } from "@nestjs/config";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
 import { extname } from "path";
-import sharp from "sharp";
+// sharp 는 CommonJS 모듈(`module.exports = sharp`)이라 default import가 런타임에서 undefined 가
+// 된다(tsconfig 에 esModuleInterop 가 꺼져 있을 때). CJS require 형식으로 직접 가져와 callable
+// 함수로 사용한다.
+import sharp = require("sharp");
 import { Media } from "@entities/media.entity";
 
 // 프론트(expo-image-manipulator)와 동일한 정책: 긴 변 ≤ 1200px, JPEG 품질 75.
@@ -121,7 +124,8 @@ export class MediaService {
 
   // 프론트의 expo-image-manipulator 압축과 동일한 정책으로 이미지를 리사이즈/재인코딩한다.
   private async compress(file: Express.Multer.File): Promise<ProcessedFile> {
-    let pipeline = sharp(file.buffer).rotate(); // EXIF orientation 보정
+    // sharp 는 CJS export 라 타입상 callable 로 인식되지 않으므로 호출부에서 캐스트한다.
+    let pipeline = (sharp as unknown as (input: Buffer) => sharp.Sharp)(file.buffer).rotate(); // EXIF orientation 보정
     const { width, height } = await pipeline.metadata();
 
     if (
