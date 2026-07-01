@@ -7,6 +7,7 @@ import { WatchHistory } from '@entities/watch-history.entity';
 import { Content } from '@entities/content.entity';
 import { RewardsService } from '../rewards/rewards.service';
 import { RewardActionType } from '../rewards/constants/reward.constants';
+import { RewardAction } from '../rewards/constants/reward-events';
 
 describe('WatchHistoryService', () => {
   let service: WatchHistoryService;
@@ -90,8 +91,9 @@ describe('WatchHistoryService', () => {
         expect(rewardsService.enqueueReward).toHaveBeenCalledWith({
           memberId: 'user-1',
           actionType: RewardActionType.VIDEO_WATCHED,
-          refId: 'wh-1',
           refType: 'watch_history',
+          refAction: RewardAction.CREATE,
+          refId: 'wh-1',
           metadata: { contentId: 'content-1', pointApplyable: true },
         });
       });
@@ -135,8 +137,9 @@ describe('WatchHistoryService', () => {
         expect(rewardsService.enqueueReward).toHaveBeenCalledWith({
           memberId: 'user-1',
           actionType: RewardActionType.VIDEO_WATCHED,
-          refId: 'wh-new',
           refType: 'watch_history',
+          refAction: RewardAction.CREATE,
+          refId: 'wh-new',
           metadata: { contentId: 'content-1', pointApplyable: true },
         });
       });

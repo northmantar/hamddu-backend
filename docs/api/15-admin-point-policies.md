@@ -137,3 +137,62 @@ No Content
 | --- | --- |
 | 403 | "접근 권한이 없습니다." |
 | 404 | "정책을 찾을 수 없습니다." |
+
+---
+
+## 15.4 액션 타입 / 보상 카탈로그 (`/points/action-types`, `/points/reward-events`)
+
+보상 정책 v2: 정책의 `actionType`은 `point_action_types`(보상 카탈로그)를 참조하고,
+카탈로그는 `(ref_type, ref_action)` = "어떤 테이블의 어떤 CRUD 이벤트"로 보상을 매칭한다. (ref/reward-policy-v2.md)
+
+### `GET /points/action-types`
+
+```json
+{
+  "data": [
+    { "code": "WATCH", "labelKo": "시청", "refType": "watch_history", "refAction": "CREATE", "isActive": true, "createdAt": "...", "updatedAt": "..." },
+    { "code": "BOARD_CREATE", "labelKo": "게시글 작성", "refType": "board", "refAction": "CREATE", "isActive": true, "createdAt": "...", "updatedAt": "..." }
+  ]
+}
+```
+
+### `GET /points/reward-events`
+
+계측된(emit 되는) 보상 이벤트 레지스트리. 액션 타입 생성 시 `(refType, refAction)` 선택지.
+
+```json
+{
+  "data": [
+    { "refType": "board", "refAction": "CREATE" },
+    { "refType": "board_comment", "refAction": "CREATE" },
+    { "refType": "challenge", "refAction": "CREATE" },
+    { "refType": "watch_history", "refAction": "CREATE" }
+  ]
+}
+```
+
+### `POST /points/action-types` (관리자)
+
+```json
+{ "code": "BOARD_CREATE", "labelKo": "게시글 작성", "refType": "board", "refAction": "CREATE" }
+```
+
+| 필드 | 타입 | 필수 | 유효성 |
+| --- | --- | --- | --- |
+| `code` | string | Yes | 1~50자, unique |
+| `labelKo` | string | Yes | 1~100자 |
+| `refType` | string | Yes | `GET /points/reward-events` 에 등록된 값만 |
+| `refAction` | enum | Yes | `CREATE`/`READ`/`UPDATE`/`DELETE`. `(refType, refAction)` 레지스트리 등록 + unique |
+
+| 상태 코드 | errorMessage |
+| --- | --- |
+| 400 | "계측되지 않은 보상 이벤트입니다: ({refType}, {refAction}). ..." |
+| 409 | "이미 존재하는 액션 코드입니다: {code}" / "이미 등록된 보상 이벤트입니다: ({refType}, {refAction}) → {code}" |
+
+### `PATCH /points/action-types/:code` (관리자)
+
+`labelKo`, `isActive` 부분 수정. `(ref_type, ref_action)`은 변경 불가.
+
+### `DELETE /points/action-types/:code` (관리자)
+
+참조 정책이 있으면 409.

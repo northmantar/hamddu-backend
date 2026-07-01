@@ -8,6 +8,7 @@ import { XpProcessor } from './processors/xp.processor';
 import { PointsModule } from '../points/points.module';
 import { XpModule } from '../xp/xp.module';
 import { PointEarningPolicy } from '@entities/point-earning-policy.entity';
+import { PointActionTypeEntity } from '@entities/point-action-type.entity';
 import { PointTransaction } from '@entities/point-transaction.entity';
 import { XpTransaction } from '@entities/xp-transaction.entity';
 
@@ -24,7 +25,12 @@ const JOB_OPTIONS = {
       { name: POINT_QUEUE, defaultJobOptions: JOB_OPTIONS },
       { name: XP_QUEUE,    defaultJobOptions: JOB_OPTIONS },
     ),
-    TypeOrmModule.forFeature([PointEarningPolicy, PointTransaction, XpTransaction]),
+    TypeOrmModule.forFeature([
+      PointEarningPolicy,
+      PointActionTypeEntity,
+      PointTransaction,
+      XpTransaction,
+    ]),
     PointsModule,
     XpModule,
   ],

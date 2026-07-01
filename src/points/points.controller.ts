@@ -141,6 +141,13 @@ export class PointsController {
     return { data: actionTypes.map(PointActionTypeResponseDto.from) };
   }
 
+  @ApiOperation({ summary: "계측된 보상 이벤트 레지스트리 조회 (액션 타입 생성 시 선택지)" })
+  @ApiResponse({ status: 200, description: "보상 이벤트 (refType, refAction) 목록 반환" })
+  @Get("reward-events")
+  getRewardEvents(): { data: { refType: string; refAction: string }[] } {
+    return { data: this.pointsService.getRewardEvents().map((e) => ({ ...e })) };
+  }
+
   @ApiOperation({ summary: "포인트 액션 타입 생성 (관리자)" })
   @ApiResponse({ status: 201, description: "액션 타입 생성 완료" })
   @ApiResponse({ status: 409, description: "이미 존재하는 액션 코드" })

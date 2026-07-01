@@ -141,10 +141,20 @@ export interface UpdatePointPolicyDto {
   isActive?: boolean;
 }
 
-// Point action type lookup
+export type RewardAction = 'CREATE' | 'READ' | 'UPDATE' | 'DELETE';
+
+// 계측된 보상 이벤트 (GET /points/reward-events)
+export interface RewardEvent {
+  refType: string;
+  refAction: RewardAction;
+}
+
+// Point action type lookup (보상 카탈로그)
 export interface PointActionType {
   code: string;
   labelKo: string;
+  refType: string;
+  refAction: RewardAction;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -153,6 +163,8 @@ export interface PointActionType {
 export interface CreateActionTypeDto {
   code: string;
   labelKo: string;
+  refType: string;
+  refAction: RewardAction;
 }
 
 export interface UpdateActionTypeDto {

@@ -6,10 +6,11 @@ import { XpProcessor } from './xp.processor';
 import { XpService } from '../../xp/xp.service';
 import { XpTransaction } from '@entities/xp-transaction.entity';
 import { RewardActionType, XP_AMOUNT_MAP } from '../constants/reward.constants';
+import { RewardAction } from '../constants/reward-events';
 import { RewardJobPayload } from '../dto/reward-job.dto';
 
-function makeJob(data: RewardJobPayload): Job<RewardJobPayload> {
-  return { id: 'job-1', data } as Job<RewardJobPayload>;
+function makeJob(data: Omit<RewardJobPayload, 'refAction'> & { refAction?: RewardAction }): Job<RewardJobPayload> {
+  return { id: 'job-1', data: { refAction: RewardAction.CREATE, ...data } } as Job<RewardJobPayload>;
 }
 
 describe('XpProcessor', () => {

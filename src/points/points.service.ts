@@ -17,6 +17,11 @@ import { CreatePointPolicyDto } from "./dto/create-policy.dto";
 import { UpdatePointPolicyDto } from "./dto/update-policy.dto";
 import { PointTransactionQueryDto } from "./dto/point-query.dto";
 import { CreatePointActionTypeDto, UpdatePointActionTypeDto } from "./dto/action-type.dto";
+import {
+  REWARD_EVENTS,
+  RewardEvent,
+  isRegisteredRewardEvent,
+} from "../rewards/constants/reward-events";
 import { PaginationMeta } from "../boards/dto/pagination.dto";
 
 @Injectable()
@@ -178,14 +183,35 @@ export class PointsService {
     return this.actionTypeRepo.find({ order: { code: "ASC" } });
   }
 
+  /** 코드에 계측된(emit 되는) 보상 이벤트 레지스트리 — 어드민 카탈로그 생성 시 선택지 */
+  getRewardEvents(): readonly RewardEvent[] {
+    return REWARD_EVENTS;
+  }
+
   async createActionType(dto: CreatePointActionTypeDto): Promise<PointActionTypeEntity> {
+    // 레지스트리 검증: 실제로 emit 되는 (refType, refAction) 만 카탈로그 생성 허용
+    if (!isRegisteredRewardEvent(dto.refType, dto.refAction)) {
+      throw new BadRequestException(
+        `계측되지 않은 보상 이벤트입니다: (${dto.refType}, ${dto.refAction}). 레지스트리에 먼저 등록되어야 합니다.`,
+      );
+    }
     const exists = await this.actionTypeRepo.findOne({ where: { code: dto.code } });
     if (exists) {
       throw new ConflictException(`이미 존재하는 액션 코드입니다: ${dto.code}`);
     }
+    const dup = await this.actionTypeRepo.findOne({
+      where: { refType: dto.refType, refAction: dto.refAction },
+    });
+    if (dup) {
+      throw new ConflictException(
+        `이미 등록된 보상 이벤트입니다: (${dto.refType}, ${dto.refAction}) → ${dup.code}`,
+      );
+    }
     const at = this.actionTypeRepo.create({
       code: dto.code,
       labelKo: dto.labelKo,
+      refType: dto.refType,
+      refAction: dto.refAction,
       isActive: true,
     });
     return this.actionTypeRepo.save(at);

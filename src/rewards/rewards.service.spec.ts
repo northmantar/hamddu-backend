@@ -3,6 +3,7 @@ import { getQueueToken } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { RewardsService } from './rewards.service';
 import { POINT_QUEUE, XP_QUEUE, RewardActionType } from './constants/reward.constants';
+import { RewardAction } from './constants/reward-events';
 import { RewardJobPayload } from './dto/reward-job.dto';
 
 describe('RewardsService', () => {
@@ -13,8 +14,9 @@ describe('RewardsService', () => {
   const mockPayload: RewardJobPayload = {
     memberId: 'user-123',
     actionType: RewardActionType.CHALLENGE_CREATED,
-    refId: 'challenge-abc',
     refType: 'challenge',
+    refAction: RewardAction.CREATE,
+    refId: 'challenge-abc',
     metadata: { pointApplyable: true },
   };
 
@@ -66,8 +68,9 @@ describe('RewardsService', () => {
       const watchPayload: RewardJobPayload = {
         memberId: 'user-456',
         actionType: RewardActionType.VIDEO_WATCHED,
-        refId: 'wh-abc',
         refType: 'watch_history',
+        refAction: RewardAction.CREATE,
+        refId: 'wh-abc',
         metadata: { contentId: 'content-1', pointApplyable: false },
       };
 

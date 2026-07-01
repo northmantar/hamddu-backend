@@ -3,20 +3,21 @@ import { Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Job } from 'bullmq';
-import { POINT_QUEUE, RewardActionType } from '../constants/reward.constants';
+import { POINT_QUEUE } from '../constants/reward.constants';
 import { RewardJobPayload } from '../dto/reward-job.dto';
 import { PointsService } from '../../points/points.service';
 import { PointEarningPolicy } from '@entities/point-earning-policy.entity';
+import { PointActionTypeEntity } from '@entities/point-action-type.entity';
 import { PointTransaction } from '@entities/point-transaction.entity';
-import { PointActionType } from '@enums/point.enum';
 import { RedisService } from '../../redis/redis.service';
 
-const ACTION_TYPE_MAP: Partial<Record<RewardActionType, PointActionType>> = {
-  [RewardActionType.CHALLENGE_CREATED]: PointActionType.CHALLENGE,
-  [RewardActionType.VIDEO_WATCHED]:     PointActionType.WATCH,
-  [RewardActionType.COMMENT_CREATED]:   PointActionType.COMMENT,
-};
-
+/**
+ * 데이터 주도 포인트 지급 (ref/reward-policy-v2.md §5)
+ *  - (refType, refAction) → 활성 카탈로그 → 활성 정책 N개 → 전부 지급
+ *  - isOneTime = 유저 평생 1회: dedup (memberId, policyId)
+ *  - 반복형: 같은 이벤트(refId) 재처리만 방지: dedup (memberId, policyId, refId)
+ *  - metadata.pointApplyable === false 이면 포인트 스킵 (도메인 조건은 발행 시점 metadata 로 전달)
+ */
 @Processor(POINT_QUEUE)
 export class PointProcessor extends WorkerHost {
   private readonly logger = new Logger(PointProcessor.name);
@@ -24,6 +25,8 @@ export class PointProcessor extends WorkerHost {
   constructor(
     private readonly pointsService: PointsService,
     private readonly redis: RedisService,
+    @InjectRepository(PointActionTypeEntity)
+    private readonly actionTypeRepo: Repository<PointActionTypeEntity>,
     @InjectRepository(PointEarningPolicy)
     private readonly policyRepo: Repository<PointEarningPolicy>,
     @InjectRepository(PointTransaction)
@@ -33,62 +36,83 @@ export class PointProcessor extends WorkerHost {
   }
 
   async process(job: Job<RewardJobPayload>): Promise<void> {
-    const { memberId, actionType, refId, refType, metadata } = job.data;
+    const { memberId, refType, refAction, refId, metadata } = job.data;
 
-    // VIDEO_WATCHED의 경우 content.pointApplyable 체크
-    if (actionType === RewardActionType.VIDEO_WATCHED && !metadata?.pointApplyable) {
-      return;
-    }
+    // 도메인 조건: 발행 측에서 pointApplyable=false 를 명시하면 포인트 미지급 (XP 는 별개)
+    if (metadata?.pointApplyable === false) return;
 
-    const pointActionType = ACTION_TYPE_MAP[actionType];
-    if (!pointActionType) {
-      // BOARD_CREATED 등 포인트 정책이 없는 액션 타입 — skip
-      return;
-    }
-
-    // Layer 1: Redis 빠른 경로
-    const idempotencyKey = `reward:point:done:${refType}:${refId}`;
-    const alreadyDone = await this.redis.get(idempotencyKey);
-    if (alreadyDone) return;
-
-    // 활성화된 정책 조회
-    const policy = await this.policyRepo.findOne({
-      where: { actionType: pointActionType, isActive: true },
+    // 1) 카탈로그 매칭 — 보상 대상 이벤트인지
+    const catalog = await this.actionTypeRepo.findOne({
+      where: { refType, refAction, isActive: true },
     });
-    if (!policy) return;
+    if (!catalog) return; // 보상 대상 아님 → no-op
 
-    // Layer 2: DB 중복 체크 (isOneTime 정책)
-    if (policy.isOneTime) {
-      const existing = await this.txRepo.findOne({
-        where: { memberId, policyId: policy.id, refId },
-      });
-      if (existing) return;
-    }
+    // 2) 활성 정책 (N개 모두 지급)
+    const policies = await this.policyRepo.find({
+      where: { actionType: catalog.code, isActive: true },
+    });
+    if (policies.length === 0) return;
 
-    try {
-      await this.pointsService.earn({
-        memberId,
-        policyId: policy.id,
-        refType,
-        refId,
-        description: this.buildDescription(actionType),
-      });
+    const description = `${catalog.labelKo} 보상`;
 
-      // 처리 완료 마킹 (24시간 TTL)
-      await this.redis.set(idempotencyKey, '1', 86400);
-    } catch (error) {
-      this.logger.error(`Point earn failed for job ${job.id}: ${(error as Error).message}`);
-      throw error;
+    for (const policy of policies) {
+      try {
+        if (await this.alreadyRewarded(policy, memberId, refType, refId)) continue;
+
+        await this.pointsService.earn({
+          memberId,
+          policyId: policy.id,
+          refType,
+          refId,
+          description,
+        });
+
+        await this.markDone(policy, memberId, refType, refId);
+      } catch (error) {
+        this.logger.error(
+          `Point earn failed (policy=${policy.id}, job=${job.id}): ${(error as Error).message}`,
+        );
+        throw error; // 잡 재시도
+      }
     }
   }
 
-  private buildDescription(actionType: RewardActionType): string {
-    const map: Record<RewardActionType, string> = {
-      [RewardActionType.CHALLENGE_CREATED]: '챌린지 완료 보상',
-      [RewardActionType.VIDEO_WATCHED]:     '영상 시청 완료 보상',
-      [RewardActionType.BOARD_CREATED]:     '게시글 작성 보상',
-      [RewardActionType.COMMENT_CREATED]:   '댓글 작성 보상',
-    };
-    return map[actionType];
+  /** 멱등 체크: 평생1회는 (member, policy), 반복형은 (member, policy, refId) */
+  private async alreadyRewarded(
+    policy: PointEarningPolicy,
+    memberId: string,
+    refType: string,
+    refId: string,
+  ): Promise<boolean> {
+    if (await this.redis.get(this.redisKey(policy, memberId, refType, refId))) {
+      return true;
+    }
+    const where = policy.isOneTime
+      ? { memberId, policyId: policy.id }
+      : { memberId, policyId: policy.id, refId };
+    const existing = await this.txRepo.findOne({ where });
+    return !!existing;
+  }
+
+  private async markDone(
+    policy: PointEarningPolicy,
+    memberId: string,
+    refType: string,
+    refId: string,
+  ): Promise<void> {
+    // 평생1회는 길게(30일) — Redis 는 빠른 경로일 뿐, 최종 권위는 DB
+    const ttl = policy.isOneTime ? 86400 * 30 : 86400;
+    await this.redis.set(this.redisKey(policy, memberId, refType, refId), '1', ttl);
+  }
+
+  private redisKey(
+    policy: PointEarningPolicy,
+    memberId: string,
+    refType: string,
+    refId: string,
+  ): string {
+    return policy.isOneTime
+      ? `reward:point:once:${policy.id}:${memberId}`
+      : `reward:point:done:${policy.id}:${refType}:${refId}`;
   }
 }

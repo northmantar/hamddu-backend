@@ -230,6 +230,13 @@ function ActionTypesTab() {
     { key: 'code', header: '코드', render: (at: PointActionType) => <code className="font-mono">{at.code}</code> },
     { key: 'labelKo', header: '한글 라벨', render: (at: PointActionType) => at.labelKo },
     {
+      key: 'event',
+      header: '보상 이벤트',
+      render: (at: PointActionType) => (
+        <span className="font-mono text-xs text-gray-600">{at.refType} / {at.refAction}</span>
+      ),
+    },
+    {
       key: 'isActive',
       header: '상태',
       render: (at: PointActionType) => (

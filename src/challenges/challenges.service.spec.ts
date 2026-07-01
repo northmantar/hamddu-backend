@@ -8,6 +8,7 @@ import { Content } from '@entities/content.entity';
 import { Media } from '@entities/media.entity';
 import { RewardsService } from '../rewards/rewards.service';
 import { RewardActionType } from '../rewards/constants/reward.constants';
+import { RewardAction } from '../rewards/constants/reward-events';
 
 describe('ChallengesService', () => {
   let service: ChallengesService;
@@ -268,8 +269,9 @@ describe('ChallengesService', () => {
       expect(rewardsService.enqueueReward).toHaveBeenCalledWith({
         memberId: 'user-1',
         actionType: RewardActionType.CHALLENGE_CREATED,
-        refId: 'challenge-1',
         refType: 'challenge',
+        refAction: RewardAction.CREATE,
+        refId: 'challenge-1',
         metadata: { pointApplyable: true },
       });
     });

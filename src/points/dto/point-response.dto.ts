@@ -148,6 +148,12 @@ export class PointActionTypeResponseDto {
   @ApiProperty({ example: "시청" })
   labelKo: string;
 
+  @ApiProperty({ example: "watch_history" })
+  refType: string;
+
+  @ApiProperty({ example: "CREATE" })
+  refAction: string;
+
   @ApiProperty({ example: true })
   isActive: boolean;
 
@@ -161,6 +167,8 @@ export class PointActionTypeResponseDto {
     return {
       code: at.code,
       labelKo: at.labelKo,
+      refType: at.refType,
+      refAction: at.refAction,
       isActive: at.isActive,
       createdAt: at.createdAt,
       updatedAt: at.updatedAt,

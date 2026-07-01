@@ -12,6 +12,7 @@ import { ChallengeQueryDto } from "./dto/challenge-query.dto";
 import { PaginationQueryDto, PaginationMeta } from "../boards/dto/pagination.dto";
 import { RewardsService } from "../rewards/rewards.service";
 import { RewardActionType } from "../rewards/constants/reward.constants";
+import { RewardAction } from "../rewards/constants/reward-events";
 
 @Injectable()
 export class ChallengesService {
@@ -130,8 +131,9 @@ export class ChallengesService {
     await this.rewardsService.enqueueReward({
       memberId,
       actionType: RewardActionType.CHALLENGE_CREATED,
-      refId: saved.id,
       refType: 'challenge',
+      refAction: RewardAction.CREATE,
+      refId: saved.id,
       metadata: { pointApplyable: content.pointApplyable },
     });
 

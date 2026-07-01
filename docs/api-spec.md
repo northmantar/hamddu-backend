@@ -151,6 +151,17 @@ Authorization: Bearer <access_token>
 | `SIGNUP` | 회원가입 |
 | `DAILY_LOGIN` | 일일 로그인 |
 
+### `rewardAction` (보상 이벤트 CRUD)
+
+> `point_action_types.ref_action` 등에서 사용. 보상 이벤트가 어떤 변경인지.
+
+| 값 | 설명 |
+| --- | --- |
+| `CREATE` | 생성 |
+| `READ` | 조회 |
+| `UPDATE` | 수정 |
+| `DELETE` | 삭제 |
+
 ### `reportReason`
 
 | 값 | 설명 |
@@ -272,7 +283,8 @@ Authorization: Bearer <access_token>
 |  | GET | /points/transactions | 인증 | 거래 내역 조회 |
 |  | POST | /points/earn | 관리자 | 포인트 지급 |
 |  | GET | /points/policies | 관리자 | 지급 정책 목록 |
-|  | GET | /points/action-types | 인증 | 액션 타입 목록 (lookup) |
+|  | GET | /points/action-types | 인증 | 액션 타입(보상 카탈로그) 목록 |
+|  | GET | /points/reward-events | 인증 | 계측된 보상 이벤트 레지스트리 |
 | **XP** | GET | /xp/wallet | 인증 | XP 지갑 조회 |
 |  | GET | /xp/transactions | 인증 | 거래 내역 조회 |
 |  | POST | /xp/earn | 관리자 | XP 지급 |
