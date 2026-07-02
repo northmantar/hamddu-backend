@@ -4,19 +4,61 @@ import { Repository } from 'typeorm';
 import { Job } from 'bullmq';
 import { XpProcessor } from './xp.processor';
 import { XpService } from '../../xp/xp.service';
+import { RedisService } from '../../redis/redis.service';
+import { XpEarningPolicy } from '@entities/xp-earning-policy.entity';
+import { XpActionTypeEntity } from '@entities/xp-action-type.entity';
 import { XpTransaction } from '@entities/xp-transaction.entity';
-import { RewardActionType, XP_AMOUNT_MAP } from '../constants/reward.constants';
 import { RewardAction } from '../constants/reward-events';
 import { RewardJobPayload } from '../dto/reward-job.dto';
 
-function makeJob(data: Omit<RewardJobPayload, 'refAction'> & { refAction?: RewardAction }): Job<RewardJobPayload> {
-  return { id: 'job-1', data: { refAction: RewardAction.CREATE, ...data } } as Job<RewardJobPayload>;
+function makeJob(data: RewardJobPayload): Job<RewardJobPayload> {
+  return { id: 'job-1', data } as Job<RewardJobPayload>;
 }
 
-describe('XpProcessor', () => {
+describe('XpProcessor (data-driven)', () => {
   let processor: XpProcessor;
   let xpService: jest.Mocked<XpService>;
+  let redis: jest.Mocked<RedisService>;
+  let actionTypeRepo: jest.Mocked<Repository<XpActionTypeEntity>>;
+  let policyRepo: jest.Mocked<Repository<XpEarningPolicy>>;
   let txRepo: jest.Mocked<Repository<XpTransaction>>;
+
+  const challengeCatalog: Partial<XpActionTypeEntity> = {
+    code: 'CHALLENGE',
+    labelKo: '챌린지 작성',
+    refType: 'challenge',
+    refAction: RewardAction.CREATE,
+    isActive: true,
+  };
+
+  const signupCatalog: Partial<XpActionTypeEntity> = {
+    code: 'USER_SIGNUP',
+    labelKo: '회원가입',
+    refType: 'users',
+    refAction: RewardAction.CREATE,
+    isActive: true,
+  };
+
+  const repeatablePolicy: Partial<XpEarningPolicy> = {
+    id: 'xpol-ch',
+    actionType: 'CHALLENGE',
+    xpAmount: 50,
+    isOneTime: false,
+    isActive: true,
+  };
+
+  const oneTimePolicy: Partial<XpEarningPolicy> = {
+    id: 'xpol-signup',
+    actionType: 'USER_SIGNUP',
+    xpAmount: 100,
+    isOneTime: true,
+    isActive: true,
+  };
+
+  const challengeJob = () =>
+    makeJob({ memberId: 'user-1', refType: 'challenge', refAction: RewardAction.CREATE, refId: 'ch-1' });
+  const signupJob = () =>
+    makeJob({ memberId: 'user-1', refType: 'users', refAction: RewardAction.CREATE, refId: 'user-1' });
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -26,135 +68,126 @@ describe('XpProcessor', () => {
           provide: XpService,
           useValue: {
             earn: jest.fn().mockResolvedValue({
-              transaction: {},
-              newTotalXp: 50,
-              newLevel: 1,
-              leveledUp: false,
+              transaction: {}, newTotalXp: 50, newLevel: 1, leveledUp: false,
             }),
           },
         },
-        {
-          provide: getRepositoryToken(XpTransaction),
-          useValue: { findOne: jest.fn() },
-        },
+        { provide: RedisService, useValue: { get: jest.fn(), set: jest.fn() } },
+        { provide: getRepositoryToken(XpActionTypeEntity), useValue: { findOne: jest.fn() } },
+        { provide: getRepositoryToken(XpEarningPolicy), useValue: { find: jest.fn() } },
+        { provide: getRepositoryToken(XpTransaction), useValue: { findOne: jest.fn() } },
       ],
     }).compile();
 
     processor = module.get(XpProcessor);
     xpService = module.get(XpService);
-    txRepo    = module.get(getRepositoryToken(XpTransaction));
+    redis = module.get(RedisService);
+    actionTypeRepo = module.get(getRepositoryToken(XpActionTypeEntity));
+    policyRepo = module.get(getRepositoryToken(XpEarningPolicy));
+    txRepo = module.get(getRepositoryToken(XpTransaction));
   });
 
   it('should be defined', () => {
     expect(processor).toBeDefined();
   });
 
-  describe('DB duplicate check', () => {
-    it('should skip if XpTransaction with same memberId+refId+refType exists', async () => {
-      txRepo.findOne.mockResolvedValue({ id: 'tx-existing' } as XpTransaction);
-
-      const job = makeJob({
-        memberId: 'user-1',
-        actionType: RewardActionType.CHALLENGE_CREATED,
-        refId: 'ch-1',
-        refType: 'challenge',
-      });
-
-      await processor.process(job);
-
+  describe('카탈로그/정책 매칭', () => {
+    it('활성 카탈로그 없으면 no-op', async () => {
+      actionTypeRepo.findOne.mockResolvedValue(null);
+      await processor.process(challengeJob());
       expect(xpService.earn).not.toHaveBeenCalled();
     });
 
-    it('should proceed if no prior transaction found', async () => {
+    it('활성 정책 없으면 스킵', async () => {
+      actionTypeRepo.findOne.mockResolvedValue(challengeCatalog as XpActionTypeEntity);
+      policyRepo.find.mockResolvedValue([]);
+      await processor.process(challengeJob());
+      expect(xpService.earn).not.toHaveBeenCalled();
+    });
+
+    it('활성 정책 N개 모두 지급', async () => {
+      actionTypeRepo.findOne.mockResolvedValue(challengeCatalog as XpActionTypeEntity);
+      policyRepo.find.mockResolvedValue([
+        { ...repeatablePolicy, id: 'p1' } as XpEarningPolicy,
+        { ...repeatablePolicy, id: 'p2' } as XpEarningPolicy,
+      ]);
+      redis.get.mockResolvedValue(null);
       txRepo.findOne.mockResolvedValue(null);
 
-      const job = makeJob({
-        memberId: 'user-1',
-        actionType: RewardActionType.CHALLENGE_CREATED,
-        refId: 'ch-1',
-        refType: 'challenge',
-      });
+      await processor.process(challengeJob());
 
-      await processor.process(job);
-
-      expect(xpService.earn).toHaveBeenCalled();
+      expect(xpService.earn).toHaveBeenCalledTimes(2);
     });
   });
 
-  describe('XP amount per action type', () => {
-    const cases: [RewardActionType, string][] = [
-      [RewardActionType.CHALLENGE_CREATED, 'challenge'],
-      [RewardActionType.VIDEO_WATCHED,     'watch_history'],
-      [RewardActionType.BOARD_CREATED,     'board'],
-      [RewardActionType.COMMENT_CREATED,   'board_comment'],
-    ];
+  describe('멱등', () => {
+    it('Redis 키 있으면 스킵', async () => {
+      actionTypeRepo.findOne.mockResolvedValue(challengeCatalog as XpActionTypeEntity);
+      policyRepo.find.mockResolvedValue([repeatablePolicy as XpEarningPolicy]);
+      redis.get.mockResolvedValue('1');
+      await processor.process(challengeJob());
+      expect(xpService.earn).not.toHaveBeenCalled();
+    });
 
-    test.each(cases)('%s should award %s XP amount from map', async (actionType, refType) => {
+    it('반복형: (member, refType, refId) 로 dedup', async () => {
+      actionTypeRepo.findOne.mockResolvedValue(challengeCatalog as XpActionTypeEntity);
+      policyRepo.find.mockResolvedValue([repeatablePolicy as XpEarningPolicy]);
+      redis.get.mockResolvedValue(null);
       txRepo.findOne.mockResolvedValue(null);
 
-      const job = makeJob({ memberId: 'user-1', actionType, refId: 'ref-1', refType });
+      await processor.process(challengeJob());
 
-      await processor.process(job);
+      expect(txRepo.findOne).toHaveBeenCalledWith({
+        where: { memberId: 'user-1', refType: 'challenge', refId: 'ch-1' },
+      });
+    });
 
-      expect(xpService.earn).toHaveBeenCalledWith(
-        expect.objectContaining({ amount: XP_AMOUNT_MAP[actionType] }),
-      );
+    it('isOneTime: (member, refType) 로 dedup + 기존 있으면 스킵', async () => {
+      actionTypeRepo.findOne.mockResolvedValue(signupCatalog as XpActionTypeEntity);
+      policyRepo.find.mockResolvedValue([oneTimePolicy as XpEarningPolicy]);
+      redis.get.mockResolvedValue(null);
+      txRepo.findOne.mockResolvedValue({ id: 'existing' } as XpTransaction);
+
+      await processor.process(signupJob());
+
+      expect(txRepo.findOne).toHaveBeenCalledWith({
+        where: { memberId: 'user-1', refType: 'users' },
+      });
+      expect(xpService.earn).not.toHaveBeenCalled();
     });
   });
 
-  describe('successful earn', () => {
-    it('should call xpService.earn with correct params', async () => {
+  describe('지급', () => {
+    it('정책 금액·label_ko 설명으로 지급 + done 키 세팅', async () => {
+      actionTypeRepo.findOne.mockResolvedValue(challengeCatalog as XpActionTypeEntity);
+      policyRepo.find.mockResolvedValue([repeatablePolicy as XpEarningPolicy]);
+      redis.get.mockResolvedValue(null);
       txRepo.findOne.mockResolvedValue(null);
 
-      const job = makeJob({
-        memberId: 'user-1',
-        actionType: RewardActionType.COMMENT_CREATED,
-        refId: 'comment-1',
-        refType: 'board_comment',
-      });
-
-      await processor.process(job);
+      await processor.process(challengeJob());
 
       expect(xpService.earn).toHaveBeenCalledWith({
         memberId: 'user-1',
-        amount: XP_AMOUNT_MAP[RewardActionType.COMMENT_CREATED],
-        refType: 'board_comment',
-        refId: 'comment-1',
-        description: '댓글 작성 보상',
-      });
-    });
-
-    it('should not throw on level-up (just logs)', async () => {
-      txRepo.findOne.mockResolvedValue(null);
-      (xpService.earn as jest.Mock).mockResolvedValue({
-        transaction: {},
-        newTotalXp: 200,
-        newLevel: 2,
-        leveledUp: true,
-      });
-
-      const job = makeJob({
-        memberId: 'user-1',
-        actionType: RewardActionType.CHALLENGE_CREATED,
-        refId: 'ch-1',
+        amount: 50,
         refType: 'challenge',
+        refId: 'ch-1',
+        description: '챌린지 작성 보상',
       });
-
-      await expect(processor.process(job)).resolves.not.toThrow();
+      expect(redis.set).toHaveBeenCalledWith(
+        'reward:xp:done:challenge:ch-1',
+        '1',
+        86400,
+      );
     });
 
-    it('should re-throw error to trigger BullMQ retry', async () => {
+    it('earn 실패 시 재시도되도록 throw', async () => {
+      actionTypeRepo.findOne.mockResolvedValue(challengeCatalog as XpActionTypeEntity);
+      policyRepo.find.mockResolvedValue([repeatablePolicy as XpEarningPolicy]);
+      redis.get.mockResolvedValue(null);
       txRepo.findOne.mockResolvedValue(null);
       (xpService.earn as jest.Mock).mockRejectedValue(new Error('DB error'));
 
-      const job = makeJob({
-        memberId: 'user-1',
-        actionType: RewardActionType.CHALLENGE_CREATED,
-        refId: 'ch-1',
-        refType: 'challenge',
-      });
-
-      await expect(processor.process(job)).rejects.toThrow('DB error');
+      await expect(processor.process(challengeJob())).rejects.toThrow('DB error');
     });
   });
 });

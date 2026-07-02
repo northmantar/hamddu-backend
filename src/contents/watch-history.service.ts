@@ -7,7 +7,6 @@ import { CreateWatchHistoryDto } from "./dto/create-watch-history.dto";
 import { PaginationQueryDto, PaginationMeta } from "../boards/dto/pagination.dto";
 import { ContentType } from "@enums/content.enum";
 import { RewardsService } from "../rewards/rewards.service";
-import { RewardActionType } from "../rewards/constants/reward.constants";
 import { RewardAction } from "../rewards/constants/reward-events";
 
 @Injectable()
@@ -76,7 +75,6 @@ export class WatchHistoryService {
       ) {
         await this.rewardsService.enqueueReward({
           memberId,
-          actionType: RewardActionType.VIDEO_WATCHED,
           refType: 'tutorial_watch',
           refAction: RewardAction.CREATE,
           refId: existing.id,
@@ -104,7 +102,6 @@ export class WatchHistoryService {
     if (content.type === ContentType.SYMBOL && dto.watchRate >= 100) {
       await this.rewardsService.enqueueReward({
         memberId,
-        actionType: RewardActionType.VIDEO_WATCHED,
         refType: 'tutorial_watch',
         refAction: RewardAction.CREATE,
         refId: saved.id,

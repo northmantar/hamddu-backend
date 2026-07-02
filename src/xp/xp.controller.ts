@@ -185,6 +185,13 @@ export class XpController {
     return { data: types.map(XpActionTypeResponseDto.from) };
   }
 
+  @ApiOperation({ summary: "계측된 보상 이벤트 레지스트리 조회 (포인트와 공유)" })
+  @ApiResponse({ status: 200, description: "보상 이벤트 (refType, refAction) 목록 반환" })
+  @Get("reward-events")
+  getRewardEvents(): { data: { refType: string; refAction: string }[] } {
+    return { data: this.xpService.getRewardEvents().map((e) => ({ ...e })) };
+  }
+
   @ApiOperation({ summary: "XP 액션 타입 생성 (관리자)" })
   @ApiResponse({ status: 201, description: "액션 타입 생성 완료" })
   @ApiResponse({ status: 409, description: "이미 존재하는 액션 코드" })

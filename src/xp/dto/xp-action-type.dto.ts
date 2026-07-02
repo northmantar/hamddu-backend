@@ -1,8 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsBoolean, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
+import { IsBoolean, IsEnum, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
+import { RewardAction } from "../../rewards/constants/reward-events";
 
 export class CreateXpActionTypeDto {
-  @ApiProperty({ description: "액션 코드", example: "SIGNUP" })
+  @ApiProperty({ description: "액션 코드", example: "USER_SIGNUP" })
   @IsString()
   @MinLength(1)
   @MaxLength(50)
@@ -13,6 +14,16 @@ export class CreateXpActionTypeDto {
   @MinLength(1)
   @MaxLength(100)
   labelKo: string;
+
+  @ApiProperty({ description: "참조 테이블명 (보상 이벤트 레지스트리에 등록된 값)", example: "users" })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(50)
+  refType: string;
+
+  @ApiProperty({ description: "CRUD 액션", enum: RewardAction, example: RewardAction.CREATE })
+  @IsEnum(RewardAction)
+  refAction: RewardAction;
 }
 
 export class UpdateXpActionTypeDto {

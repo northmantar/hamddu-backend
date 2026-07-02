@@ -17,7 +17,6 @@ import { SurveyDto } from './dto/survey.dto';
 import { RedisService } from '../redis/redis.service';
 import { NicknameSequenceService } from '../nicknames/nickname-sequence.service';
 import { RewardsService } from '../rewards/rewards.service';
-import { RewardActionType } from '../rewards/constants/reward.constants';
 import { RewardAction } from '../rewards/constants/reward-events';
 
 @Injectable()
@@ -68,7 +67,6 @@ export class UsersService {
     // 회원가입 보상 (포인트 + XP 큐로 fan-out)
     await this.rewardsService.enqueueReward({
       memberId: saved.id,
-      actionType: RewardActionType.USER_SIGNUP,
       refType: 'users',
       refAction: RewardAction.CREATE,
       refId: saved.id,

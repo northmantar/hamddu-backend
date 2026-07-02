@@ -21,6 +21,6 @@ export class RewardsService {
       this.xpQueue.add('earn', payload,    { jobId: `xp:${jobId}` }),
     ]);
 
-    this.logger.debug(`Reward enqueued: ${jobId} (${payload.actionType})`);
+    this.logger.debug(`Reward enqueued: ${jobId} (${payload.refType}/${payload.refAction})`);
   }
 }

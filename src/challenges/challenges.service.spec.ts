@@ -7,7 +7,6 @@ import { Challenge } from '@entities/challenge.entity';
 import { Content } from '@entities/content.entity';
 import { Media } from '@entities/media.entity';
 import { RewardsService } from '../rewards/rewards.service';
-import { RewardActionType } from '../rewards/constants/reward.constants';
 import { RewardAction } from '../rewards/constants/reward-events';
 
 describe('ChallengesService', () => {
@@ -268,7 +267,6 @@ describe('ChallengesService', () => {
       expect(result.challenge).toBeDefined();
       expect(rewardsService.enqueueReward).toHaveBeenCalledWith({
         memberId: 'user-1',
-        actionType: RewardActionType.CHALLENGE_CREATED,
         refType: 'challenge',
         refAction: RewardAction.CREATE,
         refId: 'challenge-1',

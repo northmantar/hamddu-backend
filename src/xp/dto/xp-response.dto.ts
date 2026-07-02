@@ -165,11 +165,17 @@ export class XpEarningPolicyResponseDto {
 }
 
 export class XpActionTypeResponseDto {
-  @ApiProperty({ example: "SIGNUP" })
+  @ApiProperty({ example: "USER_SIGNUP" })
   code: string;
 
   @ApiProperty({ example: "회원가입" })
   labelKo: string;
+
+  @ApiProperty({ example: "users" })
+  refType: string;
+
+  @ApiProperty({ example: "CREATE" })
+  refAction: string;
 
   @ApiProperty({ example: true })
   isActive: boolean;
@@ -184,6 +190,8 @@ export class XpActionTypeResponseDto {
     return {
       code: at.code,
       labelKo: at.labelKo,
+      refType: at.refType,
+      refAction: at.refAction,
       isActive: at.isActive,
       createdAt: at.createdAt,
       updatedAt: at.updatedAt,

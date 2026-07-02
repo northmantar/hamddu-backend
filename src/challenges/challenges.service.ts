@@ -11,7 +11,6 @@ import { CreateChallengeDto } from "./dto/create-challenge.dto";
 import { ChallengeQueryDto } from "./dto/challenge-query.dto";
 import { PaginationQueryDto, PaginationMeta } from "../boards/dto/pagination.dto";
 import { RewardsService } from "../rewards/rewards.service";
-import { RewardActionType } from "../rewards/constants/reward.constants";
 import { RewardAction } from "../rewards/constants/reward-events";
 
 @Injectable()
@@ -130,7 +129,6 @@ export class ChallengesService {
     // 포인트/XP 백그라운드 지급 큐 등록
     await this.rewardsService.enqueueReward({
       memberId,
-      actionType: RewardActionType.CHALLENGE_CREATED,
       refType: 'challenge',
       refAction: RewardAction.CREATE,
       refId: saved.id,

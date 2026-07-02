@@ -18,7 +18,6 @@ import { UpdateCommentDto } from "./dto/update-comment.dto";
 import { PaginationQueryDto, PaginationMeta } from "./dto/pagination.dto";
 import { CommentResponseDto } from "./dto/comment-response.dto";
 import { RewardsService } from "../rewards/rewards.service";
-import { RewardActionType } from "../rewards/constants/reward.constants";
 import { RewardAction } from "../rewards/constants/reward-events";
 
 @Injectable()
@@ -170,7 +169,6 @@ export class CommentsService {
 
     await this.rewardsService.enqueueReward({
       memberId,
-      actionType: RewardActionType.COMMENT_CREATED,
       refType: 'board_comment',
       refAction: RewardAction.CREATE,
       refId: saved.id,

@@ -22,7 +22,6 @@ import { UpdateCategoryDto } from "./dto/update-category.dto";
 import { PaginationMeta } from "./dto/pagination.dto";
 import { User } from "@entities/user.entity";
 import { RewardsService } from "../rewards/rewards.service";
-import { RewardActionType } from "../rewards/constants/reward.constants";
 import { RewardAction } from "../rewards/constants/reward-events";
 
 @Injectable()
@@ -148,7 +147,6 @@ export class BoardsService {
 
     await this.rewardsService.enqueueReward({
       memberId,
-      actionType: RewardActionType.BOARD_CREATED,
       refType: 'board',
       refAction: RewardAction.CREATE,
       refId: saved.id,

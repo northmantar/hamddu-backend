@@ -6,7 +6,6 @@ import { WatchHistoryService } from './watch-history.service';
 import { WatchHistory } from '@entities/watch-history.entity';
 import { Content } from '@entities/content.entity';
 import { RewardsService } from '../rewards/rewards.service';
-import { RewardActionType } from '../rewards/constants/reward.constants';
 import { RewardAction } from '../rewards/constants/reward-events';
 import { ContentType } from '@enums/content.enum';
 
@@ -92,7 +91,6 @@ describe('WatchHistoryService', () => {
 
         expect(rewardsService.enqueueReward).toHaveBeenCalledWith({
           memberId: 'user-1',
-          actionType: RewardActionType.VIDEO_WATCHED,
           refType: 'tutorial_watch',
           refAction: RewardAction.CREATE,
           refId: 'wh-1',
@@ -151,7 +149,6 @@ describe('WatchHistoryService', () => {
 
         expect(rewardsService.enqueueReward).toHaveBeenCalledWith({
           memberId: 'user-1',
-          actionType: RewardActionType.VIDEO_WATCHED,
           refType: 'tutorial_watch',
           refAction: RewardAction.CREATE,
           refId: 'wh-new',

@@ -10,6 +10,8 @@ import { XpModule } from '../xp/xp.module';
 import { PointEarningPolicy } from '@entities/point-earning-policy.entity';
 import { PointActionTypeEntity } from '@entities/point-action-type.entity';
 import { PointTransaction } from '@entities/point-transaction.entity';
+import { XpEarningPolicy } from '@entities/xp-earning-policy.entity';
+import { XpActionTypeEntity } from '@entities/xp-action-type.entity';
 import { XpTransaction } from '@entities/xp-transaction.entity';
 
 const JOB_OPTIONS = {
@@ -29,6 +31,8 @@ const JOB_OPTIONS = {
       PointEarningPolicy,
       PointActionTypeEntity,
       PointTransaction,
+      XpEarningPolicy,
+      XpActionTypeEntity,
       XpTransaction,
     ]),
     PointsModule,

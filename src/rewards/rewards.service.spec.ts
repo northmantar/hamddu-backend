@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { RewardsService } from './rewards.service';
-import { POINT_QUEUE, XP_QUEUE, RewardActionType } from './constants/reward.constants';
+import { POINT_QUEUE, XP_QUEUE } from './constants/reward.constants';
 import { RewardAction } from './constants/reward-events';
 import { RewardJobPayload } from './dto/reward-job.dto';
 
@@ -13,7 +13,6 @@ describe('RewardsService', () => {
 
   const mockPayload: RewardJobPayload = {
     memberId: 'user-123',
-    actionType: RewardActionType.CHALLENGE_CREATED,
     refType: 'challenge',
     refAction: RewardAction.CREATE,
     refId: 'challenge-abc',
@@ -67,8 +66,7 @@ describe('RewardsService', () => {
     it('should pass the full payload to both queues', async () => {
       const watchPayload: RewardJobPayload = {
         memberId: 'user-456',
-        actionType: RewardActionType.VIDEO_WATCHED,
-        refType: 'watch_history',
+        refType: 'tutorial_watch',
         refAction: RewardAction.CREATE,
         refId: 'wh-abc',
         metadata: { contentId: 'content-1', pointApplyable: false },

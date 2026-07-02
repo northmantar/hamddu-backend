@@ -144,12 +144,15 @@ Authorization: Bearer <access_token>
 
 ### `xpActionType`
 
-> 어드민에서 런타임 추가/삭제 가능 (`xp_action_types` lookup table, 포인트와 독립). 기본 시드 값:
+> `xp_action_types` 보상 카탈로그. 코드·금액은 포인트와 독립이나 `(ref_type, ref_action)`은 공유 레지스트리에서만 생성. 기본 시드 값:
 
-| 값 | 한글 라벨 |
-| --- | --- |
-| `SIGNUP` | 회원가입 |
-| `DAILY_LOGIN` | 일일 로그인 |
+| 값 | 한글 라벨 | (ref_type, ref_action) |
+| --- | --- | --- |
+| `USER_SIGNUP` | 회원가입 | (users, CREATE) |
+| `WATCH` | 튜토리얼 시청 완료 | (tutorial_watch, CREATE) |
+| `CHALLENGE` | 챌린지 작성 | (challenge, CREATE) |
+| `COMMENT` | 댓글 작성 | (board_comment, CREATE) |
+| `BOARD_CREATE` | 게시글 작성 | (board, CREATE) |
 
 ### `rewardAction` (보상 이벤트 CRUD)
 
@@ -290,7 +293,8 @@ Authorization: Bearer <access_token>
 |  | POST | /xp/earn | 관리자 | XP 지급 |
 |  | GET | /xp/levels | 인증 | 레벨 정책 목록 |
 |  | GET | /xp/policies | 관리자 | XP 지급 정책 목록 |
-|  | GET | /xp/action-types | 인증 | 액션 타입 목록 (lookup) |
+|  | GET | /xp/action-types | 인증 | 액션 타입(보상 카탈로그) 목록 |
+|  | GET | /xp/reward-events | 인증 | 계측된 보상 이벤트 레지스트리 (포인트와 공유) |
 | **어드민 인증** | POST | /auth/admin/login | - | 어드민 로그인 |
 |  | POST | /auth/admin/set-password | 어드민 | 비밀번호 최초 설정 |
 |  | PATCH | /auth/admin/change-password | 어드민 | 비밀번호 변경 |

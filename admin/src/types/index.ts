@@ -224,10 +224,12 @@ export interface UpdateXpPolicyDto {
   isActive?: boolean;
 }
 
-// XP action type lookup (mirrors PointActionType structure)
+// XP action type lookup / 보상 카탈로그 (mirrors PointActionType structure)
 export interface XpActionType {
   code: string;
   labelKo: string;
+  refType: string;
+  refAction: RewardAction;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;

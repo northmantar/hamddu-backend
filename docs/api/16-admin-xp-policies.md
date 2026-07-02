@@ -159,16 +159,20 @@ XP 지급 정책 목록 조회. point 지급 정책과 동일한 구조.
 
 ## 16.7 `GET /xp/action-types`
 
-XP 액션 타입 lookup 전체 조회. `point_action_types`와 독립.
+XP 액션 타입(보상 카탈로그) 전체 조회. 코드·금액은 포인트와 독립이나 `(refType, refAction)`은 공유 레지스트리.
 
 ```json
 {
   "data": [
-    { "code": "SIGNUP", "labelKo": "회원가입", "isActive": true, "createdAt": "...", "updatedAt": "..." },
-    { "code": "DAILY_LOGIN", "labelKo": "일일 로그인", "isActive": true, "createdAt": "...", "updatedAt": "..." }
+    { "code": "USER_SIGNUP", "labelKo": "회원가입", "refType": "users", "refAction": "CREATE", "isActive": true, "createdAt": "...", "updatedAt": "..." },
+    { "code": "WATCH", "labelKo": "튜토리얼 시청 완료", "refType": "tutorial_watch", "refAction": "CREATE", "isActive": true, "createdAt": "...", "updatedAt": "..." }
   ]
 }
 ```
+
+### `GET /xp/reward-events`
+
+계측된 보상 이벤트 레지스트리(포인트 `/points/reward-events`와 동일 목록 — 같은 emit이 두 큐로 fan-out).
 
 ---
 
@@ -177,14 +181,22 @@ XP 액션 타입 lookup 전체 조회. `point_action_types`와 독립.
 **Body**
 
 ```json
-{ "code": "REVIEW_WRITE", "labelKo": "후기 작성" }
+{ "code": "USER_SIGNUP", "labelKo": "회원가입", "refType": "users", "refAction": "CREATE" }
 ```
+
+| 필드 | 타입 | 필수 | 유효성 |
+| --- | --- | --- | --- |
+| `code` | string | Yes | unique |
+| `labelKo` | string | Yes | 1~100자 |
+| `refType` | string | Yes | 공유 레지스트리(`GET /xp/reward-events`)에 등록된 값만 |
+| `refAction` | enum | Yes | CRUD. `(refType, refAction)` 레지스트리 등록 + unique |
 
 **Errors**
 
 | 상태 코드 | errorMessage |
 | --- | --- |
-| 409 | "이미 존재하는 액션 코드입니다: {code}" |
+| 400 | "계측되지 않은 보상 이벤트입니다: ({refType}, {refAction}). ..." |
+| 409 | "이미 존재하는 액션 코드입니다: {code}" / "이미 등록된 보상 이벤트입니다: ({refType}, {refAction}) → {code}" |
 
 ---
 

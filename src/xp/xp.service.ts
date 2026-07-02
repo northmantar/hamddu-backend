@@ -17,6 +17,11 @@ import { CreateXpLevelDto } from "./dto/create-level.dto";
 import { UpdateXpLevelDto } from "./dto/update-level.dto";
 import { CreateXpPolicyDto, UpdateXpPolicyDto } from "./dto/xp-policy.dto";
 import { CreateXpActionTypeDto, UpdateXpActionTypeDto } from "./dto/xp-action-type.dto";
+import {
+  REWARD_EVENTS,
+  RewardEvent,
+  isRegisteredRewardEvent,
+} from "../rewards/constants/reward-events";
 import { PaginationQueryDto, PaginationMeta } from "../boards/dto/pagination.dto";
 
 @Injectable()
@@ -290,19 +295,39 @@ export class XpService {
     await this.earningPolicyRepo.update(id, { isActive: false });
   }
 
-  // ─── XP 액션 타입 (lookup) ───────────────────────────────────────────────
+  // ─── XP 액션 타입 (보상 카탈로그) ────────────────────────────────────────
   async getActionTypes(): Promise<XpActionTypeEntity[]> {
     return this.actionTypeRepo.find({ order: { code: "ASC" } });
   }
 
+  /** 계측된 보상 이벤트 레지스트리 (포인트와 공유 — 동일 emit이 두 큐로 fan-out) */
+  getRewardEvents(): readonly RewardEvent[] {
+    return REWARD_EVENTS;
+  }
+
   async createActionType(dto: CreateXpActionTypeDto): Promise<XpActionTypeEntity> {
+    if (!isRegisteredRewardEvent(dto.refType, dto.refAction)) {
+      throw new BadRequestException(
+        `계측되지 않은 보상 이벤트입니다: (${dto.refType}, ${dto.refAction}). 레지스트리에 먼저 등록되어야 합니다.`,
+      );
+    }
     const exists = await this.actionTypeRepo.findOne({ where: { code: dto.code } });
     if (exists) {
       throw new ConflictException(`이미 존재하는 액션 코드입니다: ${dto.code}`);
     }
+    const dup = await this.actionTypeRepo.findOne({
+      where: { refType: dto.refType, refAction: dto.refAction },
+    });
+    if (dup) {
+      throw new ConflictException(
+        `이미 등록된 보상 이벤트입니다: (${dto.refType}, ${dto.refAction}) → ${dup.code}`,
+      );
+    }
     const at = this.actionTypeRepo.create({
       code: dto.code,
       labelKo: dto.labelKo,
+      refType: dto.refType,
+      refAction: dto.refAction,
       isActive: true,
     });
     return this.actionTypeRepo.save(at);
