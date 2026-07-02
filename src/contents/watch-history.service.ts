@@ -5,6 +5,7 @@ import { WatchHistory } from "@entities/watch-history.entity";
 import { Content } from "@entities/content.entity";
 import { CreateWatchHistoryDto } from "./dto/create-watch-history.dto";
 import { PaginationQueryDto, PaginationMeta } from "../boards/dto/pagination.dto";
+import { ContentType } from "@enums/content.enum";
 import { RewardsService } from "../rewards/rewards.service";
 import { RewardActionType } from "../rewards/constants/reward.constants";
 import { RewardAction } from "../rewards/constants/reward-events";
@@ -67,12 +68,16 @@ export class WatchHistoryService {
         lastWatchedAt: new Date(),
       });
 
-      // 이번에 처음으로 100% 달성 시에만 보상 지급
-      if (dto.watchRate >= 100 && prevWatchRate < 100) {
+      // 튜토리얼(symbol)을 이번에 처음으로 100% 완료했을 때만 보상 (논리 이벤트: tutorial_watch)
+      if (
+        content.type === ContentType.SYMBOL &&
+        dto.watchRate >= 100 &&
+        prevWatchRate < 100
+      ) {
         await this.rewardsService.enqueueReward({
           memberId,
           actionType: RewardActionType.VIDEO_WATCHED,
-          refType: 'watch_history',
+          refType: 'tutorial_watch',
           refAction: RewardAction.CREATE,
           refId: existing.id,
           metadata: { contentId: dto.contentId, pointApplyable: content.pointApplyable },
@@ -95,12 +100,12 @@ export class WatchHistoryService {
 
     const saved = await this.watchHistoryRepo.save(watchHistory);
 
-    // 처음 저장 시 이미 100% 완료인 경우
-    if (dto.watchRate >= 100) {
+    // 처음 저장 시 이미 100% 완료이고 튜토리얼(symbol)인 경우 (논리 이벤트: tutorial_watch)
+    if (content.type === ContentType.SYMBOL && dto.watchRate >= 100) {
       await this.rewardsService.enqueueReward({
         memberId,
         actionType: RewardActionType.VIDEO_WATCHED,
-        refType: 'watch_history',
+        refType: 'tutorial_watch',
         refAction: RewardAction.CREATE,
         refId: saved.id,
         metadata: { contentId: dto.contentId, pointApplyable: content.pointApplyable },

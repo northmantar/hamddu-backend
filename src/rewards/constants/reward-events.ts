@@ -22,10 +22,13 @@ export interface RewardEvent {
 }
 
 export const REWARD_EVENTS: readonly RewardEvent[] = [
+  { refType: "users", refAction: RewardAction.CREATE },
   { refType: "board", refAction: RewardAction.CREATE },
   { refType: "board_comment", refAction: RewardAction.CREATE },
   { refType: "challenge", refAction: RewardAction.CREATE },
-  { refType: "watch_history", refAction: RewardAction.CREATE },
+  // 논리 이벤트: 물리 테이블이 아니라 "튜토리얼(symbol) 시청 완료" 도메인 이벤트.
+  // refId 는 watch_history.id 를 담아 추적 가능. (ref/reward-policy-v2.md §14)
+  { refType: "tutorial_watch", refAction: RewardAction.CREATE },
 ] as const;
 
 /** (refType, refAction) 이 레지스트리에 등록된 보상 표면인지 */

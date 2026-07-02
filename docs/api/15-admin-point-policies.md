@@ -150,7 +150,8 @@ No Content
 ```json
 {
   "data": [
-    { "code": "WATCH", "labelKo": "시청", "refType": "watch_history", "refAction": "CREATE", "isActive": true, "createdAt": "...", "updatedAt": "..." },
+    { "code": "USER_SIGNUP", "labelKo": "회원가입", "refType": "users", "refAction": "CREATE", "isActive": true, "createdAt": "...", "updatedAt": "..." },
+    { "code": "WATCH", "labelKo": "튜토리얼 시청 완료", "refType": "tutorial_watch", "refAction": "CREATE", "isActive": true, "createdAt": "...", "updatedAt": "..." },
     { "code": "BOARD_CREATE", "labelKo": "게시글 작성", "refType": "board", "refAction": "CREATE", "isActive": true, "createdAt": "...", "updatedAt": "..." }
   ]
 }
@@ -159,14 +160,16 @@ No Content
 ### `GET /points/reward-events`
 
 계측된(emit 되는) 보상 이벤트 레지스트리. 액션 타입 생성 시 `(refType, refAction)` 선택지.
+`tutorial_watch`는 물리 테이블이 아니라 "튜토리얼(symbol) 시청 완료" 논리 이벤트(refId=watch_history.id).
 
 ```json
 {
   "data": [
+    { "refType": "users", "refAction": "CREATE" },
     { "refType": "board", "refAction": "CREATE" },
     { "refType": "board_comment", "refAction": "CREATE" },
     { "refType": "challenge", "refAction": "CREATE" },
-    { "refType": "watch_history", "refAction": "CREATE" }
+    { "refType": "tutorial_watch", "refAction": "CREATE" }
   ]
 }
 ```

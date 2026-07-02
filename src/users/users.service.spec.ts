@@ -10,6 +10,7 @@ import { NicknameAdjective } from '@entities/nickname-adjective.entity';
 import { NicknameNoun } from '@entities/nickname-noun.entity';
 import { RedisService } from '../redis/redis.service';
 import { NicknameSequenceService } from '../nicknames/nickname-sequence.service';
+import { RewardsService } from '../rewards/rewards.service';
 import { Platform, UserStatus, UserType, AgeRange, UserGender, UserInterests, UserAbility } from '../enums/user.enum';
 import { SurveyDto } from './dto/survey.dto';
 
@@ -77,6 +78,7 @@ describe('UsersService', () => {
         { provide: DataSource, useValue: mockDataSource },
         { provide: RedisService, useValue: mockRedisService },
         { provide: NicknameSequenceService, useValue: mockNicknameSequenceService },
+        { provide: RewardsService, useValue: { enqueueReward: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
 

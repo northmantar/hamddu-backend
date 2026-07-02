@@ -16,6 +16,9 @@ import { UpdateNicknameDto } from './dto/update-nickname.dto';
 import { SurveyDto } from './dto/survey.dto';
 import { RedisService } from '../redis/redis.service';
 import { NicknameSequenceService } from '../nicknames/nickname-sequence.service';
+import { RewardsService } from '../rewards/rewards.service';
+import { RewardActionType } from '../rewards/constants/reward.constants';
+import { RewardAction } from '../rewards/constants/reward-events';
 
 @Injectable()
 export class UsersService {
@@ -32,6 +35,7 @@ export class UsersService {
     private readonly pointWalletRepo: Repository<PointWallet>,
     private readonly redis: RedisService,
     private readonly nicknameSequenceService: NicknameSequenceService,
+    private readonly rewardsService: RewardsService,
   ) {}
 
   async findById(id: string): Promise<User | null> {
@@ -59,7 +63,18 @@ export class UsersService {
       email,
       type: UserType.MEMBER,
     });
-    return this.userRepo.save(user);
+    const saved = await this.userRepo.save(user);
+
+    // 회원가입 보상 (포인트 + XP 큐로 fan-out)
+    await this.rewardsService.enqueueReward({
+      memberId: saved.id,
+      actionType: RewardActionType.USER_SIGNUP,
+      refType: 'users',
+      refAction: RewardAction.CREATE,
+      refId: saved.id,
+    });
+
+    return saved;
   }
 
   async updateNickname(userId: string, dto: UpdateNicknameDto): Promise<User> {

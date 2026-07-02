@@ -8,6 +8,7 @@ import { Content } from '@entities/content.entity';
 import { RewardsService } from '../rewards/rewards.service';
 import { RewardActionType } from '../rewards/constants/reward.constants';
 import { RewardAction } from '../rewards/constants/reward-events';
+import { ContentType } from '@enums/content.enum';
 
 describe('WatchHistoryService', () => {
   let service: WatchHistoryService;
@@ -18,6 +19,7 @@ describe('WatchHistoryService', () => {
   const mockContent: Partial<Content> = {
     id: 'content-1',
     name: '겉뜨기',
+    type: ContentType.SYMBOL,
     pointApplyable: true,
   };
 
@@ -91,7 +93,7 @@ describe('WatchHistoryService', () => {
         expect(rewardsService.enqueueReward).toHaveBeenCalledWith({
           memberId: 'user-1',
           actionType: RewardActionType.VIDEO_WATCHED,
-          refType: 'watch_history',
+          refType: 'tutorial_watch',
           refAction: RewardAction.CREATE,
           refId: 'wh-1',
           metadata: { contentId: 'content-1', pointApplyable: true },
@@ -122,6 +124,19 @@ describe('WatchHistoryService', () => {
 
         expect(rewardsService.enqueueReward).not.toHaveBeenCalled();
       });
+
+      it('should NOT enqueue reward on completion of a non-tutorial content', async () => {
+        const normalContent = { ...mockContent, type: ContentType.NORMAL };
+        contentRepo.findOne.mockResolvedValue(normalContent as Content);
+        watchHistoryRepo.findOne
+          .mockResolvedValueOnce(existingHistory as WatchHistory) // watchRate=50
+          .mockResolvedValueOnce({ ...existingHistory, watchRate: 100 } as WatchHistory);
+        watchHistoryRepo.update.mockResolvedValue(undefined as any);
+
+        await service.createOrUpdate('user-1', dto);
+
+        expect(rewardsService.enqueueReward).not.toHaveBeenCalled();
+      });
     });
 
     describe('create new record', () => {
@@ -137,7 +152,7 @@ describe('WatchHistoryService', () => {
         expect(rewardsService.enqueueReward).toHaveBeenCalledWith({
           memberId: 'user-1',
           actionType: RewardActionType.VIDEO_WATCHED,
-          refType: 'watch_history',
+          refType: 'tutorial_watch',
           refAction: RewardAction.CREATE,
           refId: 'wh-new',
           metadata: { contentId: 'content-1', pointApplyable: true },

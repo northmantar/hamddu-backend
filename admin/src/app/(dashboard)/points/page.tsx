@@ -202,8 +202,9 @@ function ActionTypesTab() {
       await createActionType.mutateAsync(dto);
       addToast('액션 타입이 추가되었습니다.', 'success');
       setIsModalOpen(false);
-    } catch {
-      addToast('액션 타입 추가에 실패했습니다.', 'error');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '액션 타입 추가에 실패했습니다.';
+      addToast(msg, 'error');
     }
   };
 

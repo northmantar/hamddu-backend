@@ -56,6 +56,7 @@ export class XpProcessor extends WorkerHost {
       [RewardActionType.VIDEO_WATCHED]:     '영상 시청 완료 보상',
       [RewardActionType.BOARD_CREATED]:     '게시글 작성 보상',
       [RewardActionType.COMMENT_CREATED]:   '댓글 작성 보상',
+      [RewardActionType.USER_SIGNUP]:       '회원가입 보상',
     };
     return map[actionType];
   }
