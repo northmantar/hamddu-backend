@@ -99,6 +99,15 @@ function PoliciesTab() {
     }
   };
 
+  const handleActivate = async (id: string) => {
+    try {
+      await updatePolicy.mutateAsync({ id, dto: { isActive: true } });
+      addToast('정책이 활성화되었습니다.', 'success');
+    } catch {
+      addToast('정책 활성화에 실패했습니다.', 'error');
+    }
+  };
+
   const columns = [
     {
       key: 'actionType',
@@ -143,9 +152,15 @@ function PoliciesTab() {
           <Button variant="secondary" size="sm" onClick={() => setEditingPolicy(policy)}>
             수정
           </Button>
-          <Button variant="danger" size="sm" onClick={() => handleDelete(policy.id)}>
-            비활성화
-          </Button>
+          {policy.isActive ? (
+            <Button variant="danger" size="sm" onClick={() => handleDelete(policy.id)}>
+              비활성화
+            </Button>
+          ) : (
+            <Button variant="primary" size="sm" onClick={() => handleActivate(policy.id)}>
+              활성화
+            </Button>
+          )}
         </div>
       ),
     },

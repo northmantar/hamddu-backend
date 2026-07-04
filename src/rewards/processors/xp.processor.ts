@@ -14,8 +14,8 @@ import { RedisService } from '../../redis/redis.service';
 /**
  * 데이터 주도 XP 지급 (ref/reward-policy-v2.md §5·§11)
  *  - (refType, refAction) → 활성 XP 카탈로그 → 활성 xp_earning_policies N개 → 전부 지급
- *  - xp_transaction 은 지급 정책 id 를 기록하지 않으므로 dedup 은 refType 기준:
- *      isOneTime = (memberId, refType) 평생 1회 / 반복형 = (memberId, refType, refId)
+ *  - dedup 은 지급 정책 단위(포인트와 대칭):
+ *      isOneTime = (memberId, earningPolicyId) 평생 1회 / 반복형 = (memberId, earningPolicyId, refId)
  *  - pointApplyable 은 포인트 전용 조건이므로 XP 는 무시.
  */
 @Processor(XP_QUEUE)
@@ -54,7 +54,7 @@ export class XpProcessor extends WorkerHost {
 
     for (const policy of policies) {
       try {
-        if (await this.alreadyRewarded(policy, memberId, refType, refId)) continue;
+        if (await this.alreadyRewarded(policy, memberId, refId)) continue;
 
         const result = await this.xpService.earn({
           memberId,
@@ -62,9 +62,10 @@ export class XpProcessor extends WorkerHost {
           refType,
           refId,
           description,
+          earningPolicyId: policy.id,
         });
 
-        await this.markDone(policy, memberId, refType, refId);
+        await this.markDone(policy, memberId, refId);
 
         if (result.leveledUp) {
           this.logger.log(`Level up! memberId=${memberId} → level ${result.newLevel}`);
@@ -78,18 +79,18 @@ export class XpProcessor extends WorkerHost {
     }
   }
 
+  /** 멱등: 평생1회는 (member, earningPolicyId), 반복형은 (member, earningPolicyId, refId) */
   private async alreadyRewarded(
     policy: XpEarningPolicy,
     memberId: string,
-    refType: string,
     refId: string,
   ): Promise<boolean> {
-    if (await this.redis.get(this.redisKey(policy, memberId, refType, refId))) {
+    if (await this.redis.get(this.redisKey(policy, memberId, refId))) {
       return true;
     }
     const where = policy.isOneTime
-      ? { memberId, refType }
-      : { memberId, refType, refId };
+      ? { memberId, earningPolicyId: policy.id }
+      : { memberId, earningPolicyId: policy.id, refId };
     const existing = await this.txRepo.findOne({ where });
     return !!existing;
   }
@@ -97,21 +98,15 @@ export class XpProcessor extends WorkerHost {
   private async markDone(
     policy: XpEarningPolicy,
     memberId: string,
-    refType: string,
     refId: string,
   ): Promise<void> {
     const ttl = policy.isOneTime ? 86400 * 30 : 86400;
-    await this.redis.set(this.redisKey(policy, memberId, refType, refId), '1', ttl);
+    await this.redis.set(this.redisKey(policy, memberId, refId), '1', ttl);
   }
 
-  private redisKey(
-    policy: XpEarningPolicy,
-    memberId: string,
-    refType: string,
-    refId: string,
-  ): string {
+  private redisKey(policy: XpEarningPolicy, memberId: string, refId: string): string {
     return policy.isOneTime
-      ? `reward:xp:once:${refType}:${memberId}`
-      : `reward:xp:done:${refType}:${refId}`;
+      ? `reward:xp:once:${policy.id}:${memberId}`
+      : `reward:xp:done:${policy.id}:${refId}`;
   }
 }

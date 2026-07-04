@@ -26,4 +26,9 @@ export class EarnXpDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @ApiPropertyOptional({ description: "지급 정책 ID (보상 큐 처리 시). 수동 지급은 생략", example: "policy-uuid" })
+  @IsUUID()
+  @IsOptional()
+  earningPolicyId?: string;
 }

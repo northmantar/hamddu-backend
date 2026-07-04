@@ -177,7 +177,7 @@ export class XpService {
       const transaction = manager.create(XpTransaction, {
         memberId: dto.memberId,
         walletId: wallet.id,
-        policyId: wallet.policyId,
+        earningPolicyId: dto.earningPolicyId ?? null,
         refType: dto.refType,
         refId: dto.refId,
         amount: dto.amount,

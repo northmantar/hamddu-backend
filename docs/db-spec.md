@@ -264,7 +264,7 @@
       --
       * member_id
       * wallet_id
-      * policy_id
+      * earning_policy_id
       --
       * ref_id
       * ref_type
@@ -636,7 +636,7 @@ base 닉네임이 중복될 때 붙일 다음 숫자 접미사를 관리하는 �
 | updated_at | timestamp | 수정 일시 |
 - `point_earning_policies` 구조를 그대로 미러링. **XpProcessor가 데이터주도로 이 테이블을 참조해 지급**(1750700000000에서 전환 완료).
 - 1750700000000에서 기존 하드코딩 금액을 시드(USER_SIGNUP 100 / WATCH 30 / CHALLENGE 50 / COMMENT 10 / BOARD_CREATE 20, isOneTime=false).
-- dedup은 `xp_transaction`에 지급 정책 id가 없어 refType 기준: isOneTime=`(member, ref_type)`, 반복형=`(member, ref_type, ref_id)`.
+- dedup은 `xp_transaction.earning_policy_id` 기준(포인트와 대칭): isOneTime=`(member, earning_policy_id)`, 반복형=`(member, earning_policy_id, ref_id)`. → 한 이벤트에 XP 정책 N개 + isOneTime 조합도 정밀 동작.
 
 ### 경험치-레벨 정책 테이블 (`xp_level_policy`)
 
@@ -670,12 +670,13 @@ base 닉네임이 중복될 때 붙일 다음 숫자 접미사를 관리하는 �
 | id | uuid_short() | `<<pkey>>` 트랜잭션 ID |
 | member_id | uuid_short() | 유저 ID |
 | wallet_id | uuid_short() | 기록 ID |
-| policy_id | uuid_short() | 레벨 정책 ID |
+| earning_policy_id | uuid_short() | FK → `xp_earning_policies.id`. 이 XP를 지급한 적립 정책 (수동 지급은 null) |
 | ref_id | uuid_short() | 참조 행의 ID (XP 적립 행위와 연관된 테이블의 key) |
 | ref_type | varchar | 참조 테이블 식별자 (XP 적립 행위와 연관된 테이블의 레이블) |
 | amount | integer | 트랜잭션 XP양 (양수) |
 | description | text | 트랜잭션 설명 |
 | created_at | timestamp | 트랜잭션 발생 일시 |
+- 기존 `policy_id`(레벨 정책 스냅샷, 미사용)를 1750800000000에서 `earning_policy_id`(지급 정책 참조)로 전환. 포인트와 대칭.
 
 ### 게시글 좋아요 테이블 (`board_like`)
 

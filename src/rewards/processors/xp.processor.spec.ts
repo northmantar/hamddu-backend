@@ -129,7 +129,7 @@ describe('XpProcessor (data-driven)', () => {
       expect(xpService.earn).not.toHaveBeenCalled();
     });
 
-    it('반복형: (member, refType, refId) 로 dedup', async () => {
+    it('반복형: (member, earningPolicyId, refId) 로 dedup', async () => {
       actionTypeRepo.findOne.mockResolvedValue(challengeCatalog as XpActionTypeEntity);
       policyRepo.find.mockResolvedValue([repeatablePolicy as XpEarningPolicy]);
       redis.get.mockResolvedValue(null);
@@ -138,11 +138,11 @@ describe('XpProcessor (data-driven)', () => {
       await processor.process(challengeJob());
 
       expect(txRepo.findOne).toHaveBeenCalledWith({
-        where: { memberId: 'user-1', refType: 'challenge', refId: 'ch-1' },
+        where: { memberId: 'user-1', earningPolicyId: 'xpol-ch', refId: 'ch-1' },
       });
     });
 
-    it('isOneTime: (member, refType) 로 dedup + 기존 있으면 스킵', async () => {
+    it('isOneTime: (member, earningPolicyId) 로 dedup + 기존 있으면 스킵', async () => {
       actionTypeRepo.findOne.mockResolvedValue(signupCatalog as XpActionTypeEntity);
       policyRepo.find.mockResolvedValue([oneTimePolicy as XpEarningPolicy]);
       redis.get.mockResolvedValue(null);
@@ -151,7 +151,7 @@ describe('XpProcessor (data-driven)', () => {
       await processor.process(signupJob());
 
       expect(txRepo.findOne).toHaveBeenCalledWith({
-        where: { memberId: 'user-1', refType: 'users' },
+        where: { memberId: 'user-1', earningPolicyId: 'xpol-signup' },
       });
       expect(xpService.earn).not.toHaveBeenCalled();
     });
@@ -172,9 +172,10 @@ describe('XpProcessor (data-driven)', () => {
         refType: 'challenge',
         refId: 'ch-1',
         description: '챌린지 작성 보상',
+        earningPolicyId: 'xpol-ch',
       });
       expect(redis.set).toHaveBeenCalledWith(
-        'reward:xp:done:challenge:ch-1',
+        'reward:xp:done:xpol-ch:ch-1',
         '1',
         86400,
       );

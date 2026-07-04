@@ -8,7 +8,7 @@ import {
 } from "typeorm";
 import { User } from "./user.entity";
 import { XpWallet } from "./xp-wallet.entity";
-import { XpLevelPolicy } from "./xp-level-policy.entity";
+import { XpEarningPolicy } from "./xp-earning-policy.entity";
 
 @Entity("xp_transactions")
 export class XpTransaction {
@@ -29,12 +29,13 @@ export class XpTransaction {
   @JoinColumn({ name: "wallet_id" })
   wallet: XpWallet;
 
-  @Column()
-  policyId: string;
+  /** 이 XP를 지급한 적립 정책 (수동 지급 등은 null) */
+  @Column({ type: "uuid", nullable: true })
+  earningPolicyId: string | null;
 
-  @ManyToOne(() => XpLevelPolicy)
-  @JoinColumn({ name: "policy_id" })
-  policy: XpLevelPolicy;
+  @ManyToOne(() => XpEarningPolicy, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "earning_policy_id" })
+  earningPolicy: XpEarningPolicy | null;
 
   @Column({ type: "uuid", nullable: true })
   refId: string | null;
