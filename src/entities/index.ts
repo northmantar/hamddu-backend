@@ -25,3 +25,6 @@ export * from "./xp-earning-policy.entity";
 export * from "./xp-level-policy.entity";
 export * from "./xp-wallet.entity";
 export * from "./xp-transaction.entity";
+export * from "./device-token.entity";
+export * from "./notification-campaign.entity";
+export * from "./notification-template.entity";

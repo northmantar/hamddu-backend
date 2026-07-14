@@ -300,3 +300,48 @@ export interface ChangePasswordDto {
   currentPassword: string;
   newPassword: string;
 }
+
+// Notification types
+export type CampaignType = 'ANNOUNCEMENT' | 'BATCH';
+export type CampaignStatus = 'SCHEDULED' | 'SENT' | 'ACTIVE' | 'PAUSED' | 'CANCELED';
+
+export interface NotificationCampaign {
+  id: string;
+  type: CampaignType;
+  title: string;
+  body: string;
+  scheduledAt: string | null;
+  cron: string | null;
+  status: CampaignStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCampaignDto {
+  type: CampaignType;
+  title: string;
+  body: string;
+  scheduledAt?: string;
+  cron?: string;
+}
+
+export interface UpdateCampaignDto {
+  title?: string;
+  body?: string;
+  scheduledAt?: string;
+  cron?: string;
+}
+
+export interface NotificationTemplate {
+  key: string;
+  title: string;
+  body: string;
+  isActive: boolean;
+  updatedAt: string;
+}
+
+export interface UpdateTemplateDto {
+  title?: string;
+  body?: string;
+  isActive?: boolean;
+}

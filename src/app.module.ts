@@ -42,6 +42,10 @@ import { XpEarningPolicy } from "./entities/xp-earning-policy.entity";
 import { XpActionTypeEntity } from "./entities/xp-action-type.entity";
 import { Media } from "./entities/media.entity";
 import { BoardMedia } from "./entities/board-media.entity";
+import { NotificationsModule } from "./notifications/notifications.module";
+import { DeviceToken } from "./entities/device-token.entity";
+import { NotificationCampaign } from "./entities/notification-campaign.entity";
+import { NotificationTemplate } from "./entities/notification-template.entity";
 
 @Module({
   imports: [
@@ -93,6 +97,9 @@ import { BoardMedia } from "./entities/board-media.entity";
           XpActionTypeEntity,
           Media,
           BoardMedia,
+          DeviceToken,
+          NotificationCampaign,
+          NotificationTemplate,
         ],
         synchronize: false,
         namingStrategy: new SnakeNamingStrategy(),
@@ -111,6 +118,7 @@ import { BoardMedia } from "./entities/board-media.entity";
     ChannelsModule,
     RewardsModule,
     MediaModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

@@ -229,6 +229,7 @@ Authorization: Bearer <access_token>
 | 16 | XP 레벨 정책 관리 API (관리자 전용) | [api/16-admin-xp-policies.md](api/16-admin-xp-policies.md) |
 | 17 | 채널 API | [api/17-channels.md](api/17-channels.md) |
 | 18 | 미디어 API | [api/18-media.md](api/18-media.md) |
+| 19 | 알림(FCM) API | [api/19-notifications.md](api/19-notifications.md) |
 
 ---
 

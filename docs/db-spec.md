@@ -686,3 +686,43 @@ base 닉네임이 중복될 때 붙일 다음 숫자 접미사를 관리하는 �
 | board_id | uuid_short() | 게시글 ID |
 | member_id | uuid_short() | 좋아요 액션을 수행한 유저 ID |
 | created_at | timestamp | 좋아요 액션 수행 일시 |
+
+### FCM 디바이스 토큰 테이블 (`device_tokens`)
+
+| name | type | description |
+| --- | --- | --- |
+| id | uuid_short() | `<<pkey>>` |
+| user_id | uuid_short() | FK → `users.id` (ON DELETE CASCADE). 인덱스 |
+| token | varchar | FCM 디바이스 토큰. UNIQUE |
+| platform | varchar(20) | 'ios' / 'android' 등 (nullable) |
+| created_at / updated_at | timestamp | |
+- 등록 시 전체 브로드캐스트 토픽 `all` 에 구독. 발송 중 무효 토큰은 자동 삭제.
+
+### 알림 캠페인 테이블 (`notification_campaigns`)
+
+어드민 관리 알림. 공지(단발/예약) + 배치(반복/cron). 발송 대상은 전체 유저(topic `all`).
+
+| name | type | description |
+| --- | --- | --- |
+| id | uuid_short() | `<<pkey>>` |
+| type | enum | `ANNOUNCEMENT`(공지) / `BATCH`(배치) |
+| title | varchar | 알림 제목 |
+| body | text | 알림 본문 |
+| scheduled_at | timestamptz | ANNOUNCEMENT 발송 시각 (nullable) |
+| cron | varchar | BATCH cron 패턴 (nullable, tz=Asia/Seoul) |
+| status | enum | `SCHEDULED`/`SENT`/`ACTIVE`/`PAUSED`/`CANCELED` |
+| created_at / updated_at | timestamp | |
+- BullMQ `notification` 큐로 스케줄링: 공지=delayed job(jobId=캠페인 id), 배치=job scheduler(id=캠페인 id).
+
+### 알림 템플릿 테이블 (`notification_templates`)
+
+이벤트성 알림 문구(어드민 편집). 현재 `level_up` 1종.
+
+| name | type | description |
+| --- | --- | --- |
+| key | varchar | `<<pkey>>` 템플릿 키 ('level_up') |
+| title | varchar | 제목. `{level}`/`{label}` 치환 가능 |
+| body | text | 본문. `{level}`/`{label}` 치환 가능 |
+| is_active | boolean | false면 해당 이벤트 발송 안 함 |
+| updated_at | timestamp | |
+- `{level}`=도달 레벨 번호, `{label}`=`xp_level_policies.label`(칭호).

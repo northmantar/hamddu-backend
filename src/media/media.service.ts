@@ -18,11 +18,18 @@ import { extname } from "path";
 import sharp = require("sharp");
 import { Media } from "@entities/media.entity";
 
-// 프론트(expo-image-manipulator)와 동일한 정책: 긴 변 ≤ 1200px, JPEG 품질 75.
+// 프론트(expo-image-manipulator)와 동일한 정책: 긴 변 ≤ 1200px, 품질 75.
+// 단, 포맷은 원본을 유지한다 (JPEG→JPEG, PNG→PNG, WebP→WebP). PNG 투명도 등이 보존된다.
 const COMPRESS_MAX_DIMENSION = 1200;
-const COMPRESS_JPEG_QUALITY = 75;
-const COMPRESSED_MIME = "image/jpeg";
-const COMPRESSED_EXT = "jpg";
+const COMPRESS_QUALITY = 75;
+
+// 재인코딩 대상 포맷별 인코더/확장자/MIME. 여기 없는 포맷(svg·gif·avif 등)은 원본 그대로 통과.
+type CompressTarget = "jpeg" | "png" | "webp";
+const COMPRESS_TARGETS: Record<CompressTarget, { ext: string; mime: string }> = {
+  jpeg: { ext: "jpg", mime: "image/jpeg" },
+  png: { ext: "png", mime: "image/png" },
+  webp: { ext: "webp", mime: "image/webp" },
+};
 
 export interface UploadOptions {
   compress: boolean;
@@ -122,8 +129,19 @@ export class MediaService {
     return this.mediaRepo.save(media);
   }
 
-  // 프론트의 expo-image-manipulator 압축과 동일한 정책으로 이미지를 리사이즈/재인코딩한다.
+  // 리사이즈/재인코딩으로 용량을 줄이되 원본 포맷은 유지한다. 재인코딩이 부적절한
+  // 포맷(svg·gif·avif 등)은 원본 그대로 통과시켜 확장자/투명도/애니메이션을 보존한다.
   private async compress(file: Express.Multer.File): Promise<ProcessedFile> {
+    const target = this.compressTarget(file);
+    if (!target) {
+      return {
+        buffer: file.buffer,
+        mimetype: file.mimetype || "",
+        originalname: file.originalname,
+        size: file.size,
+      };
+    }
+
     // sharp 는 CJS export 라 타입상 callable 로 인식되지 않으므로 호출부에서 캐스트한다.
     let pipeline = (sharp as unknown as (input: Buffer) => sharp.Sharp)(file.buffer).rotate(); // EXIF orientation 보정
     const { width, height } = await pipeline.metadata();
@@ -139,17 +157,32 @@ export class MediaService {
       pipeline = pipeline.resize({ ...resizeOptions, withoutEnlargement: true });
     }
 
-    const buffer = await pipeline
-      .jpeg({ quality: COMPRESS_JPEG_QUALITY })
-      .toBuffer();
+    const encoded =
+      target === "png"
+        ? pipeline.png()
+        : target === "webp"
+          ? pipeline.webp({ quality: COMPRESS_QUALITY })
+          : pipeline.jpeg({ quality: COMPRESS_QUALITY });
+    const buffer = await encoded.toBuffer();
 
+    const { ext, mime } = COMPRESS_TARGETS[target];
     const baseName = file.originalname?.replace(/\.[^.]+$/, "") ?? "image";
     return {
       buffer,
-      mimetype: COMPRESSED_MIME,
-      originalname: `${baseName}.${COMPRESSED_EXT}`,
+      mimetype: mime,
+      originalname: `${baseName}.${ext}`,
       size: buffer.length,
     };
+  }
+
+  // 입력 MIME/확장자로 재인코딩 포맷을 결정. svg·gif·avif 등 → null(원본 통과).
+  private compressTarget(file: Express.Multer.File): CompressTarget | null {
+    const mime = (file.mimetype || "").toLowerCase();
+    const ext = extname(file.originalname || "").toLowerCase();
+    if (mime === "image/jpeg" || ext === ".jpg" || ext === ".jpeg") return "jpeg";
+    if (mime === "image/png" || ext === ".png") return "png";
+    if (mime === "image/webp" || ext === ".webp") return "webp";
+    return null;
   }
 
   private assertR2Config(accountId: string, accessKeyId: string, secretAccessKey: string): void {

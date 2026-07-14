@@ -7,6 +7,7 @@ import { PointProcessor } from './processors/point.processor';
 import { XpProcessor } from './processors/xp.processor';
 import { PointsModule } from '../points/points.module';
 import { XpModule } from '../xp/xp.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { PointEarningPolicy } from '@entities/point-earning-policy.entity';
 import { PointActionTypeEntity } from '@entities/point-action-type.entity';
 import { PointTransaction } from '@entities/point-transaction.entity';
@@ -37,6 +38,7 @@ const JOB_OPTIONS = {
     ]),
     PointsModule,
     XpModule,
+    NotificationsModule,
   ],
   providers: [RewardsService, PointProcessor, XpProcessor],
   exports: [RewardsService],

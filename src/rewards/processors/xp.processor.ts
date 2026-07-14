@@ -10,6 +10,7 @@ import { XpEarningPolicy } from '@entities/xp-earning-policy.entity';
 import { XpActionTypeEntity } from '@entities/xp-action-type.entity';
 import { XpTransaction } from '@entities/xp-transaction.entity';
 import { RedisService } from '../../redis/redis.service';
+import { NotificationsService } from '../../notifications/notifications.service';
 
 /**
  * 데이터 주도 XP 지급 (ref/reward-policy-v2.md §5·§11)
@@ -31,6 +32,7 @@ export class XpProcessor extends WorkerHost {
     private readonly policyRepo: Repository<XpEarningPolicy>,
     @InjectRepository(XpTransaction)
     private readonly txRepo: Repository<XpTransaction>,
+    private readonly notifications: NotificationsService,
   ) {
     super();
   }
@@ -69,6 +71,7 @@ export class XpProcessor extends WorkerHost {
 
         if (result.leveledUp) {
           this.logger.log(`Level up! memberId=${memberId} → level ${result.newLevel}`);
+          await this.notifications.enqueueLevelUp(memberId, result.newLevel);
         }
       } catch (error) {
         this.logger.error(

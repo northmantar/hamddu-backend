@@ -16,6 +16,8 @@ jest.mock('@aws-sdk/client-s3', () => ({
 
 // 압축 경로 검증을 위해 sharp 를 모킹: resize/jpeg 호출만 추적하고 결정적 결과를 돌려준다.
 const sharpJpeg = jest.fn().mockReturnThis();
+const sharpPng = jest.fn().mockReturnThis();
+const sharpWebp = jest.fn().mockReturnThis();
 const sharpResize = jest.fn().mockReturnThis();
 const sharpRotate = jest.fn().mockReturnThis();
 const sharpMetadata = jest.fn();
@@ -26,6 +28,8 @@ jest.mock('sharp', () => {
     rotate: sharpRotate,
     resize: sharpResize,
     jpeg: sharpJpeg,
+    png: sharpPng,
+    webp: sharpWebp,
     metadata: sharpMetadata,
     toBuffer: sharpToBuffer,
   }));
@@ -57,6 +61,8 @@ describe('MediaService', () => {
     mockS3Send.mockReset();
     mockS3Send.mockResolvedValue({});
     sharpJpeg.mockClear();
+    sharpPng.mockClear();
+    sharpWebp.mockClear();
     sharpResize.mockClear();
     sharpRotate.mockClear();
     sharpMetadata.mockReset();
@@ -270,6 +276,31 @@ describe('MediaService', () => {
       );
     });
 
+    it('should keep SVG as-is (no rasterization) even when compress=true', async () => {
+      const { PutObjectCommand } = require('@aws-sdk/client-s3');
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      const svgFile = {
+        ...mockFile,
+        originalname: 'icon.svg',
+        mimetype: 'image/svg+xml',
+        buffer: Buffer.from('<svg/>'),
+      } as Express.Multer.File;
+
+      await service.upload(svgFile, 'user-1', { compress: true });
+
+      expect(sharpJpeg).not.toHaveBeenCalled();
+      expect(sharpResize).not.toHaveBeenCalled();
+      expect(PutObjectCommand).toHaveBeenCalledWith(
+        expect.objectContaining({
+          Key: expect.stringMatching(/^media\/\d+-[a-f0-9]{32}\.svg$/),
+          Body: svgFile.buffer,
+          ContentType: 'image/svg+xml',
+        }),
+      );
+    });
+
     it('should include content length when uploading to S3', async () => {
       const { PutObjectCommand } = require('@aws-sdk/client-s3');
       mediaRepo.create.mockReturnValue(mockMedia);
@@ -377,7 +408,7 @@ describe('MediaService', () => {
       expect(sharpJpeg).toHaveBeenCalledWith({ quality: 75 });
     });
 
-    it('should store compressed buffer as image/jpeg regardless of input mimetype', async () => {
+    it('should preserve PNG format (no JPEG conversion) when compressing', async () => {
       const { PutObjectCommand } = require('@aws-sdk/client-s3');
       sharpMetadata.mockResolvedValue({ width: 500, height: 500 });
       const pngFile = { ...mockFile, originalname: 'pic.png', mimetype: 'image/png' };
@@ -386,14 +417,49 @@ describe('MediaService', () => {
 
       await service.upload(pngFile as Express.Multer.File, 'user-1', { compress: true });
 
+      expect(sharpPng).toHaveBeenCalled();
+      expect(sharpJpeg).not.toHaveBeenCalled();
       expect(PutObjectCommand).toHaveBeenCalledWith(
-        expect.objectContaining({ ContentType: 'image/jpeg' }),
+        expect.objectContaining({
+          ContentType: 'image/png',
+          Key: expect.stringMatching(/\.png$/),
+        }),
       );
       expect(mediaRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ mimeType: 'image/jpeg' }),
+        expect.objectContaining({ mimeType: 'image/png' }),
       );
-      const createCall = mediaRepo.create.mock.calls[0][0] as Partial<Media>;
-      expect(createCall.url).toMatch(/\.jpg$/);
+    });
+
+    it('should preserve WebP format when compressing', async () => {
+      sharpMetadata.mockResolvedValue({ width: 500, height: 500 });
+      const webpFile = { ...mockFile, originalname: 'pic.webp', mimetype: 'image/webp' };
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      await service.upload(webpFile as Express.Multer.File, 'user-1', { compress: true });
+
+      expect(sharpWebp).toHaveBeenCalledWith({ quality: 75 });
+      expect(sharpJpeg).not.toHaveBeenCalled();
+    });
+
+    it('should pass GIF through untouched (no re-encode) when compressing', async () => {
+      const { PutObjectCommand } = require('@aws-sdk/client-s3');
+      const gifFile = { ...mockFile, originalname: 'anim.gif', mimetype: 'image/gif' };
+      mediaRepo.create.mockReturnValue(mockMedia);
+      mediaRepo.save.mockResolvedValue(mockMedia);
+
+      await service.upload(gifFile as Express.Multer.File, 'user-1', { compress: true });
+
+      expect(sharpJpeg).not.toHaveBeenCalled();
+      expect(sharpPng).not.toHaveBeenCalled();
+      expect(sharpResize).not.toHaveBeenCalled();
+      expect(PutObjectCommand).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ContentType: 'image/gif',
+          Body: gifFile.buffer,
+          Key: expect.stringMatching(/\.gif$/),
+        }),
+      );
     });
   });
 

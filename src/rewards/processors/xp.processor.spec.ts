@@ -8,6 +8,7 @@ import { RedisService } from '../../redis/redis.service';
 import { XpEarningPolicy } from '@entities/xp-earning-policy.entity';
 import { XpActionTypeEntity } from '@entities/xp-action-type.entity';
 import { XpTransaction } from '@entities/xp-transaction.entity';
+import { NotificationsService } from '../../notifications/notifications.service';
 import { RewardAction } from '../constants/reward-events';
 import { RewardJobPayload } from '../dto/reward-job.dto';
 
@@ -76,6 +77,7 @@ describe('XpProcessor (data-driven)', () => {
         { provide: getRepositoryToken(XpActionTypeEntity), useValue: { findOne: jest.fn() } },
         { provide: getRepositoryToken(XpEarningPolicy), useValue: { find: jest.fn() } },
         { provide: getRepositoryToken(XpTransaction), useValue: { findOne: jest.fn() } },
+        { provide: NotificationsService, useValue: { enqueueLevelUp: jest.fn() } },
       ],
     }).compile();
 
