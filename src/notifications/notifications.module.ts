@@ -5,6 +5,7 @@ import { DeviceToken } from "@entities/device-token.entity";
 import { NotificationCampaign } from "@entities/notification-campaign.entity";
 import { NotificationTemplate } from "@entities/notification-template.entity";
 import { XpLevelPolicy } from "@entities/xp-level-policy.entity";
+import { User } from "@entities/user.entity";
 import { NOTIFICATION_QUEUE } from "./constants";
 import { FirebaseService } from "./firebase.service";
 import { NotificationsService } from "./notifications.service";
@@ -27,6 +28,7 @@ import { NotificationProcessor } from "./notification.processor";
       NotificationCampaign,
       NotificationTemplate,
       XpLevelPolicy,
+      User,
     ]),
   ],
   controllers: [NotificationsController],
