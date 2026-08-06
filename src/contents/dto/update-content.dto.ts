@@ -31,10 +31,24 @@ export class UpdateContentDto {
   @IsBoolean()
   pointApplyable?: boolean;
 
-  @ApiPropertyOptional({ description: "미디어 ID (POST /media/upload 응답의 id)", example: "media-uuid" })
+  @ApiPropertyOptional({
+    description:
+      "기본(눌리지 않은) 상태 아이콘 미디어 ID (POST /media/upload 응답의 id). null을 보내면 아이콘이 해제됩니다.",
+    example: "media-uuid",
+    nullable: true,
+  })
   @IsOptional()
   @IsUUID()
-  mediaId?: string;
+  mediaId?: string | null;
+
+  @ApiPropertyOptional({
+    description: "눌린 상태 아이콘 미디어 ID (POST /media/upload 응답의 id). null을 보내면 아이콘이 해제됩니다.",
+    example: "media-uuid",
+    nullable: true,
+  })
+  @IsOptional()
+  @IsUUID()
+  activeMediaId?: string | null;
 
   @ApiPropertyOptional({ enum: ContentStatus, description: "콘텐츠 상태" })
   @IsOptional()

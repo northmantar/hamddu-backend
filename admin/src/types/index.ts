@@ -61,6 +61,8 @@ export interface Content {
   interests: UserInterests | null;
   imageUrl: string | null;
   mediaId: string | null;
+  activeImageUrl: string | null;
+  activeMediaId: string | null;
   pointApplyable: boolean;
   sortOrder: number | null;
   uploadedAt: string | null;
@@ -77,6 +79,7 @@ export interface CreateContentDto {
   sortOrder?: number;
   pointApplyable?: boolean;
   mediaId?: string;
+  activeMediaId?: string;
 }
 
 export interface UpdateContentDto {
@@ -85,7 +88,10 @@ export interface UpdateContentDto {
   channelId?: string;
   sortOrder?: number;
   pointApplyable?: boolean;
-  mediaId?: string;
+  /** null을 보내면 아이콘 해제 */
+  mediaId?: string | null;
+  /** null을 보내면 아이콘 해제 */
+  activeMediaId?: string | null;
   status?: ContentStatus;
 }
 

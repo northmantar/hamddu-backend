@@ -53,6 +53,8 @@
       "interests": "crochet",
       "imageUrl": "https://cdn.hamddu.online/symbols/chain.png",
       "mediaId": "media-uuid",
+      "activeImageUrl": "https://cdn.hamddu.online/symbols/chain-active.png",
+      "activeMediaId": "media-active-uuid",
       "pointApplyable": true,
       "sortOrder": 1,
       "uploadedAt": "2026-04-01T10:00:00.000Z",
@@ -104,6 +106,8 @@
     "interests": "crochet",
     "imageUrl": "https://cdn.hamddu.online/symbols/chain.png",
     "mediaId": "media-uuid-1",
+    "activeImageUrl": "https://cdn.hamddu.online/symbols/chain-active.png",
+    "activeMediaId": "media-active-uuid-1",
     "pointApplyable": true,
     "sortOrder": 1,
     "uploadedAt": "2026-04-01T10:00:00.000Z",
@@ -121,6 +125,8 @@
     "interests": "crochet",
     "imageUrl": "https://cdn.hamddu.online/symbols/sc.png",
     "mediaId": "media-uuid-2",
+    "activeImageUrl": null,
+    "activeMediaId": null,
     "pointApplyable": true,
     "sortOrder": 2,
     "uploadedAt": "2026-04-01T11:00:00.000Z",
@@ -165,6 +171,8 @@
   "interests": "crochet",
   "imageUrl": "https://cdn.hamddu.online/symbols/chain.png",
   "mediaId": "media-uuid",
+  "activeImageUrl": "https://cdn.hamddu.online/symbols/chain-active.png",
+  "activeMediaId": "media-active-uuid",
   "pointApplyable": true,
   "sortOrder": 1,
   "uploadedAt": "2026-04-01T10:00:00.000Z",
@@ -209,7 +217,8 @@
       "interests": "crochet",
       "sortOrder": 1,
       "pointApplyable": true,
-      "mediaId": "media-uuid"
+      "mediaId": "media-uuid",
+      "activeMediaId": "media-active-uuid"
     }
     ```
 
@@ -222,7 +231,8 @@
     | `interests` | string | No | `interests` enum 값 (`crochet` \| `knitting`) |
     | `sortOrder` | number | No | 1 이상의 정수 |
     | `pointApplyable` | boolean | No | 기본값: false |
-    | `mediaId` | string (UUID) | No | 미디어 ID (POST /media/upload 응답의 id) |
+    | `mediaId` | string (UUID) | No | 기본(눌리지 않은) 상태 아이콘 미디어 ID (POST /media/upload 응답의 id) |
+    | `activeMediaId` | string (UUID) | No | 눌린 상태 아이콘 미디어 ID (POST /media/upload 응답의 id) |
 
 **Response (201)**
 
@@ -240,6 +250,8 @@
   "interests": "crochet",
   "imageUrl": "https://cdn.hamddu.online/symbols/chain.png",
   "mediaId": "media-uuid",
+  "activeImageUrl": "https://cdn.hamddu.online/symbols/chain-active.png",
+  "activeMediaId": "media-active-uuid",
   "pointApplyable": true,
   "sortOrder": 1,
   "uploadedAt": null,
@@ -281,7 +293,8 @@
       "name": "수정된 콘텐츠 제목",
       "sortOrder": 2,
       "pointApplyable": false,
-      "mediaId": "new-media-uuid"
+      "mediaId": "new-media-uuid",
+      "activeMediaId": "new-media-active-uuid"
     }
     ```
 
@@ -290,7 +303,15 @@
     | `name` | string | No | 1–200자 |
     | `sortOrder` | number | No | 1 이상의 정수 |
     | `pointApplyable` | boolean | No | - |
-    | `mediaId` | string (UUID) | No | 미디어 ID |
+    | `mediaId` | string (UUID) \| null | No | 기본(눌리지 않은) 상태 아이콘 미디어 ID. `null` 전달 시 아이콘 해제 |
+    | `activeMediaId` | string (UUID) \| null | No | 눌린 상태 아이콘 미디어 ID. `null` 전달 시 아이콘 해제 |
+
+    > 아이콘 해제는 필드를 **생략**하는 것이 아니라 명시적으로 `null`을 보내야 합니다.
+    > 필드를 생략하면 기존 값이 그대로 유지됩니다.
+    >
+    > ```json
+    > { "activeMediaId": null }
+    > ```
     | `status` | enum | No | `contentStatus` 참고 (`active` \| `inactive`) |
 
 **Response (200)**
@@ -309,6 +330,8 @@
   "interests": "crochet",
   "imageUrl": "https://cdn.hamddu.online/symbols/new-image.png",
   "mediaId": "new-media-uuid",
+  "activeImageUrl": "https://cdn.hamddu.online/symbols/new-image-active.png",
+  "activeMediaId": "new-media-active-uuid",
   "pointApplyable": false,
   "sortOrder": 2,
   "uploadedAt": "2026-04-01T10:00:00.000Z",
@@ -371,6 +394,8 @@
   "interests": "crochet",
   "imageUrl": "https://cdn.hamddu.online/symbols/chain.png",
   "mediaId": "media-uuid",
+  "activeImageUrl": "https://cdn.hamddu.online/symbols/chain-active.png",
+  "activeMediaId": "media-active-uuid",
   "pointApplyable": true,
   "sortOrder": 3,
   "uploadedAt": "2026-04-01T10:00:00.000Z",

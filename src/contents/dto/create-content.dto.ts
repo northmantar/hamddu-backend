@@ -52,8 +52,19 @@ export class CreateContentDto {
   @IsBoolean()
   pointApplyable?: boolean;
 
-  @ApiPropertyOptional({ description: "미디어 ID (POST /media/upload 응답의 id)", example: "media-uuid" })
+  @ApiPropertyOptional({
+    description: "기본(눌리지 않은) 상태 아이콘 미디어 ID (POST /media/upload 응답의 id)",
+    example: "media-uuid",
+  })
   @IsOptional()
   @IsUUID()
   mediaId?: string;
+
+  @ApiPropertyOptional({
+    description: "눌린 상태 아이콘 미디어 ID (POST /media/upload 응답의 id)",
+    example: "media-uuid",
+  })
+  @IsOptional()
+  @IsUUID()
+  activeMediaId?: string;
 }

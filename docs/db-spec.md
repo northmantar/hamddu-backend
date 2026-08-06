@@ -44,6 +44,7 @@
       --
       * channel_id
       * media_id
+      * active_media_id
       --
       * source_video_id
       * name
@@ -278,7 +279,8 @@
     media ||--o{ board_media
     board ||--o{ board_media
     board }o--o| media : thumbnail
-    content }o--o| media : symbol_icon
+    content }o--o| media : symbol_icon_default
+    content }o--o| media : symbol_icon_active
     challenge }o--o| media : proof_image
 
     channel ||--o{ content
@@ -380,7 +382,8 @@ base 닉네임이 중복될 때 붙일 다음 숫자 접미사를 관리하는 �
 | --- | --- | --- |
 | id | uuid | **`<<pkey>>`** 콘텐츠 ID |
 | channel_id | uuid | 콘텐츠 업로드 채널 ID (nullable) |
-| media_id | uuid | 기호 버튼 이미지 미디어 ID (nullable, symbol 타입에만 사용) |
+| media_id | uuid | 기호 버튼 **기본(눌리지 않은) 상태** 아이콘 미디어 ID (nullable, symbol 타입에만 사용) |
+| active_media_id | uuid | 기호 버튼 **눌린 상태** 아이콘 미디어 ID (nullable, symbol 타입에만 사용) |
 | source_video_id | varchar | `<<unique>>` 플랫폼 비디오 ID |
 | name | varchar | 영상 제목 |
 | type | enum | 영상 유형 (`symbol` \| `free` \| `normal`) |

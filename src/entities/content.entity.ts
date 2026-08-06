@@ -45,12 +45,21 @@ export class Content {
   @Column({ type: "int", nullable: true })
   sortOrder: number | null;
 
+  // 기본(눌리지 않은) 상태 아이콘
   @Column({ nullable: true })
   mediaId: string | null;
 
   @ManyToOne(() => Media, { nullable: true, onDelete: "SET NULL" })
   @JoinColumn({ name: "media_id" })
   media: Media | null;
+
+  // 눌린 상태 아이콘
+  @Column({ nullable: true })
+  activeMediaId: string | null;
+
+  @ManyToOne(() => Media, { nullable: true, onDelete: "SET NULL" })
+  @JoinColumn({ name: "active_media_id" })
+  activeMedia: Media | null;
 
   @Column({ default: false })
   pointApplyable: boolean;

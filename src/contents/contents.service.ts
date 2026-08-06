@@ -56,6 +56,7 @@ export class ContentsService {
       .createQueryBuilder("content")
       .leftJoinAndSelect("content.channel", "channel")
       .leftJoinAndSelect("content.media", "media")
+      .leftJoinAndSelect("content.activeMedia", "activeMedia")
       .andWhere("content.status = :contentStatus", { contentStatus: ContentStatus.ACTIVE })
       .andWhere("(channel.id IS NULL OR channel.status = :activeStatus)", { activeStatus: ChannelStatus.ACTIVE })
       .orderBy("content.createdAt", "DESC");
@@ -84,7 +85,7 @@ export class ContentsService {
   async findById(id: string): Promise<Content> {
     const content = await this.contentRepo.findOne({
       where: { id },
-      relations: ["channel", "media"],
+      relations: ["channel", "media", "activeMedia"],
     });
 
     if (!content) {
@@ -123,6 +124,7 @@ export class ContentsService {
       .createQueryBuilder("content")
       .leftJoinAndSelect("content.channel", "channel")
       .leftJoinAndSelect("content.media", "media")
+      .leftJoinAndSelect("content.activeMedia", "activeMedia")
       .where("content.type = :type", { type: ContentType.SYMBOL })
       .andWhere("content.status = :contentStatus", { contentStatus: ContentStatus.ACTIVE })
       .andWhere("(channel.id IS NULL OR channel.status = :activeStatus)", { activeStatus: ChannelStatus.ACTIVE })
@@ -152,6 +154,7 @@ export class ContentsService {
       sortOrder: dto.sortOrder ?? null,
       pointApplyable: dto.pointApplyable ?? false,
       mediaId: dto.mediaId ?? null,
+      activeMediaId: dto.activeMediaId ?? null,
     });
 
     const saved = await this.contentRepo.save(content);
@@ -170,6 +173,7 @@ export class ContentsService {
       ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
       ...(dto.pointApplyable !== undefined && { pointApplyable: dto.pointApplyable }),
       ...(dto.mediaId !== undefined && { mediaId: dto.mediaId }),
+      ...(dto.activeMediaId !== undefined && { activeMediaId: dto.activeMediaId }),
       ...(dto.status !== undefined && { status: dto.status }),
     });
 

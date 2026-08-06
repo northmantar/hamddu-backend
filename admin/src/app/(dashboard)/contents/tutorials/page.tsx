@@ -34,11 +34,35 @@ type Tab = UserInterests;
 const STATUS_LABELS: Record<ContentStatus, string> = { active: '활성', inactive: '비활성' };
 const TAB_LABELS: Record<Tab, string> = { crochet: '코바늘', knitting: '대바늘' };
 
+function IconThumb({ url, caption }: { url: string | null; caption: string }) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className="w-12 h-12 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
+        {url ? (
+          <img src={url} alt={caption} className="w-full h-full object-cover" />
+        ) : (
+          <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        )}
+      </div>
+      <span className="text-[10px] text-gray-400">{caption}</span>
+    </div>
+  );
+}
+
 interface SortableRowProps {
   content: Content;
   channels: Array<{ id: string; name: string }>;
   onStatusChange: (content: Content, status: ContentStatus) => void;
-  onUpdate: (content: Content, name: string, sourceVideoId: string, channelId: string, mediaId?: string | null) => void;
+  onUpdate: (
+    content: Content,
+    name: string,
+    sourceVideoId: string,
+    channelId: string,
+    mediaId?: string | null,
+    activeMediaId?: string | null,
+  ) => void;
   onDelete: (content: Content) => void;
   onUploadMedia: (file: File) => Promise<{ id: string; url: string }>;
   isUploading: boolean;
@@ -52,6 +76,8 @@ function SortableRow({ content, channels, onStatusChange, onUpdate, onDelete, on
   const [editChannelId, setEditChannelId] = useState(content.channelId ?? '');
   const [editMediaId, setEditMediaId] = useState<string | null>(content.mediaId);
   const [editImageUrl, setEditImageUrl] = useState<string | null>(content.imageUrl);
+  const [editActiveMediaId, setEditActiveMediaId] = useState<string | null>(content.activeMediaId);
+  const [editActiveImageUrl, setEditActiveImageUrl] = useState<string | null>(content.activeImageUrl);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -60,7 +86,7 @@ function SortableRow({ content, channels, onStatusChange, onUpdate, onDelete, on
   };
 
   const handleSave = () => {
-    onUpdate(content, editName, editVideoId, editChannelId, editMediaId);
+    onUpdate(content, editName, editVideoId, editChannelId, editMediaId, editActiveMediaId);
     setIsEditing(false);
   };
 
@@ -70,6 +96,8 @@ function SortableRow({ content, channels, onStatusChange, onUpdate, onDelete, on
     setEditChannelId(content.channelId ?? '');
     setEditMediaId(content.mediaId);
     setEditImageUrl(content.imageUrl);
+    setEditActiveMediaId(content.activeMediaId);
+    setEditActiveImageUrl(content.activeImageUrl);
     setIsEditing(false);
   };
 
@@ -78,28 +106,38 @@ function SortableRow({ content, channels, onStatusChange, onUpdate, onDelete, on
     setEditImageUrl(imageUrl);
   };
 
+  const handleActiveImageChange = (mediaId: string | null, imageUrl: string | null) => {
+    setEditActiveMediaId(mediaId);
+    setEditActiveImageUrl(imageUrl);
+  };
+
   return (
     <tr ref={setNodeRef} style={style} className="border-t hover:bg-gray-50">
       <td className="px-4 py-3 text-sm text-gray-500 w-12 text-center">{content.sortOrder ?? '-'}</td>
-      <td className="px-4 py-3 w-16">
+      <td className="px-4 py-3 w-40">
         {isEditing ? (
-          <ImageUpload
-            value={editImageUrl}
-            onChange={handleImageChange}
-            onUpload={onUploadMedia}
-            isUploading={isUploading}
-            label=""
-            className="scale-75 origin-top-left"
-          />
+          <div className="flex gap-2">
+            <ImageUpload
+              value={editImageUrl}
+              onChange={handleImageChange}
+              onUpload={onUploadMedia}
+              isUploading={isUploading}
+              label="기본"
+              className="scale-75 origin-top-left"
+            />
+            <ImageUpload
+              value={editActiveImageUrl}
+              onChange={handleActiveImageChange}
+              onUpload={onUploadMedia}
+              isUploading={isUploading}
+              label="눌림"
+              className="scale-75 origin-top-left"
+            />
+          </div>
         ) : (
-          <div className="w-12 h-12 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
-            {content.imageUrl ? (
-              <img src={content.imageUrl} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            )}
+          <div className="flex gap-2">
+            <IconThumb url={content.imageUrl} caption="기본" />
+            <IconThumb url={content.activeImageUrl} caption="눌림" />
           </div>
         )}
       </td>
@@ -174,7 +212,9 @@ function SortableRow({ content, channels, onStatusChange, onUpdate, onDelete, on
 export default function TutorialsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('crochet');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [createForm, setCreateForm] = useState<Partial<CreateContentDto> & { imageUrl?: string | null }>({});
+  const [createForm, setCreateForm] = useState<
+    Partial<CreateContentDto> & { imageUrl?: string | null; activeImageUrl?: string | null }
+  >({});
 
   const { data: tutorials, isLoading } = useTutorials(activeTab);
   const { data: channels } = useChannels();
@@ -226,7 +266,14 @@ export default function TutorialsPage() {
     }
   };
 
-  const handleUpdate = async (content: Content, name: string, sourceVideoId: string, channelId: string, mediaId?: string | null) => {
+  const handleUpdate = async (
+    content: Content,
+    name: string,
+    sourceVideoId: string,
+    channelId: string,
+    mediaId?: string | null,
+    activeMediaId?: string | null,
+  ) => {
     try {
       await updateContent.mutateAsync({
         id: content.id,
@@ -234,7 +281,9 @@ export default function TutorialsPage() {
           name,
           sourceVideoId,
           channelId: channelId || undefined,
-          ...(mediaId !== undefined && { mediaId: mediaId || undefined }),
+          // null은 그대로 전달해야 아이콘이 해제된다 (undefined로 바꾸면 미변경으로 처리됨)
+          ...(mediaId !== undefined && { mediaId }),
+          ...(activeMediaId !== undefined && { activeMediaId }),
         },
       });
       addToast('수정되었습니다.', 'success');
@@ -270,6 +319,7 @@ export default function TutorialsPage() {
         pointApplyable: true,
         status: 'active',
         mediaId: createForm.mediaId,
+        activeMediaId: createForm.activeMediaId,
       });
       addToast('콘텐츠가 생성되었습니다.', 'success');
       setIsCreateModalOpen(false);
@@ -320,7 +370,7 @@ export default function TutorialsPage() {
                 <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
                   <tr>
                     <th className="px-4 py-3 text-center w-12">No.</th>
-                    <th className="px-4 py-3 text-left w-16">아이콘</th>
+                    <th className="px-4 py-3 text-left w-40">아이콘</th>
                     <th className="px-4 py-3 text-left">이름</th>
                     <th className="px-4 py-3 text-left">Video ID</th>
                     <th className="px-4 py-3 text-left">채널명</th>
@@ -386,12 +436,24 @@ export default function TutorialsPage() {
             onChange={(e) => setCreateForm((f) => ({ ...f, channelId: e.target.value }))}
             options={channelOptions}
           />
-          <ImageUpload
-            value={createForm.imageUrl}
-            onChange={(mediaId, imageUrl) => setCreateForm((f) => ({ ...f, mediaId: mediaId ?? undefined, imageUrl }))}
-            onUpload={handleUploadMedia}
-            isUploading={uploadMedia.isPending}
-          />
+          <div className="flex gap-6">
+            <ImageUpload
+              label="아이콘 (기본)"
+              value={createForm.imageUrl}
+              onChange={(mediaId, imageUrl) => setCreateForm((f) => ({ ...f, mediaId: mediaId ?? undefined, imageUrl }))}
+              onUpload={handleUploadMedia}
+              isUploading={uploadMedia.isPending}
+            />
+            <ImageUpload
+              label="아이콘 (눌림)"
+              value={createForm.activeImageUrl}
+              onChange={(activeMediaId, activeImageUrl) =>
+                setCreateForm((f) => ({ ...f, activeMediaId: activeMediaId ?? undefined, activeImageUrl }))
+              }
+              onUpload={handleUploadMedia}
+              isUploading={uploadMedia.isPending}
+            />
+          </div>
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="secondary" onClick={() => { setIsCreateModalOpen(false); resetCreateForm(); }}>취소</Button>
             <Button type="submit" isLoading={createContent.isPending}>추가</Button>

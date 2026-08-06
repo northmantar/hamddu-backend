@@ -55,11 +55,33 @@ export class ContentListItemDto {
   @ApiPropertyOptional({ enum: UserInterests, nullable: true })
   interests: UserInterests | null;
 
-  @ApiPropertyOptional({ example: "https://cdn.hamddu.online/symbols/chain.png", nullable: true })
+  @ApiPropertyOptional({
+    example: "https://cdn.hamddu.online/symbols/chain.png",
+    nullable: true,
+    description: "기본(눌리지 않은) 상태 아이콘 URL",
+  })
   imageUrl: string | null;
 
-  @ApiPropertyOptional({ example: "media-uuid", nullable: true, description: "연결된 미디어 ID (어드민 수정용)" })
+  @ApiPropertyOptional({
+    example: "media-uuid",
+    nullable: true,
+    description: "기본(눌리지 않은) 상태 아이콘 미디어 ID (어드민 수정용)",
+  })
   mediaId: string | null;
+
+  @ApiPropertyOptional({
+    example: "https://cdn.hamddu.online/symbols/chain-active.png",
+    nullable: true,
+    description: "눌린 상태 아이콘 URL (미등록 시 null → 기본 아이콘 사용)",
+  })
+  activeImageUrl: string | null;
+
+  @ApiPropertyOptional({
+    example: "media-uuid",
+    nullable: true,
+    description: "눌린 상태 아이콘 미디어 ID (어드민 수정용)",
+  })
+  activeMediaId: string | null;
 
   @ApiProperty({ example: true })
   pointApplyable: boolean;
@@ -86,6 +108,8 @@ export class ContentListItemDto {
       interests: content.interests,
       imageUrl: content.media?.url ?? null,
       mediaId: content.mediaId,
+      activeImageUrl: content.activeMedia?.url ?? null,
+      activeMediaId: content.activeMediaId,
       pointApplyable: content.pointApplyable,
       sortOrder: content.sortOrder,
       uploadedAt: content.uploadedAt,

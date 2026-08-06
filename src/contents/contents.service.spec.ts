@@ -3,7 +3,11 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
 import { ContentsService } from './contents.service';
+import { ContentListItemDto } from './dto/content-response.dto';
+import { UpdateContentDto } from './dto/update-content.dto';
 import { Content } from '@entities/content.entity';
 import { Channel } from '@entities/channel.entity';
 import { WatchHistory } from '@entities/watch-history.entity';
@@ -38,6 +42,8 @@ describe('ContentsService', () => {
     channel: mockChannel as Channel,
     mediaId: null,
     media: null,
+    activeMediaId: null,
+    activeMedia: null,
     pointApplyable: true,
     sortOrder: 1,
     uploadedAt: null,
@@ -136,6 +142,12 @@ describe('ContentsService', () => {
       expect(mockQb.leftJoinAndSelect).toHaveBeenCalledWith('content.media', 'media');
     });
 
+    it('should join activeMedia relation in query builder', async () => {
+      await service.findAll({ page: 1, limit: 20 });
+
+      expect(mockQb.leftJoinAndSelect).toHaveBeenCalledWith('content.activeMedia', 'activeMedia');
+    });
+
     it('should join channel relation in query builder', async () => {
       await service.findAll({ page: 1, limit: 20 });
 
@@ -200,7 +212,7 @@ describe('ContentsService', () => {
 
       expect(contentRepo.findOne).toHaveBeenCalledWith(
         expect.objectContaining({
-          relations: expect.arrayContaining(['media']),
+          relations: expect.arrayContaining(['media', 'activeMedia']),
         }),
       );
     });
@@ -284,6 +296,7 @@ describe('ContentsService', () => {
 
       expect(mockQb.leftJoinAndSelect).toHaveBeenCalledWith('content.channel', 'channel');
       expect(mockQb.leftJoinAndSelect).toHaveBeenCalledWith('content.media', 'media');
+      expect(mockQb.leftJoinAndSelect).toHaveBeenCalledWith('content.activeMedia', 'activeMedia');
     });
 
     it('should filter by SYMBOL type', async () => {
@@ -381,6 +394,37 @@ describe('ContentsService', () => {
       );
     });
 
+    it('should pass activeMediaId to contentRepo.create when provided', async () => {
+      await service.create('admin-1', { ...baseDto, activeMediaId: 'media-active-1' });
+
+      expect(contentRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ activeMediaId: 'media-active-1' }),
+      );
+    });
+
+    it('should set activeMediaId to null when not provided', async () => {
+      await service.create('admin-1', baseDto);
+
+      expect(contentRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ activeMediaId: null }),
+      );
+    });
+
+    it('should pass both icon mediaIds independently', async () => {
+      await service.create('admin-1', {
+        ...baseDto,
+        mediaId: 'media-default-1',
+        activeMediaId: 'media-active-1',
+      });
+
+      expect(contentRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          mediaId: 'media-default-1',
+          activeMediaId: 'media-active-1',
+        }),
+      );
+    });
+
     it('should create content with correct fields', async () => {
       await service.create('admin-1', { ...baseDto, interests: UserInterests.CROCHET, sortOrder: 2 });
 
@@ -435,6 +479,63 @@ describe('ContentsService', () => {
 
     it('should NOT include mediaId in update when not provided', async () => {
       await service.update('content-1', 'admin-1', { name: '새 이름' });
+
+      const updateArg = (contentRepo.update.mock.calls[0] as any)[1];
+      expect(updateArg).not.toHaveProperty('mediaId');
+    });
+
+    it('should include activeMediaId in update when provided', async () => {
+      await service.update('content-1', 'admin-1', { activeMediaId: 'media-active-2' });
+
+      expect(contentRepo.update).toHaveBeenCalledWith(
+        'content-1',
+        expect.objectContaining({ activeMediaId: 'media-active-2' }),
+      );
+    });
+
+    it('should NOT include activeMediaId in update when not provided', async () => {
+      await service.update('content-1', 'admin-1', { name: '새 이름' });
+
+      const updateArg = (contentRepo.update.mock.calls[0] as any)[1];
+      expect(updateArg).not.toHaveProperty('activeMediaId');
+    });
+
+    it('should clear mediaId when null is provided', async () => {
+      await service.update('content-1', 'admin-1', { mediaId: null });
+
+      expect(contentRepo.update).toHaveBeenCalledWith(
+        'content-1',
+        expect.objectContaining({ mediaId: null }),
+      );
+    });
+
+    it('should clear activeMediaId when null is provided', async () => {
+      await service.update('content-1', 'admin-1', { activeMediaId: null });
+
+      expect(contentRepo.update).toHaveBeenCalledWith(
+        'content-1',
+        expect.objectContaining({ activeMediaId: null }),
+      );
+    });
+
+    it('should clear only activeMediaId without touching mediaId', async () => {
+      await service.update('content-1', 'admin-1', { activeMediaId: null });
+
+      const updateArg = (contentRepo.update.mock.calls[0] as any)[1];
+      expect(updateArg).not.toHaveProperty('mediaId');
+    });
+
+    it('should clear both icons when both are null', async () => {
+      await service.update('content-1', 'admin-1', { mediaId: null, activeMediaId: null });
+
+      expect(contentRepo.update).toHaveBeenCalledWith(
+        'content-1',
+        expect.objectContaining({ mediaId: null, activeMediaId: null }),
+      );
+    });
+
+    it('should update activeMediaId without touching mediaId', async () => {
+      await service.update('content-1', 'admin-1', { activeMediaId: 'media-active-2' });
 
       const updateArg = (contentRepo.update.mock.calls[0] as any)[1];
       expect(updateArg).not.toHaveProperty('mediaId');
@@ -587,6 +688,75 @@ describe('ContentsService', () => {
       await expect(
         service.reorderTutorials('admin-1', UserInterests.CROCHET, { contentIds: ['id-1', 'id-2', 'unknown-id'] }),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  // ─── UpdateContentDto 검증 ────────────────────────────────────────────────
+
+  describe('UpdateContentDto validation', () => {
+    it('should accept null for mediaId and activeMediaId (아이콘 해제)', async () => {
+      const dto = plainToInstance(UpdateContentDto, { mediaId: null, activeMediaId: null });
+
+      const errors = await validate(dto);
+
+      expect(errors).toHaveLength(0);
+    });
+
+    it('should accept valid UUIDs for both icon fields', async () => {
+      const dto = plainToInstance(UpdateContentDto, {
+        mediaId: '11111111-1111-4111-8111-111111111111',
+        activeMediaId: '22222222-2222-4222-8222-222222222222',
+      });
+
+      const errors = await validate(dto);
+
+      expect(errors).toHaveLength(0);
+    });
+
+    it('should still reject a non-UUID string for icon fields', async () => {
+      const dto = plainToInstance(UpdateContentDto, { activeMediaId: 'not-a-uuid' });
+
+      const errors = await validate(dto);
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].property).toBe('activeMediaId');
+    });
+  });
+
+  // ─── ContentListItemDto.from ──────────────────────────────────────────────
+
+  describe('ContentListItemDto.from', () => {
+    it('should map both default and active icon urls', () => {
+      const content = {
+        ...mockContent,
+        mediaId: 'media-default-1',
+        media: { url: 'https://cdn.hamddu.online/symbols/chain.png' },
+        activeMediaId: 'media-active-1',
+        activeMedia: { url: 'https://cdn.hamddu.online/symbols/chain-active.png' },
+      } as Content;
+
+      const dto = ContentListItemDto.from(content);
+
+      expect(dto.imageUrl).toBe('https://cdn.hamddu.online/symbols/chain.png');
+      expect(dto.mediaId).toBe('media-default-1');
+      expect(dto.activeImageUrl).toBe('https://cdn.hamddu.online/symbols/chain-active.png');
+      expect(dto.activeMediaId).toBe('media-active-1');
+    });
+
+    it('should map activeImageUrl to null when active icon is not set', () => {
+      const content = {
+        ...mockContent,
+        mediaId: 'media-default-1',
+        media: { url: 'https://cdn.hamddu.online/symbols/chain.png' },
+        activeMediaId: null,
+        activeMedia: null,
+      } as Content;
+
+      const dto = ContentListItemDto.from(content);
+
+      expect(dto.imageUrl).toBe('https://cdn.hamddu.online/symbols/chain.png');
+      expect(dto.activeImageUrl).toBeNull();
+      expect(dto.activeMediaId).toBeNull();
     });
   });
 });
