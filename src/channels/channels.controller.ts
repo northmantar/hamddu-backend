@@ -23,7 +23,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { AdminGuard } from "../common/guards/admin.guard";
 import { CreateChannelDto } from "./dto/create-channel.dto";
 import { UpdateChannelDto } from "./dto/update-channel.dto";
-import { ChannelResponseDto } from "./dto/channel-response.dto";
+import { ChannelDetailDto, ChannelResponseDto } from "./dto/channel-response.dto";
 
 @ApiTags("channels")
 @ApiBearerAuth()
@@ -38,6 +38,16 @@ export class ChannelsController {
   async findAll(): Promise<{ data: ChannelResponseDto[] }> {
     const channels = await this.channelsService.findAll();
     return { data: channels.map(ChannelResponseDto.from) };
+  }
+
+  @ApiOperation({ summary: "채널 홈 조회", description: "소개글·이미지·외부 링크를 포함한 채널 상세" })
+  @ApiParam({ name: "id", description: "채널 ID" })
+  @ApiResponse({ status: 200, description: "채널 홈 반환" })
+  @ApiResponse({ status: 404, description: "채널을 찾을 수 없음" })
+  @Get(":id")
+  async findOne(@Param("id", ParseUUIDPipe) id: string): Promise<ChannelDetailDto> {
+    const channel = await this.channelsService.findHomeById(id);
+    return ChannelDetailDto.fromWithHome(channel);
   }
 
   @ApiOperation({ summary: "채널 등록 (관리자)" })
@@ -61,9 +71,9 @@ export class ChannelsController {
   async update(
     @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: UpdateChannelDto,
-  ): Promise<ChannelResponseDto> {
+  ): Promise<ChannelDetailDto> {
     const channel = await this.channelsService.update(id, dto);
-    return ChannelResponseDto.from(channel);
+    return ChannelDetailDto.fromWithHome(channel);
   }
 
   @ApiOperation({ summary: "채널 삭제 (관리자)" })

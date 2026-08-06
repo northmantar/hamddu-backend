@@ -203,6 +203,18 @@ Authorization: Bearer <access_token>
 | `active` | 활성 (콘텐츠 조회 가능) |
 | `inactive` | 비활성 (콘텐츠 조회 불가) |
 
+### `channelLinkType`
+
+채널 홈에 노출되는 외부 링크 종류.
+
+| 값 | 설명 |
+| --- | --- |
+| `instagram` | 인스타그램 |
+| `smartstore` | 네이버 스마트스토어 |
+| `youtube` | 유튜브 |
+| `website` | 웹사이트 |
+| `etc` | 기타 (`label`에 표시명 필수) |
+
 ---
 
 # API 엔드포인트 목차
@@ -329,8 +341,9 @@ Authorization: Bearer <access_token>
 |  | PATCH | /xp/action-types/:code | 관리자 | 액션 타입 수정 |
 |  | DELETE | /xp/action-types/:code | 관리자 | 액션 타입 삭제 |
 | **채널** | GET | /channels | 인증 | 채널 목록 |
+|  | GET | /channels/:id | 인증 | 채널 홈 (소개글·이미지·외부 링크) |
 |  | POST | /channels | 관리자 | 채널 등록 |
-|  | PATCH | /channels/:id | 관리자 | 채널 수정 |
+|  | PATCH | /channels/:id | 관리자 | 채널 수정 (채널 홈 편집 포함) |
 |  | DELETE | /channels/:id | 관리자 | 채널 삭제 |
 | **미디어** | POST | /media | 인증 | 이미지 업로드 (서비스용, 백엔드 압축 없음) |
 |  | POST | /media/upload | 관리자 | 이미지 업로드 (관리자용, 백엔드에서 압축) |

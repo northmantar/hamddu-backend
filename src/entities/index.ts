@@ -3,6 +3,7 @@ export * from "./nickname-base.entity";
 export * from "./nickname-adjective.entity";
 export * from "./nickname-noun.entity";
 export * from "./channel.entity";
+export * from "./channel-link.entity";
 export * from "./content.entity";
 export * from "./watch-history.entity";
 export * from "./challenge.entity";

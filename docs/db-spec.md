@@ -32,11 +32,27 @@
     entity channel #FAFAD2 {
       * id
       --
+      * profile_media_id
+      * banner_media_id
+      --
       * name
       * platform <<enum>>
       * source_channel_id
       * status <<enum>>
+      * description
       * added_at
+    }
+
+    entity channel_link #FAFAD2 {
+      * id
+      --
+      * channel_id
+      --
+      * type <<enum>>
+      * label
+      * url
+      * sort_order
+      * created_at
     }
     
     entity content #FAFAD2 {
@@ -281,6 +297,9 @@
     board }o--o| media : thumbnail
     content }o--o| media : symbol_icon_default
     content }o--o| media : symbol_icon_active
+    channel }o--o| media : profile
+    channel }o--o| media : banner
+    channel ||--o{ channel_link
     challenge }o--o| media : proof_image
 
     channel ||--o{ content
@@ -374,7 +393,27 @@ base 닉네임이 중복될 때 붙일 다음 숫자 접미사를 관리하는 �
 | platform | enum | 플랫폼 (`youtube`) |
 | source_channel_id | varchar | `<<unique>>` 플랫폼 채널 ID |
 | status | enum | 채널 상태 (`active` \| `inactive`) |
+| description | text | 채널 홈 소개글 (nullable) |
+| profile_media_id | uuid | 채널 홈 프로필(로고) 이미지 미디어 ID (nullable) |
+| banner_media_id | uuid | 채널 홈 배너(커버) 이미지 미디어 ID (nullable) |
 | added_at | timestamptz | 채널 추가 일시 |
+
+### 채널 외부 링크 테이블 (`channel_links`)
+
+채널 홈에 노출되는 인스타그램·스마트스토어 등 외부 링크. `PATCH /channels/:id`의 `links`로 **전량 교체**된다.
+
+| name | type | description |
+| --- | --- | --- |
+| id | uuid | **`<<pkey>>`** 링크 ID |
+| channel_id | uuid | 채널 ID |
+| type | enum | 링크 종류 (`instagram` \| `smartstore` \| `youtube` \| `website` \| `etc`) |
+| label | varchar(50) | 표시명 (nullable, `etc`일 때 필수) |
+| url | text | 링크 URL |
+| sort_order | integer | 노출 순서 (0부터 시작) |
+| created_at | timestamp | 생성 일시 |
+
+- 채널 삭제 시 cascade 삭제
+- `(channel_id, sort_order)` 복합 인덱스
 
 ### 콘텐츠 테이블 (`contents`)
 

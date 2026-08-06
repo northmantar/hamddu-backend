@@ -25,6 +25,23 @@ export interface CreateUserAdminDto {
 export type ChannelPlatform = 'youtube';
 export type ChannelStatus = 'active' | 'inactive';
 
+export type ChannelLinkType = 'instagram' | 'smartstore' | 'youtube' | 'website' | 'etc';
+
+export interface ChannelLink {
+  id: string;
+  type: ChannelLinkType;
+  label: string | null;
+  url: string;
+  sortOrder: number;
+}
+
+/** PATCH /channels/:id 로 보낼 링크 (id 없이 전량 교체) */
+export interface ChannelLinkInput {
+  type: ChannelLinkType;
+  url: string;
+  label?: string | null;
+}
+
 export interface Channel {
   id: string;
   name: string;
@@ -32,6 +49,16 @@ export interface Channel {
   sourceChannelId: string;
   status: ChannelStatus;
   addedAt: string;
+}
+
+/** GET /channels/:id — 채널 홈 상세 */
+export interface ChannelDetail extends Channel {
+  description: string | null;
+  profileImageUrl: string | null;
+  profileMediaId: string | null;
+  bannerImageUrl: string | null;
+  bannerMediaId: string | null;
+  links: ChannelLink[];
 }
 
 export interface CreateChannelDto {
@@ -43,6 +70,14 @@ export interface CreateChannelDto {
 export interface UpdateChannelDto {
   name?: string;
   status?: ChannelStatus;
+  /** null을 보내면 소개글 삭제 */
+  description?: string | null;
+  /** null을 보내면 이미지 해제 */
+  profileMediaId?: string | null;
+  /** null을 보내면 이미지 해제 */
+  bannerMediaId?: string | null;
+  /** 보낸 배열로 전량 교체, 배열 순서가 노출 순서 */
+  links?: ChannelLinkInput[];
 }
 
 // Content types

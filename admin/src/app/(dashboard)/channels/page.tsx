@@ -6,21 +6,48 @@ import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
-import { useChannels, useCreateChannel, useUpdateChannel, useDeleteChannel } from '@/hooks/queries/use-channels';
+import {
+  useChannels,
+  useChannelDetail,
+  useCreateChannel,
+  useUpdateChannel,
+  useDeleteChannel,
+} from '@/hooks/queries/use-channels';
+import { useUploadMedia } from '@/hooks/queries/use-media';
 import { useToast } from '@/components/ui/toast';
 import { ChannelForm } from '@/components/forms/channel-form';
-import type { Channel, ChannelStatus, CreateChannelDto } from '@/types';
+import { ChannelHomeForm } from '@/components/forms/channel-home-form';
+import type { Channel, ChannelStatus, CreateChannelDto, UpdateChannelDto } from '@/types';
 
 const STATUS_LABELS: Record<ChannelStatus, string> = { active: '활성', inactive: '비활성' };
 const PLATFORM_LABELS: Record<string, string> = { youtube: 'YouTube' };
 
 export default function ChannelsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [homeChannelId, setHomeChannelId] = useState<string | null>(null);
   const { data: channels, isLoading } = useChannels();
+  const { data: homeChannel, isLoading: isHomeLoading } = useChannelDetail(homeChannelId);
   const createChannel = useCreateChannel();
   const updateChannel = useUpdateChannel();
   const deleteChannel = useDeleteChannel();
+  const uploadMedia = useUploadMedia();
   const { addToast } = useToast();
+
+  const handleUploadMedia = async (file: File) => {
+    const result = await uploadMedia.mutateAsync(file);
+    return { id: result.id, url: result.url };
+  };
+
+  const handleHomeSubmit = async (dto: UpdateChannelDto) => {
+    if (!homeChannelId) return;
+    try {
+      await updateChannel.mutateAsync({ id: homeChannelId, dto });
+      addToast('채널 홈이 저장되었습니다.', 'success');
+      setHomeChannelId(null);
+    } catch {
+      addToast('채널 홈 저장에 실패했습니다.', 'error');
+    }
+  };
 
   const handleCreate = async (dto: CreateChannelDto) => {
     try {
@@ -93,9 +120,14 @@ export default function ChannelsPage() {
       key: 'actions',
       header: '관리',
       render: (channel: Channel) => (
-        <Button variant="danger" size="sm" onClick={() => handleDelete(channel.id)}>
-          삭제
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setHomeChannelId(channel.id)}>
+            홈 편집
+          </Button>
+          <Button variant="danger" size="sm" onClick={() => handleDelete(channel.id)}>
+            삭제
+          </Button>
+        </div>
       ),
     },
   ];
@@ -123,6 +155,26 @@ export default function ChannelsPage() {
           isLoading={createChannel.isPending}
           onCancel={() => setIsModalOpen(false)}
         />
+      </Modal>
+
+      <Modal
+        isOpen={!!homeChannelId}
+        onClose={() => setHomeChannelId(null)}
+        title={homeChannel ? `채널 홈 편집 — ${homeChannel.name}` : '채널 홈 편집'}
+      >
+        {isHomeLoading || !homeChannel ? (
+          <div className="p-8 text-center text-gray-500">불러오는 중...</div>
+        ) : (
+          <ChannelHomeForm
+            key={homeChannel.id}
+            channel={homeChannel}
+            onSubmit={handleHomeSubmit}
+            onUploadMedia={handleUploadMedia}
+            isLoading={updateChannel.isPending}
+            isUploading={uploadMedia.isPending}
+            onCancel={() => setHomeChannelId(null)}
+          />
+        )}
       </Modal>
     </div>
   );
