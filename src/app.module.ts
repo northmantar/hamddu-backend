@@ -27,6 +27,7 @@ import { BoardCommentLike } from "./entities/board-comment-like.entity";
 import { BoardReport } from "./entities/board-report.entity";
 import { CommentReport } from "./entities/comment-report.entity";
 import { Channel } from "./entities/channel.entity";
+import { ChannelLink } from "./entities/channel-link.entity";
 import { Content } from "./entities/content.entity";
 import { WatchHistory } from "./entities/watch-history.entity";
 import { Challenge } from "./entities/challenge.entity";
@@ -82,6 +83,7 @@ import { NotificationTemplate } from "./entities/notification-template.entity";
           BoardReport,
           CommentReport,
           Channel,
+          ChannelLink,
           Content,
           WatchHistory,
           Challenge,
