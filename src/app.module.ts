@@ -15,6 +15,7 @@ import { XpModule } from "./xp/xp.module";
 import { ChannelsModule } from "./channels/channels.module";
 import { RewardsModule } from "./rewards/rewards.module";
 import { MediaModule } from "./media/media.module";
+import { FeedbacksModule } from "./feedbacks/feedbacks.module";
 import { User } from "./entities/user.entity";
 import { NicknameAdjective } from "./entities/nickname-adjective.entity";
 import { NicknameNoun } from "./entities/nickname-noun.entity";
@@ -47,6 +48,7 @@ import { NotificationsModule } from "./notifications/notifications.module";
 import { DeviceToken } from "./entities/device-token.entity";
 import { NotificationCampaign } from "./entities/notification-campaign.entity";
 import { NotificationTemplate } from "./entities/notification-template.entity";
+import { Feedback } from "./entities/feedback.entity";
 
 @Module({
   imports: [
@@ -102,6 +104,7 @@ import { NotificationTemplate } from "./entities/notification-template.entity";
           DeviceToken,
           NotificationCampaign,
           NotificationTemplate,
+          Feedback,
         ],
         synchronize: false,
         namingStrategy: new SnakeNamingStrategy(),
@@ -121,6 +124,7 @@ import { NotificationTemplate } from "./entities/notification-template.entity";
     RewardsModule,
     MediaModule,
     NotificationsModule,
+    FeedbacksModule,
   ],
 })
 export class AppModule {}

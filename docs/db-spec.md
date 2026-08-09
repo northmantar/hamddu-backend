@@ -292,6 +292,15 @@
       * created_at
     }
     
+    entity feedback #FFD5B4 {
+      * id
+      --
+      * member_id
+      --
+      * body
+      * created_at
+    }
+    
     member ||--o{ media
     member }o--o| media : profile_image
     media ||--o{ board_media
@@ -309,6 +318,7 @@
     member ||--o{ board
     member ||--o{ board_comment
     member ||--o{ challenge
+    member ||--o{ feedback
     member ||--o{ point_wallet
     member ||--o{ point_transaction
     member ||--o| xp_wallet
@@ -771,3 +781,16 @@ base 닉네임이 중복될 때 붙일 다음 숫자 접미사를 관리하는 �
 | is_active | boolean | false면 해당 이벤트 발송 안 함 |
 | updated_at | timestamp | |
 - `{level}`=도달 레벨 번호, `{label}`=`xp_level_policies.label`(칭호).
+
+### 의견함 테이블 (`feedbacks`)
+
+유저가 보낸 의견. `POST /feedbacks`로 쌓기만 하고 수정·삭제 API는 없다.
+
+| name | type | description |
+| --- | --- | --- |
+| id | uuid | **`<<pkey>>`** 의견 ID |
+| member_id | uuid | 작성자 ID (nullable, 유저 삭제 시 NULL) |
+| body | text | 의견 내용 (최대 2000자) |
+| created_at | timestamp | 작성 일시 |
+
+- `created_at DESC` 인덱스 (최신순 조회용)

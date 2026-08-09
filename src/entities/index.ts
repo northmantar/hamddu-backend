@@ -16,6 +16,7 @@ export * from "./board-report.entity";
 export * from "./comment-report.entity";
 export * from "./board-media.entity";
 export * from "./media.entity";
+export * from "./feedback.entity";
 export * from "./point-action-type.entity";
 export * from "./point-earning-policy.entity";
 export * from "./point-wallet.entity";

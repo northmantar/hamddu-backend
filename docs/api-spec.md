@@ -242,6 +242,7 @@ Authorization: Bearer <access_token>
 | 17 | 채널 API | [api/17-channels.md](api/17-channels.md) |
 | 18 | 미디어 API | [api/18-media.md](api/18-media.md) |
 | 19 | 알림(FCM) API | [api/19-notifications.md](api/19-notifications.md) |
+| 20 | 의견함 API | [api/20-feedbacks.md](api/20-feedbacks.md) |
 
 ---
 
@@ -347,3 +348,4 @@ Authorization: Bearer <access_token>
 |  | DELETE | /channels/:id | 관리자 | 채널 삭제 |
 | **미디어** | POST | /media | 인증 | 이미지 업로드 (서비스용, 백엔드 압축 없음) |
 |  | POST | /media/upload | 관리자 | 이미지 업로드 (관리자용, 백엔드에서 압축) |
+| **의견함** | POST | /feedbacks | 인증 | 의견 보내기 |
