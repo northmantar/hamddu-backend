@@ -12,6 +12,7 @@ describe("FeedbacksService", () => {
     const mockFeedbackRepo = {
       create: jest.fn((v) => v),
       save: jest.fn((v) => ({ id: "feedback-1", createdAt: new Date(), ...v })),
+      findAndCount: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -44,6 +45,23 @@ describe("FeedbacksService", () => {
         memberId: "user-123",
         body: "공백 포함",
       });
+    });
+  });
+
+  describe("findAll", () => {
+    it("should return newest-first page with the author loaded", async () => {
+      const feedbacks = [{ id: "feedback-1" }] as Feedback[];
+      feedbackRepo.findAndCount.mockResolvedValue([feedbacks, 42]);
+
+      const result = await service.findAll(2, 20);
+
+      expect(feedbackRepo.findAndCount).toHaveBeenCalledWith({
+        relations: ["member"],
+        order: { createdAt: "DESC" },
+        skip: 20,
+        take: 20,
+      });
+      expect(result).toEqual({ data: feedbacks, totalCount: 42 });
     });
   });
 });

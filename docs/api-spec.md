@@ -349,3 +349,4 @@ Authorization: Bearer <access_token>
 | **미디어** | POST | /media | 인증 | 이미지 업로드 (서비스용, 백엔드 압축 없음) |
 |  | POST | /media/upload | 관리자 | 이미지 업로드 (관리자용, 백엔드에서 압축) |
 | **의견함** | POST | /feedbacks | 인증 | 의견 보내기 |
+|  | GET | /feedbacks | 관리자 | 의견 목록 조회 (최신순) |

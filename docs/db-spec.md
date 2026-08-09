@@ -784,7 +784,7 @@ base 닉네임이 중복될 때 붙일 다음 숫자 접미사를 관리하는 �
 
 ### 의견함 테이블 (`feedbacks`)
 
-유저가 보낸 의견. `POST /feedbacks`로 쌓기만 하고 수정·삭제 API는 없다.
+유저가 보낸 의견. `POST /feedbacks`로 쌓고 `GET /feedbacks`(관리자)로 조회한다. 수정·삭제 API는 없다.
 
 | name | type | description |
 | --- | --- | --- |
