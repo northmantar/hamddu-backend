@@ -19,7 +19,7 @@ import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { UpdateNicknameDto } from './dto/update-nickname.dto';
+import { UpdateMeDto } from './dto/update-me.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { SurveyDto } from './dto/survey.dto';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -46,16 +46,16 @@ export class UsersController {
     return UserResponseDto.from(user);
   }
 
-  @ApiOperation({ summary: '닉네임 변경' })
+  @ApiOperation({ summary: '내 프로필 수정 (닉네임 / 프로필 이미지)' })
   @ApiResponse({ status: 200, description: '변경된 유저 객체 반환', type: UserResponseDto })
-  @ApiResponse({ status: 400, description: '유효성 검사 실패' })
+  @ApiResponse({ status: 400, description: '유효성 검사 실패 / 유효하지 않은 미디어 ID' })
   @ApiResponse({ status: 409, description: '닉네임 중복' })
   @Patch('me')
-  async updateNickname(
+  async updateMe(
     @CurrentUser() payload: JwtPayload,
-    @Body() dto: UpdateNicknameDto,
+    @Body() dto: UpdateMeDto,
   ): Promise<UserResponseDto> {
-    const user = await this.usersService.updateNickname(payload.sub, dto);
+    const user = await this.usersService.updateMe(payload.sub, dto);
     return UserResponseDto.from(user);
   }
 

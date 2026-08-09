@@ -2,10 +2,13 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
 } from "typeorm";
+import { Media } from "./media.entity";
 import {
   UserStatus,
   UserType,
@@ -58,6 +61,14 @@ export class User {
 
   @Column({ type: "enum", enum: UserAbility, nullable: true })
   ability: UserAbility | null;
+
+  /** 프로필 이미지 (POST /media 업로드 결과) */
+  @Column({ nullable: true })
+  profileMediaId: string | null;
+
+  @ManyToOne(() => Media, { nullable: true, onDelete: "SET NULL", eager: true })
+  @JoinColumn({ name: "profile_media_id" })
+  profileMedia: Media | null;
 
   @Column({ type: "timestamptz", nullable: true })
   surveyCompletedAt: Date | null;

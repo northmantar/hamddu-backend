@@ -30,6 +30,8 @@
   "gender": "F",
   "interests": "knitting",
   "ability": "intermediate",
+  "profileImageUrl": "https://cdn.hamddu.online/media/profile.png",
+  "profileMediaId": "media-uuid",
   "surveyCompleted": true,
   "createdAt": "2026-04-09T12:00:00.000Z"
 }
@@ -45,7 +47,9 @@
 
 ## 2.2 `PATCH /users/me`
 
-현재 로그인한 유저의 닉네임을 수정합니다.
+현재 로그인한 유저의 프로필(닉네임 / 프로필 이미지)을 수정합니다. **전달한 필드만 반영**됩니다.
+
+프로필 이미지는 먼저 [`POST /media`](18-media.md)로 업로드한 뒤, 응답의 `id`를 `profileMediaId`로 전달합니다.
 
 **Request**
 
@@ -60,13 +64,15 @@
 
     ```json
     {
-      "nickname": "실뭉치장인"
+      "nickname": "실뭉치장인",
+      "profileMediaId": "media-uuid"
     }
     ```
 
     | 필드 | 타입 | 필수 | 유효성 조건 |
     | --- | --- | --- | --- |
-    | `nickname` | string | Yes | 2–30자, 한글/영문/숫자/언더스코어만 허용 |
+    | `nickname` | string | No | 2–30자, 한글/영문/숫자/공백/언더스코어만 허용 |
+    | `profileMediaId` | string \| null | No | 존재하는 미디어 ID(UUID). `null`을 보내면 프로필 이미지가 해제됩니다. |
 
 **Response (200)**
 
@@ -83,6 +89,8 @@
   "gender": "F",
   "interests": "knitting",
   "ability": "intermediate",
+  "profileImageUrl": "https://cdn.hamddu.online/media/profile.png",
+  "profileMediaId": "media-uuid",
   "surveyCompleted": true,
   "createdAt": "2026-04-09T12:00:00.000Z"
 }
@@ -93,6 +101,7 @@
 | **상태 코드** | **errorMessage** |
 | --- | --- |
 | 400 | "닉네임은 2-30자의 한글, 영문, 숫자, 언더스코어만 허용됩니다." |
+| 400 | "유효하지 않은 미디어 ID입니다." |
 | 409 | "이미 사용 중인 닉네임입니다." |
 
 ---
@@ -143,6 +152,8 @@
   "gender": "F",
   "interests": "knitting",
   "ability": "intermediate",
+  "profileImageUrl": "https://cdn.hamddu.online/media/profile.png",
+  "profileMediaId": "media-uuid",
   "surveyCompleted": true,
   "createdAt": "2026-04-09T12:00:00.000Z"
 }
@@ -209,6 +220,8 @@ No Content
   "gender": "F",
   "interests": "knitting",
   "ability": "intermediate",
+  "profileImageUrl": "https://cdn.hamddu.online/media/profile.png",
+  "profileMediaId": "media-uuid",
   "surveyCompleted": true,
   "createdAt": "2026-04-09T12:00:00.000Z"
 }

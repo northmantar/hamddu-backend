@@ -44,6 +44,16 @@ export class UserResponseDto {
   @ApiProperty({ enum: UserAbility, nullable: true })
   ability: UserAbility | null;
 
+  @ApiProperty({
+    example: 'https://cdn.hamddu.online/media/profile.png',
+    nullable: true,
+    description: '프로필 이미지 URL',
+  })
+  profileImageUrl: string | null;
+
+  @ApiProperty({ example: 'media-uuid', nullable: true, description: '프로필 미디어 ID (수정용)' })
+  profileMediaId: string | null;
+
   @ApiProperty({ example: true })
   surveyCompleted: boolean;
 
@@ -69,6 +79,8 @@ export class UserResponseDto {
       gender: user.gender,
       interests: user.interests,
       ability: user.ability,
+      profileImageUrl: user.profileMedia?.url ?? null,
+      profileMediaId: user.profileMediaId ?? null,
       surveyCompleted: user.surveyCompletedAt !== null,
       createdAt: user.createdAt,
     };

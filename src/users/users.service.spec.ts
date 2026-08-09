@@ -1,13 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User } from '@entities/user.entity';
 import { XpWallet } from '@entities/xp-wallet.entity';
 import { PointWallet } from '@entities/point-wallet.entity';
 import { NicknameAdjective } from '@entities/nickname-adjective.entity';
 import { NicknameNoun } from '@entities/nickname-noun.entity';
+import { Media } from '@entities/media.entity';
 import { RedisService } from '../redis/redis.service';
 import { NicknameSequenceService } from '../nicknames/nickname-sequence.service';
 import { RewardsService } from '../rewards/rewards.service';
@@ -22,6 +23,7 @@ describe('UsersService', () => {
   let dataSource: jest.Mocked<DataSource>;
   let redisService: jest.Mocked<RedisService>;
   let nicknameSequenceService: jest.Mocked<NicknameSequenceService>;
+  let mediaRepo: jest.Mocked<Repository<Media>>;
 
   const mockUser: Partial<User> = {
     id: 'user-123',
@@ -65,6 +67,11 @@ describe('UsersService', () => {
 
     const mockNicknameSequenceService = {
       allocateSuffix: jest.fn(),
+      claimNicknameWithSuffix: jest.fn(),
+    };
+
+    const mockMediaRepo = {
+      existsBy: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -78,6 +85,7 @@ describe('UsersService', () => {
         { provide: DataSource, useValue: mockDataSource },
         { provide: RedisService, useValue: mockRedisService },
         { provide: NicknameSequenceService, useValue: mockNicknameSequenceService },
+        { provide: getRepositoryToken(Media), useValue: mockMediaRepo },
         { provide: RewardsService, useValue: { enqueueReward: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
@@ -89,6 +97,7 @@ describe('UsersService', () => {
     dataSource = module.get(DataSource);
     redisService = module.get(RedisService);
     nicknameSequenceService = module.get(NicknameSequenceService);
+    mediaRepo = module.get(getRepositoryToken(Media));
   });
 
   it('should be defined', () => {
@@ -161,6 +170,49 @@ describe('UsersService', () => {
       const result = await service.findOrCreate(Platform.GOOGLE, 'google-456', 'new@example.com');
 
       expect(result.type).toBe(UserType.ADMIN);
+    });
+  });
+
+  describe('updateMe', () => {
+    it('should update profile image when media exists', async () => {
+      mediaRepo.existsBy.mockResolvedValue(true);
+      userRepo.findOne.mockResolvedValue({ ...mockUser, profileMediaId: 'media-1' } as User);
+
+      const result = await service.updateMe('user-123', { profileMediaId: 'media-1' });
+
+      expect(userRepo.update).toHaveBeenCalledWith('user-123', { profileMediaId: 'media-1' });
+      expect(nicknameSequenceService.claimNicknameWithSuffix).not.toHaveBeenCalled();
+      expect(result.profileMediaId).toBe('media-1');
+    });
+
+    it('should clear profile image when profileMediaId is null', async () => {
+      userRepo.findOne.mockResolvedValue(mockUser as User);
+
+      await service.updateMe('user-123', { profileMediaId: null });
+
+      expect(mediaRepo.existsBy).not.toHaveBeenCalled();
+      expect(userRepo.update).toHaveBeenCalledWith('user-123', { profileMediaId: null });
+    });
+
+    it('should throw BadRequestException if media does not exist', async () => {
+      mediaRepo.existsBy.mockResolvedValue(false);
+
+      await expect(service.updateMe('user-123', { profileMediaId: 'ghost' })).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(userRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('should claim nickname and leave profile image untouched', async () => {
+      userRepo.findOne.mockResolvedValue(mockUser as User);
+
+      await service.updateMe('user-123', { nickname: '실뭉치장인' });
+
+      expect(nicknameSequenceService.claimNicknameWithSuffix).toHaveBeenCalledWith(
+        'user-123',
+        '실뭉치장인',
+      );
+      expect(userRepo.update).not.toHaveBeenCalled();
     });
   });
 

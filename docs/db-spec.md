@@ -24,6 +24,7 @@
       * gender
       * interests
       * ability
+      * profile_media_id <<FK>>
       * survey_completed_at
       * created_at
       * withdrawn_at
@@ -292,6 +293,7 @@
     }
     
     member ||--o{ media
+    member }o--o| media : profile_image
     media ||--o{ board_media
     board ||--o{ board_media
     board }o--o| media : thumbnail
@@ -355,6 +357,7 @@
 | gender | enum | 유저 성별 (`M` | `F`) |
 | interests | enum | 유저 관심사 (`crochet` | `knitting`) |
 | ability | enum | 유저 실력 (`beginner` ~ `expert`) |
+| profile_media_id | uuid | 프로필 이미지 미디어 ID (nullable, `POST /media` 응답의 id. 미디어 삭제 시 NULL, 탈퇴 시 NULL) |
 | survey_completed_at | timestamp | 설문 완료 일시 |
 | created_at | timestamp | 유저 생성 일시 |
 | withdrawn_at | timestamp | 유저 탈퇴 일시 |

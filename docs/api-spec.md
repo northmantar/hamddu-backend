@@ -256,7 +256,7 @@ Authorization: Bearer <access_token>
 |  | POST | /auth/refresh | - | 토큰 재발급 |
 |  | POST | /auth/logout | - | 로그아웃 |
 | **유저** | GET | /users/me | 인증 | 내 프로필 조회 |
-|  | PATCH | /users/me | 인증 | 닉네임 수정 |
+|  | PATCH | /users/me | 인증 | 내 프로필 수정 (닉네임 / 프로필 이미지) |
 |  | POST | /users/me/survey | 인증 | 설문 제출 |
 |  | DELETE | /users/me | 인증 | 회원 탈퇴 |
 |  | GET | /users/:id | 관리자 | 특정 유저 조회 |

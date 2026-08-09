@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   InternalServerErrorException,
@@ -11,8 +12,9 @@ import { XpWallet } from '@entities/xp-wallet.entity';
 import { PointWallet } from '@entities/point-wallet.entity';
 import { NicknameAdjective } from '@entities/nickname-adjective.entity';
 import { NicknameNoun } from '@entities/nickname-noun.entity';
+import { Media } from '@entities/media.entity';
 import { Platform, UserStatus, UserType } from '../enums/user.enum';
-import { UpdateNicknameDto } from './dto/update-nickname.dto';
+import { UpdateMeDto } from './dto/update-me.dto';
 import { SurveyDto } from './dto/survey.dto';
 import { RedisService } from '../redis/redis.service';
 import { NicknameSequenceService } from '../nicknames/nickname-sequence.service';
@@ -32,6 +34,8 @@ export class UsersService {
     private readonly xpWalletRepo: Repository<XpWallet>,
     @InjectRepository(PointWallet)
     private readonly pointWalletRepo: Repository<PointWallet>,
+    @InjectRepository(Media)
+    private readonly mediaRepo: Repository<Media>,
     private readonly redis: RedisService,
     private readonly nicknameSequenceService: NicknameSequenceService,
     private readonly rewardsService: RewardsService,
@@ -75,8 +79,21 @@ export class UsersService {
     return saved;
   }
 
-  async updateNickname(userId: string, dto: UpdateNicknameDto): Promise<User> {
-    await this.nicknameSequenceService.claimNicknameWithSuffix(userId, dto.nickname);
+  /** 내 프로필 수정 (닉네임 / 프로필 이미지). 전달된 필드만 반영된다. */
+  async updateMe(userId: string, dto: UpdateMeDto): Promise<User> {
+    if (dto.profileMediaId) {
+      const exists = await this.mediaRepo.existsBy({ id: dto.profileMediaId });
+      if (!exists) throw new BadRequestException('유효하지 않은 미디어 ID입니다.');
+    }
+
+    if (dto.nickname !== undefined) {
+      await this.nicknameSequenceService.claimNicknameWithSuffix(userId, dto.nickname);
+    }
+
+    if (dto.profileMediaId !== undefined) {
+      await this.userRepo.update(userId, { profileMediaId: dto.profileMediaId });
+    }
+
     return this.findByIdOrFail(userId);
   }
 
@@ -124,6 +141,7 @@ export class UsersService {
       status: UserStatus.WITHDRAWN,
       withdrawnAt: new Date(),
       nickname: null,
+      profileMediaId: null,
     });
 
     const hashes = await this.redis.smembers(`user_rts:${userId}`);
