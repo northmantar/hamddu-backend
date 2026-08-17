@@ -20,7 +20,6 @@ interface ChannelHomeFormProps {
   onSubmit: (dto: UpdateChannelDto) => Promise<void>;
   onUploadMedia: (file: File) => Promise<{ id: string; url: string }>;
   isLoading?: boolean;
-  isUploading?: boolean;
   onCancel: () => void;
 }
 
@@ -29,7 +28,6 @@ export function ChannelHomeForm({
   onSubmit,
   onUploadMedia,
   isLoading,
-  isUploading,
   onCancel,
 }: ChannelHomeFormProps) {
   const [description, setDescription] = useState(channel.description ?? '');
@@ -117,7 +115,7 @@ export function ChannelHomeForm({
         <p className="mt-1 text-xs text-gray-500">{description.length} / 2000</p>
       </div>
 
-      <div className="flex flex-wrap gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <ImageUpload
           label="프로필 이미지"
           value={profileImageUrl}
@@ -126,7 +124,6 @@ export function ChannelHomeForm({
             setProfileImageUrl(imageUrl);
           }}
           onUpload={onUploadMedia}
-          isUploading={isUploading}
         />
         <ImageUpload
           label="배너 이미지"
@@ -136,7 +133,6 @@ export function ChannelHomeForm({
             setBannerImageUrl(imageUrl);
           }}
           onUpload={onUploadMedia}
-          isUploading={isUploading}
         />
       </div>
 
@@ -175,12 +171,13 @@ export function ChannelHomeForm({
                   </button>
                 </div>
 
-                <Select
-                  value={link.type}
-                  onChange={(e) => updateLink(index, { type: e.target.value as ChannelLinkType })}
-                  options={LINK_TYPE_OPTIONS}
-                  className="w-44"
-                />
+                <div className="w-32 shrink-0">
+                  <Select
+                    value={link.type}
+                    onChange={(e) => updateLink(index, { type: e.target.value as ChannelLinkType })}
+                    options={LINK_TYPE_OPTIONS}
+                  />
+                </div>
 
                 <div className="flex-1 space-y-2">
                   <Input

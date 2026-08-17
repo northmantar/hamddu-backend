@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 
 const CONTENTS_ICON = 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10';
@@ -45,6 +45,52 @@ export function Sidebar() {
   const [contentsOpen, setContentsOpen] = useState(isContentsActive);
   const [reportsOpen, setReportsOpen] = useState(isReportsActive);
   const [xpOpen, setXpOpen] = useState(isXpActive);
+
+  // XP 정책 accordion — 포인트 정책 메뉴 바로 아래에 렌더된다.
+  const xpMenu = (
+    <li>
+      <button
+        onClick={() => setXpOpen((v) => !v)}
+        className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${
+          isXpActive ? 'bg-primary-700 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+        }`}
+      >
+        <span className="flex items-center gap-3">
+          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={XP_ICON} />
+          </svg>
+          XP 정책
+        </span>
+        <svg
+          className={`w-4 h-4 transition-transform ${xpOpen ? 'rotate-180' : ''}`}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {xpOpen && (
+        <ul className="mt-1 ml-4 space-y-1">
+          {xpSubItems.map((sub) => {
+            const isActive = pathname === sub.href;
+            return (
+              <li key={sub.href}>
+                <Link
+                  href={sub.href}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    isActive ? 'bg-primary-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" />
+                  {sub.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </li>
+  );
 
   return (
     <aside className="w-64 bg-gray-900 text-white min-h-screen flex flex-col">
@@ -167,65 +213,24 @@ export function Sidebar() {
           {bottomMenuItems.map((item) => {
             const isActive = pathname === item.href;
             return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                    isActive ? 'bg-primary-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                  }`}
-                >
-                  <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-                  </svg>
-                  {item.label}
-                </Link>
-              </li>
+              <Fragment key={item.href}>
+                <li>
+                  <Link
+                    href={item.href}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                      isActive ? 'bg-primary-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                    }`}
+                  >
+                    <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
+                    </svg>
+                    {item.label}
+                  </Link>
+                </li>
+                {item.href === '/points' && xpMenu}
+              </Fragment>
             );
           })}
-
-          {/* XP 정책 accordion */}
-          <li>
-            <button
-              onClick={() => setXpOpen((v) => !v)}
-              className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-colors ${
-                isXpActive ? 'bg-primary-700 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-              }`}
-            >
-              <span className="flex items-center gap-3">
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={XP_ICON} />
-                </svg>
-                XP 정책
-              </span>
-              <svg
-                className={`w-4 h-4 transition-transform ${xpOpen ? 'rotate-180' : ''}`}
-                fill="none" stroke="currentColor" viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {xpOpen && (
-              <ul className="mt-1 ml-4 space-y-1">
-                {xpSubItems.map((sub) => {
-                  const isActive = pathname === sub.href;
-                  return (
-                    <li key={sub.href}>
-                      <Link
-                        href={sub.href}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                          isActive ? 'bg-primary-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-                        }`}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0" />
-                        {sub.label}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </li>
         </ul>
       </nav>
 

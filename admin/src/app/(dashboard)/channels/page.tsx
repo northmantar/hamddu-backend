@@ -171,7 +171,6 @@ export default function ChannelsPage() {
             onSubmit={handleHomeSubmit}
             onUploadMedia={handleUploadMedia}
             isLoading={updateChannel.isPending}
-            isUploading={uploadMedia.isPending}
             onCancel={() => setHomeChannelId(null)}
           />
         )}

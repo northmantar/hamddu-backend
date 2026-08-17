@@ -23,6 +23,9 @@ export function ImageUpload({
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(value ?? null);
   const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  // 부모가 공유 로딩값(isUploading)을 넘겨도 자기 인스턴스 상태를 우선 → 버튼별로 독립 로딩.
+  const busy = uploading || isUploading;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -41,6 +44,7 @@ export function ImageUpload({
     }
 
     setError(null);
+    setUploading(true);
 
     try {
       const result = await onUpload(file);
@@ -49,6 +53,8 @@ export function ImageUpload({
     } catch (err) {
       setError('업로드에 실패했습니다.');
       console.error(err);
+    } finally {
+      setUploading(false);
     }
 
     // input 초기화
@@ -99,8 +105,8 @@ export function ImageUpload({
             size="sm"
             variant="secondary"
             onClick={() => inputRef.current?.click()}
-            isLoading={isUploading}
-            disabled={isUploading}
+            isLoading={busy}
+            disabled={busy}
           >
             {previewUrl ? '이미지 변경' : '이미지 선택'}
           </Button>
@@ -110,7 +116,7 @@ export function ImageUpload({
               size="sm"
               variant="danger"
               onClick={handleRemove}
-              disabled={isUploading}
+              disabled={busy}
             >
               삭제
             </Button>
