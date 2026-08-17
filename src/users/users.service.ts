@@ -57,7 +57,11 @@ export class UsersService {
     platformUserId: string,
     email: string,
   ): Promise<User> {
-    const existing = await this.userRepo.findOne({ where: { platform, platformUserId } });
+    // 서비스 로그인은 항상 MEMBER row만 찾고/만든다. 같은 소셜 계정이 admin으로 승격돼도
+    // 어드민 row를 재사용하지 않고 별도 member row를 생성한다.
+    const existing = await this.userRepo.findOne({
+      where: { platform, platformUserId, type: UserType.MEMBER },
+    });
     if (existing) return existing;
 
     const user = this.userRepo.create({

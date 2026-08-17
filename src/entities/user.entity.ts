@@ -20,7 +20,7 @@ import {
 } from "@enums/user.enum";
 
 @Entity("users")
-@Unique(["platform", "platformUserId"])
+@Unique(["platform", "platformUserId", "type"])
 @Unique(["email", "type"])
 export class User {
   @PrimaryGeneratedColumn("uuid")
