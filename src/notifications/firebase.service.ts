@@ -75,6 +75,10 @@ export class FirebaseService implements OnModuleInit {
   /** 디바이스를 전체 브로드캐스트 토픽에 구독. */
   async subscribeToTopic(token: string, topic: string): Promise<void> {
     if (!this.messaging) return;
-    await this.messaging.subscribeToTopic([token], topic);
+    const res = await this.messaging.subscribeToTopic([token], topic);
+    if (res.failureCount > 0) {
+      const codes = res.errors.map(({ error }) => error.code).join(", ");
+      throw new Error(`FCM 응답 실패(${res.failureCount}건, codes=${codes})`);
+    }
   }
 }
