@@ -44,7 +44,8 @@ export class FirebaseService implements OnModuleInit {
     notification: { title: string; body: string },
   ): Promise<void> {
     if (!this.messaging) return;
-    await this.messaging.send({ topic, notification });
+    const messageId = await this.messaging.send({ topic, notification });
+    this.logger.log(`FCM 토픽 발송 성공(topic=${topic}, messageId=${messageId})`);
   }
 
   /** 디바이스 토큰 다건 발송. 등록만료/무효 토큰을 반환 → 호출측이 삭제. */
@@ -57,6 +58,10 @@ export class FirebaseService implements OnModuleInit {
       tokens,
       notification,
     });
+    const messageIds = res.responses.flatMap((r) => (r.messageId ? [r.messageId] : []));
+    this.logger.log(
+      `FCM 디바이스 발송 결과(success=${res.successCount}, failure=${res.failureCount}, messageIds=${messageIds.join(",")})`,
+    );
     const invalidTokens: string[] = [];
     res.responses.forEach((r, i) => {
       if (r.success) return;
@@ -78,7 +83,10 @@ export class FirebaseService implements OnModuleInit {
     const res = await this.messaging.subscribeToTopic([token], topic);
     if (res.failureCount > 0) {
       const codes = res.errors.map(({ error }) => error.code).join(", ");
-      throw new Error(`FCM 응답 실패(${res.failureCount}건, codes=${codes})`);
+      throw new Error(
+        `FCM 토픽 구독 실패(topic=${topic}, success=${res.successCount}, failure=${res.failureCount}, codes=${codes})`,
+      );
     }
+    this.logger.log(`FCM 토픽 구독 성공(topic=${topic}, success=${res.successCount})`);
   }
 }
