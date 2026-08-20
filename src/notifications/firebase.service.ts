@@ -65,7 +65,10 @@ export class FirebaseService implements OnModuleInit {
     const invalidTokens: string[] = [];
     res.responses.forEach((r, i) => {
       if (r.success) return;
-      const code = r.error?.code ?? "";
+      const code = r.error?.code ?? "unknown";
+      this.logger.warn(
+        `FCM 디바이스 발송 실패(token=${tokens[i].slice(0, 12)}…, code=${code})`,
+      );
       if (
         code === "messaging/registration-token-not-registered" ||
         code === "messaging/invalid-registration-token" ||

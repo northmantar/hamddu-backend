@@ -2,6 +2,35 @@ import { ConfigService } from "@nestjs/config";
 import { FirebaseService } from "./firebase.service";
 
 describe("FirebaseService", () => {
+  it("디바이스 발송 실패 토큰과 FCM 오류 코드를 기록한다", async () => {
+    const service = new FirebaseService({} as ConfigService);
+    const warn = jest.fn();
+    (service as any).logger.log = jest.fn();
+    (service as any).logger.warn = warn;
+    (service as any).messaging = {
+      sendEachForMulticast: jest.fn().mockResolvedValue({
+        successCount: 1,
+        failureCount: 1,
+        responses: [
+          { success: true, messageId: "message-1" },
+          {
+            success: false,
+            error: { code: "messaging/invalid-apns-credentials" },
+          },
+        ],
+      }),
+    };
+
+    await service.sendToTokens(
+      ["successful-token", "failed-token-123456"],
+      { title: "t", body: "b" },
+    );
+
+    expect(warn).toHaveBeenCalledWith(
+      "FCM 디바이스 발송 실패(token=failed-token…, code=messaging/invalid-apns-credentials)",
+    );
+  });
+
   it("토픽 발송 메시지 ID와 구독 성공 건수를 기록한다", async () => {
     const service = new FirebaseService({} as ConfigService);
     const log = jest.fn();
