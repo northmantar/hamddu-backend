@@ -37,9 +37,11 @@ Location: https://accounts.google.com/o/oauth2/v2/auth?...
 **Response (302)**
 
 ```
-Location: {FRONTEND_URL}/auth/success?access_token=<jwt>&survey_required=<true|false>
+Location: {FRONTEND_URL}/auth/success?access_token=<jwt>&refresh_token=<token>&survey_required=<true|false>
 Set-Cookie: refresh_token=<token>; HttpOnly; SameSite=Strict; Path=/; Max-Age=2592000
 ```
+
+> 쿼리의 `refresh_token`은 쿠키를 쓸 수 없는 모바일 클라이언트용입니다. 웹은 쿠키를 쓰므로 무시하면 됩니다.
 
 ---
 
@@ -80,9 +82,11 @@ Location: https://nid.naver.com/oauth2.0/authorize?...
 **Response (302)**
 
 ```
-Location: {FRONTEND_URL}/auth/success?access_token=<jwt>&survey_required=<true|false>
+Location: {FRONTEND_URL}/auth/success?access_token=<jwt>&refresh_token=<token>&survey_required=<true|false>
 Set-Cookie: refresh_token=<token>; HttpOnly; SameSite=Strict; Path=/; Max-Age=2592000
 ```
+
+> 쿼리의 `refresh_token`은 쿠키를 쓸 수 없는 모바일 클라이언트용입니다. 웹은 쿠키를 쓰므로 무시하면 됩니다.
 
 ---
 
@@ -90,20 +94,36 @@ Set-Cookie: refresh_token=<token>; HttpOnly; SameSite=Strict; Path=/; Max-Age=25
 
 리프레시 토큰을 사용해 새 액세스 토큰을 발급받습니다.
 
+> **웹 vs 모바일**
+> 웹은 쿠키(`refresh_token`)만 쓰면 됩니다. 모바일은 인앱 브라우저(`ASWebAuthenticationSession`)로 OAuth를 처리해 쿠키 저장소가 앱과 분리되므로, 콜백 쿼리의 `refresh_token`을 저장해 두었다가 **body로** 보냅니다.
+
 **Request**
 
 - Headers: 없음
 - Query Parameters: 없음
-- Body: 없음
-- Cookie: `refresh_token` (필수)
+- Body: (쿠키가 없을 때만 필요)
+
+    ```json
+    {
+      "refreshToken": "a1b2c3..."
+    }
+    ```
+
+    | 필드 | 타입 | 필수 | 설명 |
+    | --- | --- | --- | --- |
+    | `refreshToken` | string | No | 쿠키가 없을 때 사용. 쿠키가 있으면 쿠키가 우선합니다. |
+- Cookie: `refresh_token` (body를 안 보낼 경우 필수)
 
 **Response (200)**
 
 ```json
 {
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "d4e5f6..."
 }
 ```
+
+리프레시 토큰은 매 호출마다 회전됩니다. 쿠키로 요청하면 새 토큰이 `Set-Cookie`로만 내려가고 `refreshToken` 필드는 생략됩니다. **body로 요청한 경우에만** 회전된 토큰이 응답에 포함되며, 클라이언트는 이 값을 반드시 저장해야 합니다(이전 토큰은 즉시 무효).
 
 **Errors**
 
@@ -121,7 +141,13 @@ Set-Cookie: refresh_token=<token>; HttpOnly; SameSite=Strict; Path=/; Max-Age=25
 
 - Headers: 없음
 - Query Parameters: 없음
-- Body: 없음
+- Body: (쿠키가 없을 때만 필요)
+
+    ```json
+    {
+      "refreshToken": "a1b2c3..."
+    }
+    ```
 - Cookie: `refresh_token`
 
 **Response (204)**

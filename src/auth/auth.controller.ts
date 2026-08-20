@@ -36,6 +36,7 @@ import { AdminLoginDto } from './dto/admin-login.dto';
 import { SetAdminPasswordDto } from './dto/set-admin-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ResetAdminPasswordDto } from './dto/reset-admin-password.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AdminGuard } from '../common/guards/admin.guard';
 
 const COOKIE_NAME = 'refresh_token';
@@ -69,7 +70,7 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: '구글 OAuth 콜백 (구글이 직접 호출)' })
-  @ApiResponse({ status: 302, description: '{FRONTEND_URL}/auth/success?access_token=...&survey_required=...' })
+  @ApiResponse({ status: 302, description: '{FRONTEND_URL}/auth/success?access_token=...&refresh_token=...&survey_required=...' })
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleCallback(@Req() req: Request, @Res() res: Response): Promise<void> {
@@ -85,7 +86,7 @@ export class AuthController {
   naverLogin(): void {}
 
   @ApiOperation({ summary: '네이버 OAuth 콜백 (네이버가 직접 호출)' })
-  @ApiResponse({ status: 302, description: '{FRONTEND_URL}/auth/success?access_token=...&survey_required=...' })
+  @ApiResponse({ status: 302, description: '{FRONTEND_URL}/auth/success?access_token=...&refresh_token=...&survey_required=...' })
   @Get('naver/callback')
   @UseGuards(AuthGuard('naver'))
   async naverCallback(@Req() req: Request, @Res() res: Response): Promise<void> {
@@ -94,34 +95,52 @@ export class AuthController {
 
   // ── Token management ─────────────────────────────────────────────────────────
 
-  @ApiOperation({ summary: '액세스 토큰 재발급' })
+  @ApiOperation({
+    summary: '액세스 토큰 재발급',
+    description:
+      '리프레시 토큰은 쿠키에서 읽고, 쿠키가 없으면 body의 refreshToken을 사용한다(쿠키를 못 쓰는 모바일용). ' +
+      'body로 받은 경우 회전된 새 리프레시 토큰을 응답 body에도 담아 준다.',
+  })
   @ApiCookieAuth('refresh_token')
-  @ApiResponse({ status: 200, description: '새 액세스 토큰 반환', schema: { example: { accessToken: 'eyJ...' } } })
-  @ApiResponse({ status: 401, description: '쿠키 없음, 토큰 만료, 또는 재사용 시도' })
+  @ApiBody({ type: RefreshTokenDto, required: false })
+  @ApiResponse({
+    status: 200,
+    description: '새 액세스 토큰 반환 (모바일은 refreshToken도 함께 반환)',
+    schema: { example: { accessToken: 'eyJ...', refreshToken: 'a1b2c3...' } },
+  })
+  @ApiResponse({ status: 401, description: '토큰 없음, 만료, 또는 재사용 시도' })
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ accessToken: string }> {
-    const oldToken: string | undefined = req.cookies?.[COOKIE_NAME];
+    @Body() dto: RefreshTokenDto,
+  ): Promise<{ accessToken: string; refreshToken?: string }> {
+    const cookieToken: string | undefined = req.cookies?.[COOKIE_NAME];
+    const oldToken = cookieToken ?? dto?.refreshToken;
     if (!oldToken) throw new UnauthorizedException('No refresh token');
 
     const { accessToken, refreshToken } = await this.authService.refreshTokens(oldToken);
     res.cookie(COOKIE_NAME, refreshToken, cookieOptions(this.config));
-    return { accessToken };
+    // 쿠키를 못 쓰는 클라이언트(인앱 브라우저 OAuth)는 회전된 토큰을 body로 받아 직접 저장한다.
+    return cookieToken ? { accessToken } : { accessToken, refreshToken };
   }
 
-  @ApiOperation({ summary: '로그아웃' })
+  @ApiOperation({
+    summary: '로그아웃',
+    description: '쿠키가 없으면 body의 refreshToken을 무효화한다.',
+  })
   @ApiCookieAuth('refresh_token')
+  @ApiBody({ type: RefreshTokenDto, required: false })
   @ApiResponse({ status: 204, description: '로그아웃 성공, 쿠키 삭제' })
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   async logout(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
+    @Body() dto: RefreshTokenDto,
   ): Promise<void> {
-    const token: string | undefined = req.cookies?.[COOKIE_NAME];
+    const token: string | undefined = req.cookies?.[COOKIE_NAME] ?? dto?.refreshToken;
     if (token) await this.authService.logout(token);
     res.clearCookie(COOKIE_NAME, { path: '/' });
   }
@@ -242,8 +261,10 @@ export class AuthController {
     const surveyRequired = !user.surveyCompletedAt;
     const frontendUrl = this.config.get<string>('FRONTEND_URL');
     // Pass the short-lived access token via query param; frontend stores it in memory.
+    // refresh_token도 함께 넘긴다 — 인앱 브라우저(ASWebAuthenticationSession)로 로그인하는
+    // 모바일은 쿠키 저장소가 분리돼 있어 위에서 심은 쿠키를 읽지 못한다. 웹은 쿠키만 쓰고 무시하면 된다.
     res.redirect(
-      `${frontendUrl}/auth/success?access_token=${accessToken}&survey_required=${surveyRequired}`,
+      `${frontendUrl}/auth/success?access_token=${accessToken}&refresh_token=${refreshToken}&survey_required=${surveyRequired}`,
     );
   }
 }
