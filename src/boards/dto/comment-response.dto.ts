@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { BoardComment } from "@entities/board-comment.entity";
 import { AuthorDto } from "./board-response.dto";
+import { displayNickname } from "../../users/user-display";
 
 export class CommentResponseDto {
   @ApiProperty({ example: "comment-uuid" })
@@ -43,7 +44,7 @@ export class CommentResponseDto {
       isLiked,
       author: {
         id: comment.member.id,
-        nickname: comment.member.nickname ?? "",
+        nickname: displayNickname(comment.member),
       },
       children,
       createdAt: comment.createdAt,

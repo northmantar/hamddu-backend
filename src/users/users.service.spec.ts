@@ -9,6 +9,7 @@ import { PointWallet } from '@entities/point-wallet.entity';
 import { NicknameAdjective } from '@entities/nickname-adjective.entity';
 import { NicknameNoun } from '@entities/nickname-noun.entity';
 import { Media } from '@entities/media.entity';
+import { DeviceToken } from '@entities/device-token.entity';
 import { RedisService } from '../redis/redis.service';
 import { NicknameSequenceService } from '../nicknames/nickname-sequence.service';
 import { RewardsService } from '../rewards/rewards.service';
@@ -24,6 +25,7 @@ describe('UsersService', () => {
   let redisService: jest.Mocked<RedisService>;
   let nicknameSequenceService: jest.Mocked<NicknameSequenceService>;
   let mediaRepo: jest.Mocked<Repository<Media>>;
+  let mockDeviceTokenRepo: { delete: jest.Mock };
 
   const mockUser: Partial<User> = {
     id: 'user-123',
@@ -74,6 +76,8 @@ describe('UsersService', () => {
       existsBy: jest.fn(),
     };
 
+    mockDeviceTokenRepo = { delete: jest.fn() };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
@@ -86,6 +90,7 @@ describe('UsersService', () => {
         { provide: RedisService, useValue: mockRedisService },
         { provide: NicknameSequenceService, useValue: mockNicknameSequenceService },
         { provide: getRepositoryToken(Media), useValue: mockMediaRepo },
+        { provide: getRepositoryToken(DeviceToken), useValue: mockDeviceTokenRepo },
         { provide: RewardsService, useValue: { enqueueReward: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
@@ -271,15 +276,20 @@ describe('UsersService', () => {
   });
 
   describe('withdraw', () => {
-    it('should update user status and clear redis tokens', async () => {
+    it('should anonymize identifiers, drop device tokens and clear redis tokens', async () => {
       redisService.smembers.mockResolvedValue(['hash1', 'hash2']);
 
       await service.withdraw('user-123');
 
       expect(userRepo.update).toHaveBeenCalledWith('user-123', expect.objectContaining({
         status: UserStatus.WITHDRAWN,
+        platformUserId: null,
+        email: null,
+        name: '탈퇴한 회원',
         nickname: null,
+        profileMediaId: null,
       }));
+      expect(mockDeviceTokenRepo.delete).toHaveBeenCalledWith({ userId: 'user-123' });
       expect(redisService.del).toHaveBeenCalledWith('rt:hash1', 'rt:hash2');
       expect(redisService.del).toHaveBeenCalledWith('user_rts:user-123');
     });

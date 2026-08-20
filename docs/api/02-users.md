@@ -169,7 +169,13 @@
 
 ## 2.4 `DELETE /users/me`
 
-회원 탈퇴 (소프트 삭제)
+회원 탈퇴 (소프트 삭제 + 식별자 익명화)
+
+- `status`를 `withdrawn`으로 바꾸고 `withdrawnAt`을 기록한다.
+- 식별자 익명화: `platformUserId` / `email` → `null`, `name` → `탈퇴한 회원`, `nickname` / `profileMediaId` → `null`.
+  → 같은 소셜 계정으로 재가입하면 이전 계정과 연결되지 않고 새 회원으로 생성된다.
+- 디바이스 토큰 삭제(푸시 중단), refresh token 전량 폐기.
+- 작성한 게시글·댓글은 그대로 남으며 작성자 닉네임만 `탈퇴한 회원`으로 노출된다.
 
 **Request**
 
