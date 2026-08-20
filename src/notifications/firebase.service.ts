@@ -26,7 +26,9 @@ export class FirebaseService implements OnModuleInit {
             credential: admin.credential.cert(serviceAccount),
           });
       this.messaging = app.messaging();
-      this.logger.log("Firebase Admin 초기화 완료");
+      this.logger.log(
+        `Firebase Admin 초기화 완료(project=${serviceAccount.project_id})`,
+      );
     } catch (e) {
       this.logger.error(
         `Firebase 초기화 실패: ${(e as Error).message} → 발송 비활성화`,
