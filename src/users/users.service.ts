@@ -13,7 +13,9 @@ import { PointWallet } from '@entities/point-wallet.entity';
 import { NicknameAdjective } from '@entities/nickname-adjective.entity';
 import { NicknameNoun } from '@entities/nickname-noun.entity';
 import { Media } from '@entities/media.entity';
+import { DeviceToken } from '@entities/device-token.entity';
 import { Platform, UserStatus, UserType } from '../enums/user.enum';
+import { WITHDRAWN_NAME } from './user-display';
 import { UpdateMeDto } from './dto/update-me.dto';
 import { SurveyDto } from './dto/survey.dto';
 import { RedisService } from '../redis/redis.service';
@@ -36,6 +38,8 @@ export class UsersService {
     private readonly pointWalletRepo: Repository<PointWallet>,
     @InjectRepository(Media)
     private readonly mediaRepo: Repository<Media>,
+    @InjectRepository(DeviceToken)
+    private readonly deviceTokenRepo: Repository<DeviceToken>,
     private readonly redis: RedisService,
     private readonly nicknameSequenceService: NicknameSequenceService,
     private readonly rewardsService: RewardsService,
@@ -141,12 +145,19 @@ export class UsersService {
   }
 
   async withdraw(userId: string): Promise<void> {
+    // 재가입 시 이전 계정과 연결되지 않도록 식별자를 모두 익명화한다.
+    // 게시글/댓글은 user_id FK로 남아 그대로 노출된다.
     await this.userRepo.update(userId, {
       status: UserStatus.WITHDRAWN,
       withdrawnAt: new Date(),
+      platformUserId: null,
+      email: null,
+      name: WITHDRAWN_NAME,
       nickname: null,
       profileMediaId: null,
     });
+
+    await this.deviceTokenRepo.delete({ userId });
 
     const hashes = await this.redis.smembers(`user_rts:${userId}`);
     await this.redis.del(...hashes.map((h) => `rt:${h}`));

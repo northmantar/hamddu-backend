@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { BoardStatus } from "@enums/board.enum";
 import { Board } from "@entities/board.entity";
+import { displayNickname } from "../../users/user-display";
 
 export class AuthorDto {
   @ApiProperty({ example: "author-uuid" })
@@ -69,7 +70,7 @@ export class BoardListItemDto {
       },
       author: {
         id: board.member.id,
-        nickname: board.member.nickname ?? "",
+        nickname: displayNickname(board.member),
       },
       media: board.boardMedia?.map((bm) => ({
         id: bm.media.id,

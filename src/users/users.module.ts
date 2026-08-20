@@ -9,12 +9,21 @@ import { PointWallet } from "@entities/point-wallet.entity";
 import { NicknameAdjective } from "@entities/nickname-adjective.entity";
 import { NicknameNoun } from "@entities/nickname-noun.entity";
 import { Media } from "@entities/media.entity";
+import { DeviceToken } from "@entities/device-token.entity";
 import { NicknamesModule } from "../nicknames/nicknames.module";
 import { RewardsModule } from "../rewards/rewards.module";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, XpWallet, PointWallet, NicknameAdjective, NicknameNoun, Media]),
+    TypeOrmModule.forFeature([
+      User,
+      XpWallet,
+      PointWallet,
+      NicknameAdjective,
+      NicknameNoun,
+      Media,
+      DeviceToken,
+    ]),
     NicknamesModule,
     RewardsModule,
   ],

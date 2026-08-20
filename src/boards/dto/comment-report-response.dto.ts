@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { ReportReason, ReportStatus } from "@enums/report.enum";
 import { CommentReport } from "@entities/comment-report.entity";
+import { displayNickname } from "../../users/user-display";
 
 export class CommentReporterDto {
   @ApiProperty({ example: "reporter-uuid" })
@@ -64,7 +65,7 @@ export class CommentReportDetailDto extends CommentReportResponseDto {
       ...CommentReportResponseDto.from(report),
       reporter: {
         id: report.reporter.id,
-        nickname: report.reporter.nickname ?? "",
+        nickname: displayNickname(report.reporter),
       },
       comment: {
         id: report.comment.id,
