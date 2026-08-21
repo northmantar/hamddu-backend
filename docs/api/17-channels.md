@@ -75,9 +75,9 @@
   "bannerImageUrl": "https://cdn.hamddu.online/media/banner.png",
   "bannerMediaId": "media-uuid-2",
   "links": [
-    { "id": "link-uuid-1", "type": "instagram", "label": null, "url": "https://instagram.com/hamddu", "sortOrder": 0 },
-    { "id": "link-uuid-2", "type": "smartstore", "label": null, "url": "https://smartstore.naver.com/hamddu", "sortOrder": 1 },
-    { "id": "link-uuid-3", "type": "etc", "label": "블로그", "url": "https://blog.naver.com/hamddu", "sortOrder": 2 }
+    { "id": "link-uuid-1", "type": "instagram", "label": null, "url": "https://instagram.com/hamddu", "sortOrder": 0, "iconUrl": "https://cdn.hamddu.online/icons/link-types/instagram.png" },
+    { "id": "link-uuid-2", "type": "smartstore", "label": null, "url": "https://smartstore.naver.com/hamddu", "sortOrder": 1, "iconUrl": "https://cdn.hamddu.online/icons/link-types/smartstore.png" },
+    { "id": "link-uuid-3", "type": "etc", "label": "블로그", "url": "https://blog.naver.com/hamddu", "sortOrder": 2, "iconUrl": "https://cdn.hamddu.online/icons/link-types/url.png" }
   ]
 }
 ```
@@ -93,6 +93,7 @@
 
 - 미등록 항목은 `null`, 링크가 없으면 빈 배열 `[]`로 반환됩니다.
 - `label`은 `type`이 `etc`일 때만 채워지며, 그 외에는 보통 `null`입니다.
+- `iconUrl`은 `type`에 따라 서버가 내려주는 고정 아이콘 URL입니다. `instagram`/`smartstore`/`youtube`는 각 플랫폼 원형 로고, `website`/`etc`는 공통 URL 로고(`url.png`)를 사용합니다.
 
 **Errors**
 
@@ -225,9 +226,9 @@
   "bannerImageUrl": "https://cdn.hamddu.online/media/banner.png",
   "bannerMediaId": "media-uuid-2",
   "links": [
-    { "id": "link-uuid-1", "type": "instagram", "label": null, "url": "https://instagram.com/hamddu", "sortOrder": 0 },
-    { "id": "link-uuid-2", "type": "smartstore", "label": null, "url": "https://smartstore.naver.com/hamddu", "sortOrder": 1 },
-    { "id": "link-uuid-3", "type": "etc", "label": "블로그", "url": "https://blog.naver.com/hamddu", "sortOrder": 2 }
+    { "id": "link-uuid-1", "type": "instagram", "label": null, "url": "https://instagram.com/hamddu", "sortOrder": 0, "iconUrl": "https://cdn.hamddu.online/icons/link-types/instagram.png" },
+    { "id": "link-uuid-2", "type": "smartstore", "label": null, "url": "https://smartstore.naver.com/hamddu", "sortOrder": 1, "iconUrl": "https://cdn.hamddu.online/icons/link-types/smartstore.png" },
+    { "id": "link-uuid-3", "type": "etc", "label": "블로그", "url": "https://blog.naver.com/hamddu", "sortOrder": 2, "iconUrl": "https://cdn.hamddu.online/icons/link-types/url.png" }
   ]
 }
 ```

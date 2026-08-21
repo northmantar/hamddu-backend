@@ -371,6 +371,27 @@ describe('ChannelsService', () => {
       expect(dto.profileImageUrl).toBe('https://cdn.hamddu.online/media/profile.png');
       expect(dto.bannerImageUrl).toBe('https://cdn.hamddu.online/media/banner.png');
       expect(dto.links.map((l) => l.id)).toEqual(['l1', 'l2']);
+      expect(dto.links.map((l) => l.iconUrl)).toEqual([
+        'https://cdn.hamddu.online/icons/link-types/instagram.png',
+        'https://cdn.hamddu.online/icons/link-types/smartstore.png',
+      ]);
+    });
+
+    it('should use the shared url icon for website and etc', () => {
+      const channel = {
+        ...mockChannel,
+        links: [
+          { id: 'l1', type: ChannelLinkType.WEBSITE, label: null, url: 'https://a', sortOrder: 0 },
+          { id: 'l2', type: ChannelLinkType.ETC, label: '블로그', url: 'https://b', sortOrder: 1 },
+        ],
+      } as Channel;
+
+      const dto = ChannelDetailDto.fromWithHome(channel);
+
+      expect(dto.links.map((l) => l.iconUrl)).toEqual([
+        'https://cdn.hamddu.online/icons/link-types/url.png',
+        'https://cdn.hamddu.online/icons/link-types/url.png',
+      ]);
     });
 
     it('should map images to null and links to empty array when unset', () => {

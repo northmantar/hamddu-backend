@@ -3,6 +3,17 @@ import { Channel } from "@entities/channel.entity";
 import { ChannelLink } from "@entities/channel-link.entity";
 import { ChannelLinkType, ChannelPlatform, ChannelStatus } from "@enums/channel.enum";
 
+const CDN_BASE = process.env.CDN_BASE_URL || "https://cdn.hamddu.online";
+
+/** 링크 종류별 아이콘. website/etc는 공통 URL 로고를 쓴다. */
+const LINK_ICON_URL: Record<ChannelLinkType, string> = {
+  [ChannelLinkType.INSTAGRAM]: `${CDN_BASE}/icons/link-types/instagram.png`,
+  [ChannelLinkType.SMARTSTORE]: `${CDN_BASE}/icons/link-types/smartstore.png`,
+  [ChannelLinkType.YOUTUBE]: `${CDN_BASE}/icons/link-types/youtube.png`,
+  [ChannelLinkType.WEBSITE]: `${CDN_BASE}/icons/link-types/url.png`,
+  [ChannelLinkType.ETC]: `${CDN_BASE}/icons/link-types/url.png`,
+};
+
 export class ChannelLinkDto {
   @ApiProperty({ example: "link-uuid" })
   id: string;
@@ -19,6 +30,12 @@ export class ChannelLinkDto {
   @ApiProperty({ example: 0, description: "노출 순서 (0부터 시작)" })
   sortOrder: number;
 
+  @ApiProperty({
+    example: "https://cdn.hamddu.online/icons/link-types/instagram.png",
+    description: "링크 종류별 아이콘 URL (website/etc는 공통 URL 로고)",
+  })
+  iconUrl: string;
+
   static from(link: ChannelLink): ChannelLinkDto {
     return {
       id: link.id,
@@ -26,6 +43,7 @@ export class ChannelLinkDto {
       label: link.label,
       url: link.url,
       sortOrder: link.sortOrder,
+      iconUrl: LINK_ICON_URL[link.type],
     };
   }
 }
